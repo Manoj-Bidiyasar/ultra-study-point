@@ -1,5 +1,5 @@
 import SubcategoryClient from "./SubcategoryClient";
-import { db } from "@/lib/firebase-admin";
+import { adminDb } from "@/lib/firebaseAdmin";
 import { notFound } from "next/navigation";
 
 export const revalidate = 3600; // 1 hour ISR
@@ -41,7 +41,7 @@ export default async function Page({ params }) {
     notFound();
   }
 
-  const snap = await db
+  const snap = await adminDb
     .collection("artifacts")
     .doc("ultra-study-point")
     .collection("public")

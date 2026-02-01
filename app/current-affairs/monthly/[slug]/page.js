@@ -1,6 +1,6 @@
 import ArticleClient from "./ArticleClient";
 import { notFound } from "next/navigation";
-import { db } from "@/lib/firebase-admin";
+import { adminDb } from "@/lib/firebaseAdmin";
 import { breadcrumbConfig } from "@/lib/breadcrumbs";
 import { buildBreadcrumbSchema } from "@/lib/breadcrumbSchema";
 import { resolveRelatedContent } from "@/lib/related/relatedEngine";
@@ -56,7 +56,7 @@ export async function generateMetadata(props) {
 
   if (!slug) return {};
 
-  const colRef = db
+  const colRef = adminDb
     .collection("artifacts")
     .doc("ultra-study-point")
     .collection("public")
@@ -119,7 +119,7 @@ export default async function MonthlyArticlePage(props) {
 
   if (!slug) notFound();
 
-  const colRef = db
+  const colRef = adminDb
     .collection("artifacts")
     .doc("ultra-study-point")
     .collection("public")

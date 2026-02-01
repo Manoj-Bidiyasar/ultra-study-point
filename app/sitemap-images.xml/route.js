@@ -1,4 +1,4 @@
-import { getAllPublishedPages } from "@/lib/sitemap";
+import { getAllPublishedPages } from "@/app/sitemap";
 
 export async function GET() {
   const pages = await getAllPublishedPages();

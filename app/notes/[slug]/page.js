@@ -1,6 +1,6 @@
 import NotesClient from "./NotesClient";
 import { notFound } from "next/navigation";
-import { db } from "@/lib/firebase-admin";
+import { adminDb } from "@/lib/firebaseAdmin";
 import { migrateContentBlocks } from "@/components/content/utils/migrateContentBlocks";
 
 
@@ -47,7 +47,7 @@ function serializeFirestoreData(value) {
 async function getRelatedNotes({ category, excludeSlug }) {
   if (!category) return [];
 
-  const ref = db
+  const ref = adminDb
     .collection("artifacts")
     .doc("ultra-study-point")
     .collection("public")
@@ -81,7 +81,7 @@ export async function generateMetadata(props) {
 
   const isPreview = searchParams?.preview === "true";
 
-  const docRef = db
+  const docRef = adminDb
     .collection("artifacts")
     .doc("ultra-study-point")
     .collection("public")
@@ -126,7 +126,7 @@ export default async function NotesPage(props) {
 
   const isPreview = searchParams?.preview === "true";
 
-  const colRef = db
+  const colRef = adminDb
     .collection("artifacts")
     .doc("ultra-study-point")
     .collection("public")
