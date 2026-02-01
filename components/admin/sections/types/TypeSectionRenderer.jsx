@@ -1,0 +1,61 @@
+import DailySection from "./DailySection";
+import MonthlySection from "./MonthlySection";
+import NotesSection from "./NotesSection";
+import QuizSection from "./QuizSection";
+
+export default function TypeSectionRenderer({
+  type,
+  meta,
+  isLocked,
+  onChange,
+}) {
+  if (type === "daily") {
+    return (
+      <DailySection
+        value={meta?.daily || {}}
+        isLocked={isLocked}
+        onChange={(v) =>
+          onChange({ daily: v })
+        }
+      />
+    );
+  }
+
+  if (type === "monthly") {
+    return (
+      <MonthlySection
+        value={meta?.monthly || {}}
+        isLocked={isLocked}
+        onChange={(v) =>
+          onChange({ monthly: v })
+        }
+      />
+    );
+  }
+
+  if (type === "notes") {
+    return (
+      <NotesSection
+        value={meta?.notes || {}}
+        isLocked={isLocked}
+        onChange={(v) =>
+          onChange({ notes: v })
+        }
+      />
+    );
+  }
+
+  if (type === "quiz") {
+    return (
+      <QuizSection
+        value={meta?.quiz || {}}
+        isLocked={isLocked}
+        onChange={(v) =>
+          onChange({ quiz: v })
+        }
+      />
+    );
+  }
+
+  return null;
+}
