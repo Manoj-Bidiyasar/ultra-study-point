@@ -1,29 +1,53 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import mermaid from "mermaid";
+import { useEffect, useRef, useState } from "react";
+import {
+  initMermaid,
+  renderMermaid,
+} from "@/components/content/mermaidClient";
 
 export default function DiagramBlock({ block }) {
   const ref = useRef(null);
+  const [error, setError] = useState("");
+
+  // stable id
+  const idRef = useRef(
+    "diagram-" + Math.random().toString(36).slice(2)
+  );
 
   useEffect(() => {
-    if (!block?.code) return;
+    initMermaid();
+  }, []);
 
-    mermaid.initialize({
-      startOnLoad: false,
-      securityLevel: "loose",
-      theme: "default",
-    });
+  useEffect(() => {
+    if (!block?.code?.trim()) {
+      if (ref.current) ref.current.innerHTML = "";
+      setError("");
+      return;
+    }
 
-    mermaid.render(
-      "diagram-" + Math.random().toString(36).slice(2),
-      block.code
-    ).then(({ svg }) => {
-      if (ref.current) {
-        ref.current.innerHTML = svg;
+    renderMermaid(block.code, idRef.current).then(
+      (res) => {
+        if (res.error) {
+          setError(res.error);
+          if (ref.current) ref.current.innerHTML = "";
+        } else {
+          setError("");
+          if (ref.current) {
+            ref.current.innerHTML = res.svg;
+          }
+        }
       }
-    });
+    );
   }, [block?.code]);
+
+  if (error) {
+    return (
+      <div className="my-6 p-3 border border-red-300 bg-red-50 text-sm text-red-700 rounded">
+        ❌ Diagram error: {error}
+      </div>
+    );
+  }
 
   return (
     <div

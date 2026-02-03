@@ -11,7 +11,7 @@ export async function generateMetadata({
   params,
   searchParams,
 }) {
-  const token = searchParams?.token;
+  const { token } = await searchParams;
 
   return {
     title: "PREVIEW — Draft Content",
@@ -40,8 +40,8 @@ export default async function PreviewPage({
   params,
   searchParams,
 }) {
-  const { type } = params;
-  const token = searchParams?.token;
+  const { type } = await params;
+  const { token } = await searchParams;
 
   if (!token) notFound();
 
@@ -91,7 +91,6 @@ export default async function PreviewPage({
 
   return (
     <article className="max-w-4xl mx-auto p-6">
-
       {/* PREVIEW BANNER */}
       <div
         style={{
@@ -106,7 +105,7 @@ export default async function PreviewPage({
       >
         <b>🔴 Preview Mode</b>
 
-        {/* ✅ CLIENT COMPONENT */}
+        {/* CLIENT COMPONENT */}
         <ExitPreviewButton />
       </div>
 
