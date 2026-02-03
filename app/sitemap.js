@@ -1,5 +1,7 @@
+import { getAllPublishedPages } from "@/lib/sitemap";
+
 export default async function sitemap() {
-  const baseUrl = "ultrastudypoint.in";
+  const baseUrl = "https://ultrastudypoint.in";
 
   return [
     {
@@ -19,3 +21,5 @@ export default async function sitemap() {
     },
   ];
 }
+
+export { getAllPublishedPages };

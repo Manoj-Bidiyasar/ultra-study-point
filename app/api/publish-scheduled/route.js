@@ -1,15 +1,15 @@
-import { db } from "@/lib/firebaseAdmin";
+import { adminDb } from "@/lib/firebaseAdmin";
 
 export async function GET() {
   const now = new Date();
 
-  const snap = await db
+  const snap = await adminDb
     .collectionGroup("currentAffairs")
     .where("status", "==", "scheduled")
     .where("publishAt", "<=", now)
     .get();
 
-  const batch = db.batch();
+  const batch = adminDb.batch();
 
   snap.forEach((doc) => {
     batch.update(doc.ref, {
