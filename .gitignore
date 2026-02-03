@@ -102,3 +102,6 @@ logs/
 # ===============================
 tmp/
 temp/
+
+# Local secret folder (service account JSON)
+secure/

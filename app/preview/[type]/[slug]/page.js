@@ -44,6 +44,7 @@ export default async function PreviewPage({
   const { token } = await searchParams;
 
   if (!token) notFound();
+  if (!adminDb) notFound();
 
   /* ================= TOKEN ================= */
 

@@ -1,5 +1,5 @@
 import NotesClient from "./NotesClient";
-import { adminDb } from "@/lib/firebaseAdmin";
+import { getAdminDb } from "@/lib/firebaseAdmin";
 
 /* ================= SEO ================= */
 export const metadata = {
@@ -9,7 +9,7 @@ export const metadata = {
 };
 
 /* ================= FORCE SSR ================= */
-export const dynamic = "force-static";
+export const dynamic = "force-dynamic";
 
 /* ================= SERIALIZER ================= */
 function serializeDoc(doc) {
@@ -38,6 +38,11 @@ function serializeDoc(doc) {
 }
 
 export default async function NotesPage() {
+  const adminDb = getAdminDb();
+  if (!adminDb) {
+    return <NotesClient initialNotes={[]} />;
+  }
+
   const colRef = adminDb
     .collection("artifacts")
     .doc("ultra-study-point")

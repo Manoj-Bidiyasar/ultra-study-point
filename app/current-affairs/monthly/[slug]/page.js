@@ -1,12 +1,12 @@
 import ArticleClient from "./ArticleClient";
 import { notFound } from "next/navigation";
-import { adminDb } from "@/lib/firebaseAdmin";
+import { getAdminDb } from "@/lib/firebaseAdmin";
 import { breadcrumbConfig } from "@/lib/breadcrumbs";
 import { buildBreadcrumbSchema } from "@/lib/breadcrumbSchema";
 import { resolveRelatedContent } from "@/lib/related/relatedEngine";
 
-/* ================= ISR ================= */
-export const revalidate = 300;
+/* ================= RENDER MODE ================= */
+export const dynamic = "force-dynamic";
 
 /* ================= UTILS ================= */
 function serializeFirestoreData(value) {
@@ -53,8 +53,9 @@ function formatMonthYearFromDate(caDate) {
 export async function generateMetadata(props) {
   const params = await props.params;
   const slug = params?.slug;
+  const adminDb = getAdminDb();
 
-  if (!slug) return {};
+  if (!slug || !adminDb) return {};
 
   const colRef = adminDb
     .collection("artifacts")
@@ -113,11 +114,13 @@ export async function generateMetadata(props) {
 export default async function MonthlyArticlePage(props) {
   const params = await props.params;
   const searchParams = await props.searchParams;
+  const adminDb = getAdminDb();
 
   const slug = params?.slug;
   const isPreview = searchParams?.preview === "true";
 
   if (!slug) notFound();
+  if (!adminDb) notFound();
 
   const colRef = adminDb
     .collection("artifacts")

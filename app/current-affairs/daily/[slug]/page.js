@@ -1,13 +1,13 @@
 import ArticleClient from "./ArticleClient";
 import { notFound } from "next/navigation";
-import { adminDb } from "@/lib/firebaseAdmin";
+import { getAdminDb } from "@/lib/firebaseAdmin";
 import { breadcrumbConfig } from "@/lib/breadcrumbs";
 import { buildBreadcrumbSchema } from "@/lib/breadcrumbSchema";
 import { resolveRelatedContent } from "@/lib/related/relatedEngine";
 import { formatIndianDate } from "@/lib/dateFormatters";
 
-/* ================= ISR ================= */
-export const revalidate = 60; // 60 seconds ISR
+/* ================= RENDER MODE ================= */
+export const dynamic = "force-dynamic";
 
 /* ================= DATE ================= */
 function serializeFirestoreData(value) {
@@ -39,8 +39,9 @@ function serializeFirestoreData(value) {
 export async function generateMetadata(props) {
   const params = await props.params;
   const slug = params?.slug;
+  const adminDb = getAdminDb();
   
-  if (!slug) return {};
+  if (!slug || !adminDb) return {};
 
   const colRef = adminDb
     .collection("artifacts")
@@ -99,10 +100,14 @@ export async function generateMetadata(props) {
 export default async function ArticlePage(props) {
   const params = await props.params;
   const searchParams = await props.searchParams;
+  const adminDb = getAdminDb();
 
   const slug = params?.slug;
 
   if (!slug || typeof slug !== "string") {
+    notFound();
+  }
+  if (!adminDb) {
     notFound();
   }
 

@@ -1,8 +1,9 @@
 import SubcategoryClient from "./SubcategoryClient";
-import { adminDb } from "@/lib/firebaseAdmin";
+import { getAdminDb } from "@/lib/firebaseAdmin";
 import { notFound } from "next/navigation";
 
-export const revalidate = 3600; // 1 hour ISR
+// dynamic rendering; no ISR
+export const dynamic = "force-dynamic";
 
 /* ================= LABEL FORMATTER ================= */
 const formatLabel = (value = "") =>
@@ -35,10 +36,20 @@ export async function generateMetadata({ params }) {
 export default async function Page({ params }) {
   // ✅ MUST await params
   const { subcategory } = await params;
+  const adminDb = getAdminDb();
 
   // 🔒 SAFETY GUARD
   if (!subcategory) {
     notFound();
+  }
+  if (!adminDb) {
+    return (
+      <SubcategoryClient
+        notes={[]}
+        categoryId={null}
+        subcategory={subcategory}
+      />
+    );
   }
 
   const snap = await adminDb

@@ -1,6 +1,13 @@
-import { adminDb } from "@/lib/firebaseAdmin";
+import { getAdminDb } from "@/lib/firebaseAdmin";
 
 export async function GET() {
+  const adminDb = getAdminDb();
+  if (!adminDb) {
+    return Response.json(
+      { success: false, error: "Firebase admin not configured" },
+      { status: 500 }
+    );
+  }
   const now = new Date();
 
   const snap = await adminDb

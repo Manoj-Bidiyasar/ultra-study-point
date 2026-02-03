@@ -1,9 +1,10 @@
 import CurrentAffairsClient from "./CurrentAffairsClient";
-import { adminDb } from "@/lib/firebaseAdmin";
+import { getAdminDb } from "@/lib/firebaseAdmin";
 
 /* ===================== ISR (HYBRID) ===================== */
 /* Revalidate every 5 minutes */
-export const revalidate = 300;
+// dynamic rendering; no ISR
+export const dynamic = "force-dynamic";
 
 /* ===================== SAFE SERIALIZER ===================== */
 /* Converts Firestore Timestamp → ISO string */
@@ -65,6 +66,11 @@ export async function generateMetadata(props) {
 
 /* ===================== SERVER DATA FETCH ===================== */
 async function getInitialCurrentAffairs() {
+  const adminDb = getAdminDb();
+  if (!adminDb) {
+    return { daily: [], monthly: [] };
+  }
+
   const baseRef = adminDb
     .collection("artifacts")
     .doc("ultra-study-point")

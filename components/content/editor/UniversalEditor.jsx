@@ -18,6 +18,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 
 import { getBlockLabel } from "./getBlockLabel";
+import { BLOCK_EDITORS } from "../registry/blockComponents";
 
 /* ======================================================
    SORTABLE ITEM
@@ -266,8 +267,7 @@ return (
         strategy={verticalListSortingStrategy}
       >
         {orderedBlocks.map((block) => {
-          const Editor =
-            require(`./blocks/${capitalize(block.type)}Editor`).default;
+          const Editor = BLOCK_EDITORS[block.type];
 
           const realIndex = blocks.findIndex(
             (b) => b.id === block.id
@@ -375,7 +375,7 @@ return (
 
                     
 
-                  {!block.__collapsed && (
+                  {!block.__collapsed && Editor && (
                     <Editor
                       block={block}
                       onChange={(b) =>
@@ -397,13 +397,4 @@ return (
 }
 
 /* ====================================================== */
-function capitalize(str) {
-  return str
-    .split("_")
-    .map(
-      (s) =>
-        s.charAt(0).toUpperCase() +
-        s.slice(1)
-    )
-    .join("");
-}
+// keep file local functions minimal

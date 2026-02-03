@@ -1,11 +1,12 @@
 import NotesClient from "./NotesClient";
 import { notFound } from "next/navigation";
-import { adminDb } from "@/lib/firebaseAdmin";
+import { getAdminDb } from "@/lib/firebaseAdmin";
 import { migrateContentBlocks } from "@/components/content/utils/migrateContentBlocks";
 
 
 /* ================= ISR ================= */
-export const revalidate = 120;
+
+export const dynamic = "force-dynamic";
 
 /* ================= HELPERS ================= */
 const normalizeDate = (value) => {
@@ -46,6 +47,8 @@ function serializeFirestoreData(value) {
 /* ================= RELATED NOTES ================= */
 async function getRelatedNotes({ category, excludeSlug }) {
   if (!category) return [];
+  const adminDb = getAdminDb();
+  if (!adminDb) return [];
 
   const ref = adminDb
     .collection("artifacts")
@@ -72,6 +75,8 @@ async function getRelatedNotes({ category, excludeSlug }) {
 export async function generateMetadata(props) {
   const params = await props.params;
   const searchParams = await props.searchParams;
+  const adminDb = getAdminDb();
+  if (!adminDb) return {};
 
   const slug = Array.isArray(params?.slug)
     ? params.slug[0]
@@ -117,6 +122,8 @@ export async function generateMetadata(props) {
 export default async function NotesPage(props) {
   const params = await props.params;
   const searchParams = await props.searchParams;
+  const adminDb = getAdminDb();
+  if (!adminDb) notFound();
 
   const slug = Array.isArray(params?.slug)
     ? params.slug[0]
