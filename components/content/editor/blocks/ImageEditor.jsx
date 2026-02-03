@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { uploadImage } from "@/components/content/imageTools/firebaseStorage";
+import { uploadImage } from "@/components/content/ImageTools/firebaseStorage";
 import { input, label } from "../editorStyles";
 
 /* ======================================================
