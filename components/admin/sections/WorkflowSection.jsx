@@ -9,6 +9,8 @@ export default function WorkflowSection({
   rawData,
   role,
   onReviewChange,
+  onSubmitForReview,
+  onAdminAction,
 }) {
   const [userCache, setUserCache] = useState({});
 
@@ -131,6 +133,41 @@ export default function WorkflowSection({
           </Field>
         </>
       )}
+
+      {/* ACTIONS */}
+      <div style={{ marginTop: 12, display: "flex", gap: 8 }}>
+        {role === "editor" && (
+          <button
+            style={ui.btnPrimary}
+            onClick={onSubmitForReview}
+          >
+            Submit for Review
+          </button>
+        )}
+
+        {(role === "admin" || role === "super_admin") && (
+          <>
+            <button
+              style={ui.btnPrimary}
+              onClick={() => onAdminAction("published")}
+            >
+              Publish
+            </button>
+            <button
+              style={ui.btn}
+              onClick={() => onAdminAction("scheduled")}
+            >
+              Schedule
+            </button>
+            <button
+              style={ui.btn}
+              onClick={() => onAdminAction("draft")}
+            >
+              Return to Draft
+            </button>
+          </>
+        )}
+      </div>
     </div>
   );
 }
@@ -196,5 +233,22 @@ const ui = {
     borderRadius: 6,
     fontSize: 14,
     resize: "vertical",
+  },
+  btn: {
+    padding: "6px 10px",
+    borderRadius: 6,
+    border: "1px solid #d1d5db",
+    background: "#fff",
+    cursor: "pointer",
+    fontSize: 13,
+  },
+  btnPrimary: {
+    padding: "6px 10px",
+    borderRadius: 6,
+    border: "1px solid #2563eb",
+    background: "#2563eb",
+    color: "#fff",
+    cursor: "pointer",
+    fontSize: 13,
   },
 };

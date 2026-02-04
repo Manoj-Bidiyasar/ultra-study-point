@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
-import BaseEditor from "@/app/admin/editors/BaseEditor";
+import BaseCAEditor from "@/app/admin/editors/BaseCAEditor";
 
 const COLLECTION_PATH = [
   "artifacts",
@@ -137,7 +137,7 @@ if (isNew) {
   if (!data || !role) return <p>Document not found</p>;
 
   return (
-    <BaseEditor
+    <BaseCAEditor
       rawData={data}
       role={role}   // ✅ REAL ROLE
       type="monthly"

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
-import BaseEditor from "@/app/admin/editors/BaseEditor";
+import BaseNotesEditor from "@/app/admin/editors/BaseNotesEditor";
 
 /* ================= COLLECTION ================= */
 
@@ -105,10 +105,9 @@ export default function EditNote() {
   if (!data || !role) return <p>Document not found</p>;
 
   return (
-    <BaseEditor
+    <BaseNotesEditor
       rawData={data}
       role={role}
-      type="notes"   // ✅ IMPORTANT
     />
   );
 }

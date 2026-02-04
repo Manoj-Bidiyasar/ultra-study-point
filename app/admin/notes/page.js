@@ -7,6 +7,8 @@ import {
   getDocs,
   query,
   orderBy,
+  limit,
+  startAfter,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
@@ -25,30 +27,35 @@ export default function NotesListPage() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
+  const [lastDoc, setLastDoc] = useState(null);
+  const [hasMore, setHasMore] = useState(true);
 
   /* ================= LOAD DATA ================= */
+  async function loadPage(next = false) {
+    setLoading(true);
+
+    const q = query(
+      collection(db, ...COLLECTION_PATH),
+      orderBy("updatedAt", "desc"),
+      ...(next && lastDoc ? [startAfter(lastDoc)] : []),
+      limit(50)
+    );
+
+    const snap = await getDocs(q);
+    const docs = snap.docs.map((d) => ({
+      id: d.id,
+      ...d.data(),
+    }));
+
+    setItems((prev) => (next ? [...prev, ...docs] : docs));
+    setLastDoc(snap.docs[snap.docs.length - 1] || null);
+    setHasMore(snap.size === 50);
+    setLoading(false);
+  }
+
   useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-
-      const q = query(
-        collection(db, ...COLLECTION_PATH),
-        orderBy("updatedAt", "desc")
-      );
-
-      const snap = await getDocs(q);
-
-      setItems(
-        snap.docs.map((d) => ({
-          id: d.id,
-          ...d.data(),
-        }))
-      );
-
-      setLoading(false);
-    };
-
-    load();
+    loadPage(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   /* ================= FILTER ================= */
@@ -181,6 +188,12 @@ export default function NotesListPage() {
           </table>
         </div>
       )}
+
+      {hasMore && !loading && (
+        <button style={styles.loadMore} onClick={() => loadPage(true)}>
+          Load more
+        </button>
+      )}
     </div>
   );
 }
@@ -299,4 +312,13 @@ const styles = {
         ? "#92400e"
         : "#374151",
   }),
+  loadMore: {
+    marginTop: 16,
+    padding: "8px 12px",
+    borderRadius: 6,
+    border: "1px solid #d1d5db",
+    background: "#fff",
+    cursor: "pointer",
+    fontSize: 13,
+  },
 };

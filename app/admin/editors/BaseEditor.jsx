@@ -7,6 +7,11 @@ import {
   setDoc,
   updateDoc,
   serverTimestamp,
+  collection,
+  addDoc,
+  query,
+  where,
+  getDocs,
 } from "firebase/firestore";
 
 /* ================= FIREBASE ================= */
@@ -36,14 +41,18 @@ import WorkflowSection from "@/components/admin/sections/WorkflowSection";
 import CollapsibleCard from "@/components/admin/ui/CollapsibleCard";
 import StatusBadge from "@/components/admin/ui/StatusBadge";
 import StickySidebar from "@/components/admin/ui/StickySidebar";
-import TypeSectionRenderer from "@/components/admin/sections/types/TypeSectionRenderer.jsx";
 import {
   buildTitle,
   buildSeoTitle,
   buildCanonicalUrl,
 } from "@/lib/content/contentUtils";
 
-const MODULE = "current-affairs";
+const MODULE_BY_TYPE = {
+  daily: "current-affairs",
+  monthly: "current-affairs",
+  notes: "notes",
+  quiz: "quiz",
+};
 /* ======================================================
    BASE CURRENT AFFAIRS EDITOR
    Used for:
@@ -51,7 +60,14 @@ const MODULE = "current-affairs";
    - Monthly Current Affairs
 ====================================================== */
 
-export default function BaseEditor({ rawData, role, type }) {
+export default function BaseEditor({
+  rawData,
+  role,
+  type,
+  renderTypeSection,
+}) {
+  const moduleKey = MODULE_BY_TYPE[type] || "current-affairs";
+  const isCA = type === "daily" || type === "monthly";
 
   /* ======================================================
      STATE
@@ -171,12 +187,13 @@ const [lastSavedAt, setLastSavedAt] = useState(Date.now());
 /* SEO + TITLE AUTO GENERATION (SINGLE SOURCE) */
 
 useEffect(() => {
+  if (!isCA) return;
   if (!state.caDate) return;
 
   const nextTitle =
     state.title ||
     buildTitle({
-      module: MODULE,
+      module: moduleKey,
       type,
       date: state.caDate,
     });
@@ -184,7 +201,7 @@ useEffect(() => {
   const nextSeoTitle =
     state.seo.seoTitle ||
     buildSeoTitle({
-      module: MODULE,
+      module: moduleKey,
       type,
       date: state.caDate,
       language: state.language,
@@ -193,7 +210,7 @@ useEffect(() => {
   const nextCanonical =
     state.seo.canonicalUrl ||
     buildCanonicalUrl({
-      module: MODULE,
+      module: moduleKey,
       type,
       slug: state.slug,
     });
@@ -216,7 +233,7 @@ useEffect(() => {
       canonicalUrl: nextCanonical,
     },
   }));
-}, [state.caDate, state.language, state.slug, type]);
+}, [isCA, state.caDate, state.language, state.slug, type]);
 
 
 
@@ -269,6 +286,53 @@ const docRef = doc(
     return out;
   }
 
+  async function upsertReviewQueue({
+    action,
+    feedback,
+  }) {
+    const reviewRef = collection(
+      db,
+      "artifacts",
+      "ultra-study-point",
+      "public",
+      "data",
+      "review_queue"
+    );
+
+    const q = query(
+      reviewRef,
+      where("docId", "==", state.id),
+      where("type", "==", type),
+      where("status", "==", "pending")
+    );
+
+    const snap = await getDocs(q);
+
+    if (action === "submit") {
+      if (!snap.empty) return;
+
+      await addDoc(reviewRef, {
+        docId: state.id,
+        type,
+        title: state.title || "",
+        status: "pending",
+        createdBy: currentUserProfile,
+        submittedAt: serverTimestamp(),
+      });
+      return;
+    }
+
+    if (snap.empty) return;
+
+    const reviewDoc = snap.docs[0];
+    await updateDoc(reviewDoc.ref, {
+      status: action === "approve" ? "approved" : "rejected",
+      reviewedAt: serverTimestamp(),
+      reviewedBy: currentUserProfile,
+      feedback: feedback || "",
+    });
+  }
+
   /* ======================================================
      AUTO SAVE
   ====================================================== */
@@ -278,7 +342,7 @@ const [saveError, setSaveError] = useState(null);
 const [isSaving, setIsSaving] = useState(false);
 
 
-  async function saveToFirestore() {
+  async function saveToFirestore({ mode = "auto" } = {}) {
   if (!currentUserProfile) return;
   if (isLocked) return;
   if (isSaving) return;
@@ -301,9 +365,6 @@ try {
     throw new Error(slugError);
   }
 
-
-
-
     const userMeta = {
       uid: currentUserProfile.uid,
       email: currentUserProfile.email,
@@ -316,6 +377,14 @@ try {
   ...cleanState
 } = state;
 
+  // Auto-save should never publish. Keep scheduled if set, otherwise draft.
+  const safeStatus =
+    mode === "auto"
+      ? state.status === "scheduled"
+        ? "scheduled"
+        : "draft"
+      : state.status;
+
 const payload = {
   id: state.id,
 
@@ -327,19 +396,19 @@ const payload = {
 
   content: state.content,
 
-  dailyMeta: state.dailyMeta,
-  monthlyMeta: state.monthlyMeta,
-  notesMeta: state.notesMeta,
-  quizMeta: state.quizMeta,
+  dailyMeta: isCA ? state.dailyMeta : {},
+  monthlyMeta: isCA ? state.monthlyMeta : {},
+  notesMeta: type === "notes" ? state.notesMeta : {},
+  quizMeta: type === "quiz" ? state.quizMeta : {},
 
   relatedContent: state.relatedContent,
 
-  caDate: safeDate(state.caDate),
-  pdfUrl: state.pdfUrl,
+  caDate: isCA ? safeDate(state.caDate) : null,
+  pdfUrl: isCA ? state.pdfUrl : "",
 
-  status: state.status,
+  status: safeStatus,
   publishedAt:
-    state.status === "scheduled"
+    safeStatus === "scheduled"
       ? safeDate(state.publishedAt)
       : null,
 
@@ -379,13 +448,90 @@ const payload = {
   }
 }
 
+  async function submitForReview() {
+    if (!currentUserProfile) return;
+    if (isLocked) return;
 
-useEffect(() => {
+    try {
+      await upsertReviewQueue({ action: "submit" });
+      await updateDoc(docRef, {
+        submittedAt: serverTimestamp(),
+        isLocked: true,
+        review: {
+          status: "pending",
+          feedback: "",
+        },
+      });
+      setState((s) => ({
+        ...s,
+        isLocked: true,
+        review: {
+          status: "pending",
+          feedback: "",
+        },
+      }));
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  async function applyAdminAction(nextStatus) {
+    if (!currentUserProfile) return;
+    if (role !== "admin" && role !== "super_admin") return;
+
+    try {
+      const update = {
+        status: nextStatus,
+        updatedBy: currentUserProfile,
+        updatedAt: serverTimestamp(),
+        isLocked: false,
+      };
+
+      if (nextStatus === "published") {
+        update.publishedAt = serverTimestamp();
+      }
+      if (nextStatus === "scheduled") {
+        update.publishedAt = state.publishedAt || null;
+      }
+
+      await updateDoc(docRef, update);
+
+      if (nextStatus === "published") {
+        await upsertReviewQueue({ action: "approve" });
+        update.review = {
+          status: "approved",
+          feedback: state.review?.feedback || "",
+          reviewedBy: currentUserProfile,
+        };
+      }
+      if (nextStatus === "draft") {
+        await upsertReviewQueue({
+          action: "reject",
+          feedback: state.review?.feedback || "",
+        });
+        update.review = {
+          status: "rejected",
+          feedback: state.review?.feedback || "",
+          reviewedBy: currentUserProfile,
+        };
+      }
+
+      setState((s) => ({
+        ...s,
+        ...update,
+      }));
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+
+  useEffect(() => {
   if (!currentUserProfile) return;
   if (isLocked) return;
   if (state.status !== "draft") return;
 
-  const t = setTimeout(saveToFirestore, 3000);
+  const t = setTimeout(() => saveToFirestore({ mode: "auto" }), 3000);
   return () => clearTimeout(t);
 }, [
   currentUserProfile, // ✅ CRITICAL
@@ -419,6 +565,12 @@ useEffect(() => {
             <StatusBadge status={state.status} />
             <span>{autoSaveStatus}</span>
           </div>
+          {state.status === "published" && (
+            <div style={ui.warn}>
+              This document is published. Changes won’t auto‑publish until you
+              manually update the status.
+            </div>
+          )}
         </div>
 
         <button
@@ -440,6 +592,12 @@ setInterval(() => {
           }}
         >
           Public Preview
+        </button>
+        <button
+          style={{ ...ui.btn, marginLeft: 8 }}
+          onClick={() => saveToFirestore({ mode: "manual" })}
+        >
+          Save Now
         </button>
       </div>
 
@@ -495,31 +653,25 @@ setInterval(() => {
         <div>
           <StickySidebar>
 
-  {/* ================= SETTINGS ================= */}
-<CollapsibleCard title="Type Specific Settings" defaultOpen>
-  <TypeSectionRenderer
-  type={type}
-  meta={{
-    daily: state.dailyMeta,
-    monthly: state.monthlyMeta,
-    notes: state.notesMeta,
-    quiz: state.quizMeta,
-  }}
-  isLocked={isLocked}
-  onChange={(meta) =>
-    setState((s) => ({
-      ...s,
-      dailyMeta: meta.daily ?? s.dailyMeta,
-      monthlyMeta: meta.monthly ?? s.monthlyMeta,
-      notesMeta: meta.notes ?? s.notesMeta,
-      quizMeta: meta.quiz ?? s.quizMeta,
-    }))
-  }
-/>
-
-</CollapsibleCard>
-
-
+  {/* ================= SETTINGS (OPTIONAL) ================= */}
+  {renderTypeSection?.({
+    type,
+    isLocked,
+    meta: {
+      daily: state.dailyMeta,
+      monthly: state.monthlyMeta,
+      notes: state.notesMeta,
+      quiz: state.quizMeta,
+    },
+    onChange: (meta) =>
+      setState((s) => ({
+        ...s,
+        dailyMeta: meta.daily ?? s.dailyMeta,
+        monthlyMeta: meta.monthly ?? s.monthlyMeta,
+        notesMeta: meta.notes ?? s.notesMeta,
+        quizMeta: meta.quiz ?? s.quizMeta,
+      })),
+  })}
 
   {/* ================= WORKFLOW ================= */}
   <CollapsibleCard
@@ -540,6 +692,8 @@ setInterval(() => {
           },
         }))
       }
+      onSubmitForReview={submitForReview}
+      onAdminAction={applyAdminAction}
     />
   </CollapsibleCard>
 
@@ -622,5 +776,14 @@ const ui = {
     border: "1px solid #d1d5db",
     background: "#fff",
     cursor: "pointer",
+  },
+  warn: {
+    marginTop: 8,
+    padding: "8px 10px",
+    borderRadius: 6,
+    border: "1px solid #f59e0b",
+    background: "#fffbeb",
+    color: "#92400e",
+    fontSize: 12,
   },
 };

@@ -1,41 +1,12 @@
 import CurrentAffairsClient from "./CurrentAffairsClient";
+import { unstable_cache } from "next/cache";
 import { getAdminDb } from "@/lib/firebaseAdmin";
+import { serializeFirestoreData } from "@/lib/utils/serializeFirestore";
 
 /* ===================== ISR (HYBRID) ===================== */
 /* Revalidate every 5 minutes */
 // dynamic rendering; no ISR
 export const dynamic = "force-dynamic";
-
-/* ===================== SAFE SERIALIZER ===================== */
-/* Converts Firestore Timestamp → ISO string */
-function serializeValue(value) {
-  if (value === null || value === undefined) return null;
-
-  if (typeof value === "object" && typeof value.toDate === "function") {
-    return value.toDate().toISOString();
-  }
-
-  if (Array.isArray(value)) {
-    return value.map(serializeValue);
-  }
-
-  if (typeof value === "object") {
-    const obj = {};
-    for (const key in value) {
-      obj[key] = serializeValue(value[key]);
-    }
-    return obj;
-  }
-
-  return value;
-}
-
-function serializeDoc(doc) {
-  return {
-    id: doc.id,
-    ...serializeValue(doc.data()),
-  };
-}
 
 /* ===================== SEO (SERVER) ===================== */
 export async function generateMetadata(props) {
@@ -65,7 +36,8 @@ export async function generateMetadata(props) {
 
 
 /* ===================== SERVER DATA FETCH ===================== */
-async function getInitialCurrentAffairs() {
+const getInitialCurrentAffairs = unstable_cache(
+  async () => {
   const adminDb = getAdminDb();
   if (!adminDb) {
     return { daily: [], monthly: [] };
@@ -94,10 +66,19 @@ async function getInitialCurrentAffairs() {
   ]);
 
   return {
-    daily: dailySnap.docs.map(serializeDoc),
-    monthly: monthlySnap.docs.map(serializeDoc),
+    daily: dailySnap.docs.map((d) => ({
+      id: d.id,
+      ...serializeFirestoreData(d.data()),
+    })),
+    monthly: monthlySnap.docs.map((d) => ({
+      id: d.id,
+      ...serializeFirestoreData(d.data()),
+    })),
   };
-}
+  },
+  ["current-affairs-index"],
+  { revalidate: 300 }
+);
 
 /* ===================== PAGE ===================== */
 export default async function CurrentAffairsPage(props) {
