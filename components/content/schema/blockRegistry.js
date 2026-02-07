@@ -1,4 +1,4 @@
-/**
+﻿/**
  * blockRegistry.js
  * --------------------------------------------------
  * Single source of truth for all content blocks.
@@ -32,18 +32,18 @@ export const BLOCK_REGISTRY = {
 
   latex: {
     label: "LaTeX",
-    icon: "∑",
+    icon: "âˆ‘",
     default: {
       latex: "",
       inlineOnly: false,
-      number: false, // ✅ already supported by LatexBlock
+      number: false, // âœ… already supported by LatexBlock
     },
     fields: ["latex", "inlineOnly", "number"],
   },
 
   section: {
   label: "Section",
-  icon: "§",
+  icon: "Â§",
   default: {
     title: "",
     subtitle: "",
@@ -55,7 +55,7 @@ export const BLOCK_REGISTRY = {
 
   points: {
     label: "Points",
-    icon: "•",
+    icon: "â€¢",
     default: {
       style: "bullet",
       items: [],
@@ -65,7 +65,7 @@ export const BLOCK_REGISTRY = {
 
   callout: {
     label: "Callout",
-    icon: "⚠️",
+    icon: "âš ï¸",
     default: {
       variant: "info",
       content: "",
@@ -75,7 +75,7 @@ export const BLOCK_REGISTRY = {
 
   image: {
     label: "Image",
-    icon: "🖼",
+    icon: "ðŸ–¼",
     default: {
       url: "",
       caption: "",
@@ -86,7 +86,7 @@ export const BLOCK_REGISTRY = {
 
 table: {
   label: "Table",
-  icon: "▦",
+  icon: "â–¦",
   default: {
     title: "",
     captionAlign: "center",
@@ -108,21 +108,6 @@ table: {
   ],
 },
 
-
-
-
-
-
-  diagram: {
-    label: "Diagram",
-    icon: "↗",
-    default: {
-      engine: "mermaid",
-      code: "",
-    },
-    fields: ["engine", "code"],
-  },
-
   code: {
     label: "Code",
     icon: "</>",
@@ -135,7 +120,7 @@ table: {
 
   pdf: {
   label: "PDF",
-  icon: "📄",
+  icon: "ðŸ“„",
   default: {
     title: "",
     url: "",
@@ -153,17 +138,17 @@ table: {
 
   mcq: {
     label: "MCQ",
-    icon: "❓",
+    icon: "â“",
 
     default: {
       type: "mcq",
 
       question: "",
 
-      // ✅ REQUIRED
+      // âœ… REQUIRED
       mode: "single", // single | multi
 
-      // ✅ ALWAYS ID-BASED OPTIONS
+      // âœ… ALWAYS ID-BASED OPTIONS
       options: [
         { id: "a", text: "" },
         { id: "b", text: "" },
@@ -171,7 +156,7 @@ table: {
         { id: "d", text: "" },
       ],
 
-      // ✅ store option IDs
+      // âœ… store option IDs
       correct: [],
 
       explanation: "",
@@ -180,7 +165,7 @@ table: {
       revealAnswer: false,
       revealExplanation: false,
 
-      // ✅ grouped exam config
+      // âœ… grouped exam config
       exam: {
         marks: 1,
         negative: 0,
@@ -215,7 +200,7 @@ table: {
 
   fill_blank: {
     label: "Fill in the blanks",
-    icon: "✍️",
+    icon: "âœï¸",
     default: {
       question: "",
       answers: {},
@@ -225,11 +210,11 @@ table: {
 
   one_liner: {
   label: "One Liner",
-  icon: "🧠",
+  icon: "ðŸ§ ",
   default: {
     question: "",
     answer: "",
-    revealAnswer: true,   // ✅ NEW
+    revealAnswer: true,   // âœ… NEW
   },
   fields: ["question", "answer", "revealAnswer"],
 },
@@ -237,7 +222,7 @@ table: {
 
   numerical: {
     label: "Numerical",
-    icon: "🔢",
+    icon: "ðŸ”¢",
     default: {
       question: "",
       answer: "",
@@ -248,12 +233,12 @@ table: {
   },
 
   /* ======================
-     ✅ NEW — STEP MATH BLOCK
+     âœ… NEW â€” STEP MATH BLOCK
      ====================== */
 
   math_steps: {
     label: "Math Steps",
-    icon: "📐",
+    icon: "ðŸ“",
     default: {
       title: "",
       steps: [],
@@ -283,7 +268,7 @@ export function createBlock(type) {
     // UI-only metadata (never saved)
     __ui: {
   collapsed: false,
-  label: "",        // ✅ manual override
+  label: "",        // âœ… manual override
 },
 
 
@@ -309,3 +294,5 @@ export function cloneBlock(block) {
   copy.__ui = { collapsed: false };
   return copy;
 }
+
+

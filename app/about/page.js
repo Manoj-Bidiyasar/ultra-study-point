@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { db } from "@/lib/firebase";
+import { db } from "@/lib/firebase/client";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
 export default function AboutPage() {
@@ -233,3 +233,4 @@ export default function AboutPage() {
     </div>
   );
 }
+

@@ -1,7 +1,11 @@
 import NotesClient from "./NotesClient";
 import { notFound } from "next/navigation";
-import { getAdminDb } from "@/lib/firebaseAdmin";
+import { getAdminDb } from "@/lib/firebase/admin";
 import { migrateContentBlocks } from "@/components/content/utils/migrateContentBlocks";
+import { serializeFirestoreData } from "@/lib/serialization/serializeFirestore";
+import { unstable_cache } from "next/cache";
+import { resolveRelatedContent } from "@/lib/related/relatedEngine";
+import { SITE_URL } from "@/lib/seo/siteConfig";
 
 
 /* ================= ISR ================= */
@@ -20,55 +24,40 @@ const capitalize = (str = "") =>
   str.charAt(0).toUpperCase() + str.slice(1);
 
 /* 🔑 SERIALIZER */
-function serializeFirestoreData(value) {
-  if (value === null || value === undefined) return value;
-
-  if (typeof value === "object" && value?.toDate) {
-    return value.toDate().toISOString();
-  }
-
-  if (value instanceof Date) return value.toISOString();
-
-  if (Array.isArray(value)) {
-    return value.map(serializeFirestoreData);
-  }
-
-  if (typeof value === "object") {
-    const result = {};
-    for (const key in value) {
-      result[key] = serializeFirestoreData(value[key]);
-    }
-    return result;
-  }
-
-  return value;
-}
+// serializer imported from lib/utils/serializeFirestore
 
 /* ================= RELATED NOTES ================= */
-async function getRelatedNotes({ category, excludeSlug }) {
-  if (!category) return [];
-  const adminDb = getAdminDb();
-  if (!adminDb) return [];
+const getRelatedNotesCached = unstable_cache(
+  async (category) => {
+    if (!category) return [];
+    const adminDb = getAdminDb();
+    if (!adminDb) return [];
 
-  const ref = adminDb
-    .collection("artifacts")
-    .doc("ultra-study-point")
-    .collection("public")
-    .doc("data")
-    .collection("master_notes");
+    const ref = adminDb
+      .collection("artifacts")
+      .doc("ultra-study-point")
+      .collection("public")
+      .doc("data")
+      .collection("master_notes");
 
-  const snap = await ref
-    .where("status", "==", "published")
-    .where("category", "==", category)
-    .limit(6)
-    .get();
+    const snap = await ref
+      .where("status", "==", "published")
+      .where("category", "==", category)
+      .limit(10)
+      .get();
 
-  return snap.docs
-    .map((d) => ({
+    return snap.docs.map((d) => ({
       slug: d.id,
       title: d.data().title,
-    }))
-    .filter((n) => n.slug !== excludeSlug);
+    }));
+  },
+  (category) => ["related-notes", category],
+  { revalidate: 600 }
+);
+
+async function getRelatedNotes({ category, excludeSlug }) {
+  const list = await getRelatedNotesCached(category);
+  return list.filter((n) => n.slug !== excludeSlug).slice(0, 6);
 }
 
 /* ================= SEO ================= */
@@ -114,6 +103,9 @@ export async function generateMetadata(props) {
   return {
     title: capitalize(data.title),
     description: data.seoDescription || data.summary || "",
+    alternates: {
+      canonical: `${SITE_URL}/notes/${slug}`,
+    },
   };
 }
 
@@ -163,6 +155,45 @@ export default async function NotesPage(props) {
       excludeSlug: slug,
     });
 
+    const manualList = Array.isArray(data.relatedContent)
+      ? data.relatedContent
+      : [];
+
+    const manualNotes = manualList
+      .filter((i) => i?.type === "notes" && i?.slug)
+      .map((i) => ({
+        slug: i.slug,
+        title: i.title || i.slug,
+      }));
+
+    const manualCA = manualList
+      .filter(
+        (i) =>
+          (i?.type === "daily" || i?.type === "monthly") &&
+          i?.slug
+      )
+      .map((i) => ({
+        ...i,
+        canonicalUrl:
+          i.canonicalUrl ||
+          `/current-affairs/${i.type}/${i.slug}`,
+      }));
+
+    const relatedCA = await resolveRelatedContent({
+      pageType: "notes",
+      subject: data.subject,
+      tags: data.tags,
+      manualCA,
+      manualNotes,
+    });
+
+    const mergedRelatedNotes = [
+      ...manualNotes,
+      ...relatedContent.filter(
+        (n) => !manualNotes.some((m) => m.slug === n.slug)
+      ),
+    ];
+
     const blocks =
   Array.isArray(data.blocks) && data.blocks.length > 0
     ? data.blocks
@@ -172,11 +203,11 @@ const safeNote = serializeFirestoreData({
   id: docSnap.id,
   ...data,
   blocks,
-  relatedContent,
+  relatedContent: mergedRelatedNotes,
 });
 
 
-    const breadcrumbSchema = {
+      const breadcrumbSchema = {
       "@context": "https://schema.org",
       "@type": "BreadcrumbList",
       itemListElement: [
@@ -184,19 +215,19 @@ const safeNote = serializeFirestoreData({
           "@type": "ListItem",
           position: 1,
           name: "Notes",
-          item: "https://yourdomain.com/notes",
+          item: `${SITE_URL}/notes`,
         },
         data.category && {
           "@type": "ListItem",
           position: 2,
           name: data.category,
-          item: `https://yourdomain.com/notes/${data.categorySlug || ""}`,
+          item: `${SITE_URL}/notes/${data.categorySlug || ""}`,
         },
         {
           "@type": "ListItem",
           position: 3,
           name: data.title,
-          item: `https://yourdomain.com/notes/${slug}`,
+          item: `${SITE_URL}/notes/${slug}`,
         },
       ].filter(Boolean),
     };
@@ -206,6 +237,7 @@ const safeNote = serializeFirestoreData({
         mode="note"
         note={safeNote}
         breadcrumbSchema={breadcrumbSchema}
+        relatedCA={serializeFirestoreData(relatedCA)}
       />
     );
   }
@@ -230,3 +262,5 @@ const safeNote = serializeFirestoreData({
 
   notFound();
 }
+
+

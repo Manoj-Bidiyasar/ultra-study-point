@@ -2,9 +2,16 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
+import { usePathname } from 'next/navigation';
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const pathname = usePathname();
+
+  const isActive = (href) => {
+    if (href === "/") return pathname === "/";
+    return pathname.startsWith(href);
+  };
 
   return (
     <nav className="bg-blue-700 text-white shadow-lg sticky top-0 z-50">
@@ -18,11 +25,13 @@ export default function Navbar() {
 
         {/* DESKTOP LINKS (Visible on Computer) */}
         <div className="hidden md:flex gap-6 text-sm font-semibold">
-          <Link href="/" className="hover:text-blue-200 transition">Home</Link>
-          <Link href="/current-affairs" className="hover:text-blue-200 transition">Current Affairs</Link>
-          <Link href="/notes" className="hover:text-blue-200 transition">Notes Hub</Link>
+          <Link href="/" className={`transition ${isActive("/") ? "text-yellow-200" : "hover:text-blue-200"}`}>Home</Link>
+          <Link href="/current-affairs" className={`transition ${isActive("/current-affairs") ? "text-yellow-200" : "hover:text-blue-200"}`}>Current Affairs</Link>
+          <Link href="/notes" className={`transition ${isActive("/notes") ? "text-yellow-200" : "hover:text-blue-200"}`}>Notes Hub</Link>
+          <Link href="/quiz" className={`transition ${isActive("/quiz") ? "text-yellow-200" : "hover:text-blue-200"}`}>Quizzes</Link>
+          <Link href="/pyqs" className={`transition ${isActive("/pyqs") ? "text-yellow-200" : "hover:text-blue-200"}`}>PYQs</Link>
           {/* ADDED THIS LINK */}
-          <Link href="/about" className="hover:text-blue-200 transition">About Us</Link>
+          <Link href="/about" className={`transition ${isActive("/about") ? "text-yellow-200" : "hover:text-blue-200"}`}>About Us</Link>
         </div>
 
         {/* MOBILE BUTTON */}
@@ -34,11 +43,13 @@ export default function Navbar() {
       {/* MOBILE MENU (Visible on Phone) */}
       {isOpen && (
         <div className="md:hidden bg-blue-800 border-t border-blue-600">
-           <Link href="/" onClick={() => setIsOpen(false)} className="block py-3 px-4 border-b border-blue-700 hover:bg-blue-900">Home</Link>
-           <Link href="/current-affairs" onClick={() => setIsOpen(false)} className="block py-3 px-4 border-b border-blue-700 hover:bg-blue-900">Current Affairs</Link>
-           <Link href="/notes" onClick={() => setIsOpen(false)} className="block py-3 px-4 border-b border-blue-700 hover:bg-blue-900">Notes Hub</Link>
+           <Link href="/" onClick={() => setIsOpen(false)} className={`block py-3 px-4 border-b border-blue-700 hover:bg-blue-900 ${isActive("/") ? "bg-blue-900 text-yellow-200" : ""}`}>Home</Link>
+           <Link href="/current-affairs" onClick={() => setIsOpen(false)} className={`block py-3 px-4 border-b border-blue-700 hover:bg-blue-900 ${isActive("/current-affairs") ? "bg-blue-900 text-yellow-200" : ""}`}>Current Affairs</Link>
+           <Link href="/notes" onClick={() => setIsOpen(false)} className={`block py-3 px-4 border-b border-blue-700 hover:bg-blue-900 ${isActive("/notes") ? "bg-blue-900 text-yellow-200" : ""}`}>Notes Hub</Link>
+           <Link href="/quiz" onClick={() => setIsOpen(false)} className={`block py-3 px-4 border-b border-blue-700 hover:bg-blue-900 ${isActive("/quiz") ? "bg-blue-900 text-yellow-200" : ""}`}>Quizzes</Link>
+           <Link href="/pyqs" onClick={() => setIsOpen(false)} className={`block py-3 px-4 border-b border-blue-700 hover:bg-blue-900 ${isActive("/pyqs") ? "bg-blue-900 text-yellow-200" : ""}`}>PYQs</Link>
            {/* ADDED THIS LINK */}
-           <Link href="/about" onClick={() => setIsOpen(false)} className="block py-3 px-4 hover:bg-blue-900">About Us</Link>
+           <Link href="/about" onClick={() => setIsOpen(false)} className={`block py-3 px-4 hover:bg-blue-900 ${isActive("/about") ? "bg-blue-900 text-yellow-200" : ""}`}>About Us</Link>
         </div>
       )}
     </nav>

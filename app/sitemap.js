@@ -2,6 +2,13 @@ import { getAllPublishedPages } from "@/lib/sitemap";
 
 export default async function sitemap() {
   const baseUrl = "https://ultrastudypoint.in";
+  const pages = await getAllPublishedPages();
+
+  const dynamicEntries = pages.map((page) => ({
+    url: `${baseUrl}${page.path}`,
+    lastModified: page.lastModified || new Date(),
+    priority: page.path.startsWith("/current-affairs") ? 0.7 : 0.6,
+  }));
 
   return [
     {
@@ -19,6 +26,7 @@ export default async function sitemap() {
       lastModified: new Date(),
       priority: 0.9,
     },
+    ...dynamicEntries,
   ];
 }
 

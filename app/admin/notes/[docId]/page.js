@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { doc, getDoc } from "firebase/firestore";
-import { auth, db } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase/client";
 import BaseNotesEditor from "@/app/admin/editors/BaseNotesEditor";
 
 /* ================= COLLECTION ================= */
@@ -111,3 +111,4 @@ export default function EditNote() {
     />
   );
 }
+

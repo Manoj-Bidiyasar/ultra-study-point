@@ -1,4 +1,4 @@
-import { getAdminDb } from "@/lib/firebaseAdmin";
+import { getAdminDb } from "@/lib/firebase/admin";
 
 export async function GET() {
   const adminDb = getAdminDb();
@@ -29,3 +29,5 @@ export async function GET() {
   await batch.commit();
   return Response.json({ success: true });
 }
+
+

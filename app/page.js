@@ -6,42 +6,17 @@ import {
   orderBy,
   limit,
 } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db } from "@/lib/firebase/client";
 import HomeClient from "./HomeClient";
+import { serializeFirestoreData } from "@/lib/serialization/serializeFirestore";
+import { unstable_cache } from "next/cache";
 
 /* ================= ISR ================= */
 export const revalidate = 300;
 
-/* ================= DEEP SERIALIZER ================= */
-const deepSerialize = (value) => {
-  if (value && typeof value.toMillis === "function") {
-    return value.toMillis();
-  }
-
-  if (
-    value &&
-    typeof value === "object" &&
-    typeof value.seconds === "number"
-  ) {
-    return value.seconds * 1000;
-  }
-
-  if (Array.isArray(value)) {
-    return value.map(deepSerialize);
-  }
-
-  if (value && typeof value === "object") {
-    return Object.fromEntries(
-      Object.entries(value).map(([k, v]) => [k, deepSerialize(v)])
-    );
-  }
-
-  return value;
-};
-
 const serializeDoc = (doc) => ({
   id: doc.id,
-  ...deepSerialize(doc.data()),
+  ...serializeFirestoreData(doc.data()),
 });
 
 /* ================= SEO METADATA ================= */
@@ -70,8 +45,8 @@ export async function generateMetadata() {
   };
 }
 
-/* ================= PAGE ================= */
-export default async function Page() {
+const getHomeData = unstable_cache(
+  async () => {
   const caRef = collection(
     db,
     "artifacts",
@@ -119,6 +94,19 @@ export default async function Page() {
     ),
   ]);
 
+  return {
+    dailyCA: dailySnap.docs.map(serializeDoc),
+    monthlyCA: monthlySnap.docs.map(serializeDoc),
+    latestNotes: notesSnap.docs.map(serializeDoc),
+  };
+  },
+  ["home-data"],
+  { revalidate: 300 }
+);
+
+/* ================= PAGE ================= */
+export default async function Page() {
+  const data = await getHomeData();
   return (
     <>
       {/* ===== STRUCTURED DATA ===== */}
@@ -137,10 +125,11 @@ export default async function Page() {
       />
 
       <HomeClient
-        dailyCA={dailySnap.docs.map(serializeDoc)}
-        monthlyCA={monthlySnap.docs.map(serializeDoc)}
-        latestNotes={notesSnap.docs.map(serializeDoc)}
+        dailyCA={data.dailyCA}
+        monthlyCA={data.monthlyCA}
+        latestNotes={data.latestNotes}
       />
     </>
   );
 }
+

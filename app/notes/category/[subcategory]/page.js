@@ -1,6 +1,7 @@
 import SubcategoryClient from "./SubcategoryClient";
-import { getAdminDb } from "@/lib/firebaseAdmin";
+import { getAdminDb } from "@/lib/firebase/admin";
 import { notFound } from "next/navigation";
+import { SITE_URL } from "@/lib/seo/siteConfig";
 
 // dynamic rendering; no ISR
 export const dynamic = "force-dynamic";
@@ -27,7 +28,7 @@ export async function generateMetadata({ params }) {
     title: `${label} Notes | Ultra Study Point`,
     description: `Detailed study notes on ${label}. Designed for quick revision and deep understanding.`,
     alternates: {
-      canonical: `https://yourdomain.com/notes/category/${subcategory}`,
+      canonical: `${SITE_URL}/notes/category/${subcategory}`,
     },
   };
 }
@@ -92,3 +93,5 @@ export default async function Page({ params }) {
     />
   );
 }
+
+

@@ -5,8 +5,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 
-import { auth, db } from "@/lib/firebase";
-import { permissionsByRole } from "@/lib/permissions";
+import { auth, db } from "@/lib/firebase/client";
+import { permissionsByRole } from "@/lib/admin/permissions";
 import AdminSidebar from "@/app/admin/components/AdminSidebar";
 
 export default function AdminLayout({ children }) {
@@ -202,5 +202,8 @@ const styles = {
     flex: 1,
     padding: 24,
     background: "#f8fafc",
+    minWidth: 0,
+    overflowX: "auto",
   },
 };
+

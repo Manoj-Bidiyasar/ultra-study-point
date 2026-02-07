@@ -12,7 +12,7 @@ import {
   startAfter,
   getDocs,
 } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db } from "@/lib/firebase/client";
 
 export default function CurrentAffairsClient({
   initialDaily,
@@ -316,3 +316,4 @@ export default function CurrentAffairsClient({
     </div>
   );
 }
+

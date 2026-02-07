@@ -1,7 +1,7 @@
 import CurrentAffairsClient from "./CurrentAffairsClient";
 import { unstable_cache } from "next/cache";
-import { getAdminDb } from "@/lib/firebaseAdmin";
-import { serializeFirestoreData } from "@/lib/utils/serializeFirestore";
+import { getAdminDb } from "@/lib/firebase/admin";
+import { serializeFirestoreData } from "@/lib/serialization/serializeFirestore";
 
 /* ===================== ISR (HYBRID) ===================== */
 /* Revalidate every 5 minutes */
@@ -148,3 +148,5 @@ export default async function CurrentAffairsPage(props) {
     </>
   );
 }
+
+

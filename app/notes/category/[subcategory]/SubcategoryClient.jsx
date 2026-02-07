@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { SITE_URL } from "@/lib/seo/siteConfig";
 
 /* ================= LABEL ================= */
 const formatLabel = (value = "") =>
@@ -23,19 +24,19 @@ export default function SubcategoryClient({
         "@type": "ListItem",
         position: 1,
         name: "Notes",
-        item: "https://yourdomain.com/notes",
+        item: `${SITE_URL}/notes`,
       },
       catLabel && {
         "@type": "ListItem",
         position: 2,
         name: catLabel,
-        item: `https://yourdomain.com/notes/${categoryId}`,
+        item: `${SITE_URL}/notes/${categoryId}`,
       },
       {
         "@type": "ListItem",
         position: 3,
         name: subLabel,
-        item: `https://yourdomain.com/notes/category/${subcategory}`,
+        item: `${SITE_URL}/notes/category/${subcategory}`,
       },
     ].filter(Boolean),
   };
@@ -47,7 +48,7 @@ export default function SubcategoryClient({
       "@type": "ListItem",
       position: i + 1,
       name: n.title,
-      url: `https://yourdomain.com/notes/${n.slug}`,
+      url: `${SITE_URL}/notes/${n.slug}`,
     })),
   };
 

@@ -1,5 +1,7 @@
 import NotesClient from "./NotesClient";
-import { getAdminDb } from "@/lib/firebaseAdmin";
+import { unstable_cache } from "next/cache";
+import { getAdminDb } from "@/lib/firebase/admin";
+import { serializeDoc } from "@/lib/serialization/serializeDoc";
 
 /* ================= SEO ================= */
 export const metadata = {
@@ -11,48 +13,28 @@ export const metadata = {
 /* ================= FORCE SSR ================= */
 export const dynamic = "force-dynamic";
 
-/* ================= SERIALIZER ================= */
-function serializeDoc(doc) {
-  const data = doc.data();
+const getNotesIndex = unstable_cache(
+  async () => {
+    const adminDb = getAdminDb();
+    if (!adminDb) return [];
 
-  const serialize = (value) => {
-    if (value?.toDate instanceof Function) {
-      return value.toMillis();
-    }
-    if (Array.isArray(value)) {
-      return value.map(serialize);
-    }
-    if (value && typeof value === "object") {
-      const obj = {};
-      for (const k in value) obj[k] = serialize(value[k]);
-      return obj;
-    }
-    return value;
-  };
+    const colRef = adminDb
+      .collection("artifacts")
+      .doc("ultra-study-point")
+      .collection("public")
+      .doc("data")
+      .collection("master_notes");
 
-  return {
-    id: doc.id,
-    slug: doc.id,
-    ...serialize(data),
-  };
-}
+    const snap = await colRef.orderBy("date", "desc").get();
+    return snap.docs.map(serializeDoc);
+  },
+  ["notes-index"],
+  { revalidate: 300 }
+);
 
 export default async function NotesPage() {
-  const adminDb = getAdminDb();
-  if (!adminDb) {
-    return <NotesClient initialNotes={[]} />;
-  }
-
-  const colRef = adminDb
-    .collection("artifacts")
-    .doc("ultra-study-point")
-    .collection("public")
-    .doc("data")
-    .collection("master_notes");
-
-  const snap = await colRef.orderBy("date", "desc").get();
-
-  const notes = snap.docs.map(serializeDoc);
-
+  const notes = await getNotesIndex();
   return <NotesClient initialNotes={notes} />;
 }
+
+

@@ -11,7 +11,8 @@ import {
   limit,
   startAfter,
 } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db } from "@/lib/firebase/client";
+import { formatMonthYear, formatShortDate } from "@/lib/dates/formatters";
 
 /* ================= COLLECTION PATH ================= */
 const COLLECTION_PATH = [
@@ -68,15 +69,6 @@ export default function MonthlyCAListPage() {
       : items.filter((x) => x.status === filter);
 
   /* ================= HELPERS ================= */
-  const formatDate = (ts) => {
-    if (!ts?.toDate) return "—";
-    return ts
-      .toDate()
-      .toLocaleDateString("en-IN", {
-        month: "long",
-        year: "numeric",
-      });
-  };
 
   /* ================= UI ================= */
   return (
@@ -164,7 +156,7 @@ export default function MonthlyCAListPage() {
                   </td>
 
                   <td style={styles.td}>
-                    {formatDate(item.caDate)}
+                    {formatMonthYear(item.caDate)}
                   </td>
 
                   <td style={styles.td}>
@@ -178,7 +170,7 @@ export default function MonthlyCAListPage() {
                   </td>
 
                   <td style={styles.td}>
-                    {formatDate(item.updatedAt)}
+                    {formatShortDate(item.updatedAt)}
                   </td>
 
                   <td style={styles.td}>
@@ -328,3 +320,4 @@ const styles = {
     fontSize: 13,
   },
 };
+

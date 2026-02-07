@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import UniversalRenderer from "@/components/content/renderer/UniversalRenderer";
 import Breadcrumbs from "@/components/Breadcrumbs";
-import { formatIndianDate } from "@/lib/dateFormatters";
+import { formatIndianDate } from "@/lib/dates/formatters";
 
 const RelatedContent = dynamic(
   () => import("@/components/related/RelatedContent"),
@@ -130,3 +130,4 @@ export default function ArticleClient({ data, schema, breadcrumbs, related }) {
   </main>
 );
 }
+

@@ -10,7 +10,8 @@ import {
   limit,
   startAfter,
 } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db } from "@/lib/firebase/client";
+import { formatShortDate } from "@/lib/dates/formatters";
 
 /* ================= COLLECTION PATH ================= */
 const COLLECTION_PATH = [
@@ -65,16 +66,6 @@ export default function NotesListPage() {
       : items.filter((x) => x.status === filter);
 
   /* ================= HELPERS ================= */
-  const formatDate = (ts) => {
-    if (!ts?.toDate) return "—";
-    return ts
-      .toDate()
-      .toLocaleDateString("en-IN", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      });
-  };
 
   /* ================= UI ================= */
   return (
@@ -176,7 +167,7 @@ export default function NotesListPage() {
                   </td>
 
                   <td style={styles.td}>
-                    {formatDate(item.updatedAt)}
+                    {formatShortDate(item.updatedAt)}
                   </td>
 
                   <td style={styles.td}>
@@ -322,3 +313,4 @@ const styles = {
     fontSize: 13,
   },
 };
+

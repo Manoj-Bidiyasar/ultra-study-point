@@ -11,7 +11,8 @@ import {
   limit,
   startAfter,
 } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db } from "@/lib/firebase/client";
+import { formatShortDate } from "@/lib/dates/formatters";
 
 /* ================= COLLECTION PATH ================= */
 const COLLECTION_PATH = [
@@ -78,14 +79,6 @@ export default function DailyCAListPage() {
     );
   });
 
-  const formatDate = (ts) =>
-    ts?.toDate
-      ? ts.toDate().toLocaleDateString("en-IN", {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-        })
-      : "—";
 
   /* ================= UI ================= */
   return (
@@ -172,7 +165,7 @@ export default function DailyCAListPage() {
                   </td>
 
                   <td style={styles.td}>
-                    {formatDate(item.caDate)}
+                    {formatShortDate(item.caDate)}
                   </td>
 
                   <td style={styles.td}>
@@ -375,3 +368,4 @@ const styles = {
     fontSize: 13,
   },
 };
+

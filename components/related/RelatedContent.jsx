@@ -2,6 +2,7 @@
 
 import CurrentAffairsBlock from "./CurrentAffairsBlock";
 import ImportantNotesBlock from "./ImportantNotesBlock";
+import QuizBlock from "./QuizBlock";
 
 export default function RelatedContent({ data, pageType }) {
   if (!data) return null;
@@ -13,6 +14,10 @@ export default function RelatedContent({ data, pageType }) {
           items={data.currentAffairs}
           pageType={pageType}
         />
+      )}
+
+      {data.quizzes?.length > 0 && (
+        <QuizBlock items={data.quizzes} pageType={pageType} />
       )}
 
       {data.importantNotes?.length > 0 && (

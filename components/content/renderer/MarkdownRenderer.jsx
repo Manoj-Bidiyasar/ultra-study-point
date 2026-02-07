@@ -11,11 +11,16 @@ import "katex/dist/katex.min.css";
 export default function MarkdownRenderer({
   children,
   className = "",
+  inline = false,
 }) {
   if (!children) return null;
 
+  const Wrapper = inline ? "span" : "div";
+
   return (
-    <div className={`prose prose-slate max-w-none ${className}`}>
+    <Wrapper
+      className={`prose prose-slate max-w-none ${className} ${inline ? "inline align-baseline" : ""}`}
+    >
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath]}
         rehypePlugins={[
@@ -24,7 +29,7 @@ export default function MarkdownRenderer({
         ]}
         components={{
           p: ({ children }) => (
-            <p className="leading-7 my-2 text-gray-800">
+            <p className={`leading-7 text-gray-800 ${inline ? "my-0 inline" : "my-2"}`}>
               {children}
             </p>
           ),
@@ -47,6 +52,6 @@ export default function MarkdownRenderer({
       >
         {children}
       </ReactMarkdown>
-    </div>
+    </Wrapper>
   );
 }

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { doc, getDoc } from "firebase/firestore";
-import { auth, db } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase/client";
 import BaseCAEditor from "@/app/admin/editors/BaseCAEditor";
 
 const COLLECTION_PATH = [
@@ -28,6 +28,7 @@ export default function EditDailyCA() {
 
   const isNew = searchParams.get("new") === "true";
   const slugFromCreate = searchParams.get("slug") || "";
+  const caDateFromCreate = searchParams.get("caDate") || "";
 
   const [data, setData] = useState(null);
   const [role, setRole] = useState(null);
@@ -67,9 +68,9 @@ export default function EditDailyCA() {
       }
 
       if (isNew) {
-  const inferredDate = /^\d{4}-\d{2}-\d{2}$/.test(docId)
-    ? docId
-    : "";
+  const inferredDate =
+    caDateFromCreate ||
+    (/^\d{4}-\d{2}-\d{2}$/.test(docId) ? docId : "");
 
   setData({
     id: docId,
@@ -97,7 +98,7 @@ export default function EditDailyCA() {
     }
 
     load();
-  }, [docId, isNew, slugFromCreate]);
+  }, [docId, isNew, slugFromCreate, caDateFromCreate]);
 
   if (loading) return <p>Loading…</p>;
   if (!data || !role) return <p>Document not found</p>;
@@ -110,3 +111,4 @@ export default function EditDailyCA() {
     />
   );
 }
+

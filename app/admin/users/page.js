@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { auth, db } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase/client";
 import {
   collection,
   getDocs,
@@ -78,7 +78,9 @@ export default function UsersPage() {
         updatedUser.id
       ),
       {
-        ...updatedUser,
+        displayName: updatedUser.displayName,
+        status: updatedUser.status,
+        contentAccess: updatedUser.contentAccess,
         updatedAt: serverTimestamp(),
       }
     );
@@ -86,7 +88,7 @@ export default function UsersPage() {
     // update UI instantly
     setUsers((prev) =>
       prev.map((u) =>
-        u.id === updatedUser.id ? updatedUser : u
+        u.id === updatedUser.id ? { ...u, ...updatedUser } : u
       )
     );
 
@@ -118,3 +120,4 @@ export default function UsersPage() {
     </div>
   );
 }
+

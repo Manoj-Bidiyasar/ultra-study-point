@@ -1,35 +1,16 @@
 import ArticleClient from "./ArticleClient";
 import { notFound } from "next/navigation";
-import { getAdminDb } from "@/lib/firebaseAdmin";
-import { breadcrumbConfig } from "@/lib/breadcrumbs";
-import { buildBreadcrumbSchema } from "@/lib/breadcrumbSchema";
+import { getAdminDb } from "@/lib/firebase/admin";
+import { breadcrumbConfig } from "@/lib/breadcrumbs/config";
+import { buildBreadcrumbSchema } from "@/lib/breadcrumbs/buildBreadcrumbSchema";
 import { resolveRelatedContent } from "@/lib/related/relatedEngine";
+import { serializeFirestoreData } from "@/lib/serialization/serializeFirestore";
+import { unstable_cache } from "next/cache";
 
 /* ================= RENDER MODE ================= */
 export const dynamic = "force-dynamic";
 
 /* ================= UTILS ================= */
-function serializeFirestoreData(value) {
-  if (value === null || value === undefined) return value;
-
-  if (typeof value === "object" && value.toDate) {
-    return value.toDate().toISOString();
-  }
-
-  if (Array.isArray(value)) {
-    return value.map(serializeFirestoreData);
-  }
-
-  if (typeof value === "object") {
-    const out = {};
-    for (const k in value) {
-      out[k] = serializeFirestoreData(value[k]);
-    }
-    return out;
-  }
-
-  return value;
-}
 
 /* ===== DATE FORMATTER ===== */
 function formatMonthYearFromDate(caDate) {
@@ -50,6 +31,30 @@ function formatMonthYearFromDate(caDate) {
 }
 
 /* ================= SEO ================= */
+const getMonthlyBySlug = unstable_cache(
+  async (slug) => {
+    const adminDb = getAdminDb();
+    if (!adminDb) return null;
+
+    const colRef = adminDb
+      .collection("artifacts")
+      .doc("ultra-study-point")
+      .collection("public")
+      .doc("data")
+      .collection("currentAffairs");
+
+    const snap = await colRef.where("slug", "==", slug).limit(1).get();
+    if (snap.empty) return null;
+
+    return {
+      id: snap.docs[0].id,
+      data: snap.docs[0].data(),
+    };
+  },
+  (slug) => ["monthly-ca", slug],
+  { revalidate: 600 }
+);
+
 export async function generateMetadata(props) {
   const params = await props.params;
   const slug = params?.slug;
@@ -57,18 +62,9 @@ export async function generateMetadata(props) {
 
   if (!slug || !adminDb) return {};
 
-  const colRef = adminDb
-    .collection("artifacts")
-    .doc("ultra-study-point")
-    .collection("public")
-    .doc("data")
-    .collection("currentAffairs");
-
-  const snap = await colRef.where("slug", "==", slug).limit(1).get();
-
-  if (snap.empty) return {};
-
-  const data = snap.docs[0].data();
+  const cached = await getMonthlyBySlug(slug);
+  if (!cached) return {};
+  const data = cached.data;
 
   const monthYear = formatMonthYearFromDate(data.caDate);
 
@@ -129,11 +125,14 @@ export default async function MonthlyArticlePage(props) {
     .doc("data")
     .collection("currentAffairs");
 
-  const snap = await colRef.where("slug", "==", slug).limit(1).get();
+  const cached = isPreview ? null : await getMonthlyBySlug(slug);
+  let data = cached?.data || null;
 
-  if (snap.empty) notFound();
-
-  const data = snap.docs[0].data();
+  if (!data) {
+    const snap = await colRef.where("slug", "==", slug).limit(1).get();
+    if (snap.empty) notFound();
+    data = snap.docs[0].data();
+  }
   const publishedAt = data.publishedAt?.toDate?.();
   const now = new Date();
 
@@ -142,10 +141,37 @@ export default async function MonthlyArticlePage(props) {
     if (data.status === "scheduled" && publishedAt > now) notFound();
   }
 
+  const manualList = Array.isArray(data.relatedContent)
+    ? data.relatedContent
+    : [];
+
+  const manualCA = manualList
+    .filter(
+      (i) =>
+        (i?.type === "daily" || i?.type === "monthly") &&
+        i?.slug
+    )
+    .map((i) => ({
+      ...i,
+      canonicalUrl:
+        i.canonicalUrl ||
+        `/current-affairs/${i.type}/${i.slug}`,
+    }));
+
+  const manualNotes = manualList
+    .filter((i) => i?.type === "notes" && i?.slug)
+    .map((i) => ({
+      slug: i.slug,
+      title: i.title || i.slug,
+    }));
+
   const related = await resolveRelatedContent({
     pageType: "monthly",
+    pageCaDate: data.caDate?.toDate?.(),
     subject: data.subject,
     tags: data.tags,
+    manualCA,
+    manualNotes,
   });
 
   const monthYear = formatMonthYearFromDate(data.caDate);
@@ -221,3 +247,5 @@ export default async function MonthlyArticlePage(props) {
     />
   );
 }
+
+

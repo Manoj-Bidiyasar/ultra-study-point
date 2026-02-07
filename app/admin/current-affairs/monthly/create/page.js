@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { doc, getDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db } from "@/lib/firebase/client";
 
 import {
   generateSlug,
@@ -144,3 +144,4 @@ const styles = {
     borderRadius: 6,
   },
 };
+

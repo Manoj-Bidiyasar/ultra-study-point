@@ -1,19 +1,9 @@
 import { useState } from "react";
-import { roleTemplates } from "../utils/roleTemplates";
 
 export default function UserModal({ user, onClose, onSave }) {
   const [form, setForm] = useState({ ...user });
 
   const isSuperAdmin = user.role === "super_admin";
-
-  const changeRole = (role) => {
-    if (isSuperAdmin) return;
-    setForm({
-      ...form,
-      role,
-      ...roleTemplates[role]
-    });
-  };
 
   return (
     <div style={modal}>
@@ -26,15 +16,7 @@ export default function UserModal({ user, onClose, onSave }) {
       />
 
       <label>Role</label>
-      <select
-        value={form.role}
-        disabled={isSuperAdmin}
-        onChange={e => changeRole(e.target.value)}
-      >
-        <option value="editor">Editor</option>
-        <option value="admin">Admin</option>
-        <option value="super_admin" disabled>Super Admin</option>
-      </select>
+      <input value={form.role} disabled />
 
       <h4>Content Access</h4>
       {Object.keys(form.contentAccess).map(key => (

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import { doc, getDoc } from "firebase/firestore";
-import { auth, db } from "@/lib/firebase";
+import { auth, db } from "@/lib/firebase/client";
 import BaseCAEditor from "@/app/admin/editors/BaseCAEditor";
 
 const COLLECTION_PATH = [
@@ -144,3 +144,4 @@ if (isNew) {
     />
   );
 }
+

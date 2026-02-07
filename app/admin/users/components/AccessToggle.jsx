@@ -1,5 +1,5 @@
 import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db } from "@/lib/firebase/client";
 
 export default function AccessToggle({ userId, accessKey, value }) {
   const toggle = async () => {
@@ -27,3 +27,4 @@ export default function AccessToggle({ userId, accessKey, value }) {
     />
   );
 }
+

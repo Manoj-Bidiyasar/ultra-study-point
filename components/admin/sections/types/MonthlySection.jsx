@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useState } from "react";
+
 export default function MonthlySection({
   value = {},
   isLocked,
@@ -9,6 +11,11 @@ export default function MonthlySection({
     caDate = "",
     pdfUrl = "",
   } = value;
+  const [editDate, setEditDate] = useState(false);
+
+  useEffect(() => {
+    setEditDate(!caDate);
+  }, [caDate]);
 
   const monthValue =
     caDate && !isNaN(new Date(caDate))
@@ -27,7 +34,7 @@ export default function MonthlySection({
         <input
           type="month"
           style={ui.input}
-          disabled={isLocked}
+          disabled={isLocked || !editDate}
           value={monthValue}
           onChange={(e) => {
             const v = e.target.value;
@@ -52,6 +59,17 @@ export default function MonthlySection({
         <span style={ui.hint}>
           Stored internally as timestamp (1st day of month)
         </span>
+        {!isLocked && (
+          <label style={ui.hint}>
+            <input
+              type="checkbox"
+              checked={editDate}
+              onChange={(e) => setEditDate(e.target.checked)}
+              style={{ marginRight: 6 }}
+            />
+            Edit month
+          </label>
+        )}
       </div>
 
       {/* ================= PDF ================= */}

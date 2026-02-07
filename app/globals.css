@@ -108,6 +108,25 @@ select:-webkit-autofill {
   background: rgba(0, 0, 0, 0.2);
   border-radius: 10px;
 }
+
+/* ============================= */
+/* QUIZ PREVIEW GLOW             */
+/* ============================= */
+.quiz-focus-glow {
+  animation: quizGlow 1.6s ease-in-out infinite;
+}
+
+@keyframes quizGlow {
+  0% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.35);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(59, 130, 246, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+  }
+}
 /* ======================================================
    CODE BLOCK — LINE NUMBERS ONLY
 ====================================================== */

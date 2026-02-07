@@ -2,15 +2,48 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import {
+  collection,
+  getCountFromServer,
+  query,
+  where,
+} from "firebase/firestore";
+import { db } from "@/lib/firebase/client";
 
 export default function AdminSidebar({ permissions, role }) {
   const pathname = usePathname();
+  const [pendingReviews, setPendingReviews] = useState(0);
 
   const [caOpen, setCaOpen] = useState(
     pathname.startsWith("/admin/current-affairs")
   );
   const caActive = pathname.startsWith("/admin/current-affairs");
+
+  useEffect(() => {
+    async function loadPending() {
+      if (role !== "admin" && role !== "super_admin") return;
+
+      try {
+        const reviewRef = collection(
+          db,
+          "artifacts",
+          "ultra-study-point",
+          "public",
+          "data",
+          "review_queue"
+        );
+        const snap = await getCountFromServer(
+          query(reviewRef, where("status", "==", "pending"))
+        );
+        setPendingReviews(snap.data().count || 0);
+      } catch (e) {
+        setPendingReviews(0);
+      }
+    }
+
+    loadPending();
+  }, [role]);
 
   return (
     <aside style={styles.sidebar}>
@@ -23,7 +56,11 @@ export default function AdminSidebar({ permissions, role }) {
       {/* NAVIGATION */}
       <nav style={styles.nav}>
         <div style={styles.navGroup}>
-          <NavLink href="/admin/dashboard" label="Dashboard" />
+          <NavLink
+            href="/admin/dashboard"
+            label="Dashboard"
+            badge={pendingReviews > 0 ? pendingReviews : null}
+          />
 
           {/* CURRENT AFFAIRS */}
           {permissions?.canManageContent && (
@@ -61,6 +98,16 @@ export default function AdminSidebar({ permissions, role }) {
             <NavLink href="/admin/notes" label="Notes" />
           )}
 
+          {/* QUIZZES */}
+          {permissions?.canManageContent && (
+            <NavLink href="/admin/quizzes" label="Quizzes" />
+          )}
+
+          {/* PYQs */}
+          {permissions?.canManageContent && (
+            <NavLink href="/admin/pyqs" label="PYQs" />
+          )}
+
           {/* CONTACT */}
           {permissions?.canViewMessages && (
             <NavLink
@@ -86,7 +133,7 @@ export default function AdminSidebar({ permissions, role }) {
    NAV LINK
 ====================================================== */
 
-function NavLink({ href, label, small }) {
+function NavLink({ href, label, small, badge }) {
   const pathname = usePathname();
   const active = pathname.startsWith(href);
   const [hover, setHover] = useState(false);
@@ -117,7 +164,8 @@ function NavLink({ href, label, small }) {
         transition: "all 0.15s ease",
       }}
     >
-      {label}
+      <span>{label}</span>
+      {badge ? <span style={styles.badge}>{badge}</span> : null}
     </Link>
   );
 }
@@ -132,6 +180,7 @@ const styles = {
     height: "100vh",
     position: "sticky",
     top: 0,
+    flexShrink: 0,
 
     borderRight: "1px solid #e5e7eb",
     padding: 16,
@@ -204,5 +253,14 @@ const styles = {
   divider: {
     margin: "12px 0",
     borderTop: "1px solid #e5e7eb",
+  },
+  badge: {
+    marginLeft: "auto",
+    background: "#ef4444",
+    color: "#fff",
+    fontSize: 11,
+    padding: "2px 6px",
+    borderRadius: 999,
+    fontWeight: 700,
   },
 };

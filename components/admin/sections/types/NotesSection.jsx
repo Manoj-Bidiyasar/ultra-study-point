@@ -3,7 +3,7 @@
 import {
   CATEGORY_DEFINITIONS,
   SUBCATEGORY_CONFIG,
-} from "@/lib/notesTaxonomy";
+} from "@/lib/notes/taxonomy";
 
 export default function NotesSection({
   value = {},
@@ -177,3 +177,4 @@ const ui = {
     background: "#fafafa",
   },
 };
+

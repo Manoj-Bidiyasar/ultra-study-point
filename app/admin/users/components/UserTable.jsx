@@ -1,10 +1,10 @@
 import RoleBadge from "./RoleBadge";
 import AccessToggle from "./AccessToggle";
 import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db } from "@/lib/firebase/client";
 
 export default function UserTable({ users }) {
-  const updateRole = async (user, role) => {
+  const updateStatus = async (user, status) => {
     if (user.isProtected) {
       alert("Protected Super Admin cannot be modified.");
       return;
@@ -21,44 +21,66 @@ export default function UserTable({ users }) {
     );
 
     await updateDoc(ref, {
-      role,
+      status,
       updatedAt: serverTimestamp(),
     });
   };
 
   return (
-    <table style={{ width: "100%", background: "#fff", borderRadius: 8 }}>
+    <table style={ui.table}>
+      <colgroup>
+        <col style={{ width: "22%" }} />
+        <col style={{ width: "26%" }} />
+        <col style={{ width: "12%" }} />
+        <col style={{ width: "14%" }} />
+        <col style={{ width: "8%" }} />
+        <col style={{ width: "8%" }} />
+        <col style={{ width: "10%" }} />
+      </colgroup>
       <thead>
         <tr>
-          <th>Name</th>
-          <th>Email</th>
-          <th>Role</th>
-          <th>Daily</th>
-          <th>Monthly</th>
-          <th>Notes</th>
+          <th style={ui.th}>Name</th>
+          <th style={ui.th}>Email</th>
+          <th style={ui.th}>Role</th>
+          <th style={ui.th}>Status</th>
+          <th style={ui.th}>Daily</th>
+          <th style={ui.th}>Monthly</th>
+          <th style={ui.th}>Notes</th>
         </tr>
       </thead>
 
       <tbody>
         {users.map((u) => (
-          <tr key={u.id}>
-            <td>{u.displayName}</td>
-            <td>{u.email}</td>
-            <td>
-              <RoleBadge role={u.role} />
-              {!u.isProtected && (
-                <select
-                  value={u.role}
-                  onChange={(e) => updateRole(u, e.target.value)}
-                >
-                  <option value="editor">Editor</option>
-                  <option value="admin">Admin</option>
-                  <option value="super_admin">Super Admin</option>
-                </select>
-              )}
+          <tr
+            key={u.id}
+            style={{
+              ...ui.tr,
+              ...(u.status === "suspended"
+                ? ui.rowSuspended
+                : ui.rowActive),
+            }}
+          >
+            <td style={ui.td}>{u.displayName || "—"}</td>
+            <td style={{ ...ui.td, ...ui.emailCell }}>{u.email || "—"}</td>
+            <td style={ui.td}>
+              <div style={ui.roleCell}>
+                <RoleBadge role={u.role} />
+              </div>
             </td>
 
-            <td>
+            <td style={ui.td}>
+              <select
+                value={u.status || "active"}
+                disabled={u.isProtected || u.role === "super_admin"}
+                onChange={(e) => updateStatus(u, e.target.value)}
+                style={ui.select}
+              >
+                <option value="active">Active</option>
+                <option value="suspended">Suspended</option>
+              </select>
+            </td>
+
+            <td style={ui.td}>
               <AccessToggle
                 userId={u.id}
                 accessKey="dailyCA"
@@ -66,7 +88,7 @@ export default function UserTable({ users }) {
               />
             </td>
 
-            <td>
+            <td style={ui.td}>
               <AccessToggle
                 userId={u.id}
                 accessKey="monthlyCA"
@@ -74,7 +96,7 @@ export default function UserTable({ users }) {
               />
             </td>
 
-            <td>
+            <td style={ui.td}>
               <AccessToggle
                 userId={u.id}
                 accessKey="notes"
@@ -87,3 +109,54 @@ export default function UserTable({ users }) {
     </table>
   );
 }
+
+const ui = {
+  table: {
+    width: "100%",
+    background: "#fff",
+    borderRadius: 10,
+    borderCollapse: "collapse",
+    overflow: "hidden",
+    tableLayout: "auto",
+  },
+  th: {
+    textAlign: "left",
+    fontSize: 12,
+    color: "#6b7280",
+    padding: "10px 12px",
+    background: "#f8fafc",
+    borderBottom: "1px solid #e5e7eb",
+  },
+  td: {
+    padding: "10px 12px",
+    borderBottom: "1px solid #f3f4f6",
+    fontSize: 14,
+    verticalAlign: "middle",
+  },
+  emailCell: {
+    wordBreak: "break-all",
+  },
+  roleCell: {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 6,
+    flexWrap: "wrap",
+  },
+  tr: {
+    background: "#fff",
+  },
+  rowActive: {
+    background: "#f0fdf4",
+  },
+  rowSuspended: {
+    background: "#fef2f2",
+  },
+  select: {
+    padding: "4px 8px",
+    borderRadius: 6,
+    border: "1px solid #d1d5db",
+    fontSize: 12,
+    minWidth: 100,
+  },
+};
+

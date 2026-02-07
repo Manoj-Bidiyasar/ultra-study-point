@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { db } from "@/lib/firebase";
+import { db } from "@/lib/firebase/client";
 import {
   collection,
   getDocs,
@@ -389,3 +389,4 @@ const statusColors = {
   replied: { color: "#16a34a" },
   archived: { color: "#6b7280" },
 };
+

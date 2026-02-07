@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { doc, getDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db } from "@/lib/firebase/client";
 import {
   generateSlug,
   buildTitle,
@@ -93,8 +93,11 @@ const [title, setTitle] = useState("");
 
     /* ---------- OPEN EDITOR (NEW DOC) ---------- */
     router.push(
-  `/admin/current-affairs/daily/${docId}?slug=${slug}&new=true`
-);
+      `/admin/current-affairs/daily/${docId}` +
+        `?slug=${encodeURIComponent(slug)}` +
+        `&new=true` +
+        `&caDate=${encodeURIComponent(caDate)}`
+    );
 
   }
 
@@ -206,3 +209,4 @@ const styles = {
     color: "#6b7280",
   },
 };
+

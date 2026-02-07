@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { doc, getDoc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db } from "@/lib/firebase/client";
+import { formatShortDate } from "@/lib/dates/formatters";
 
 export default function WorkflowSection({
   state,
   rawData,
   role,
+  submitState,
   onReviewChange,
   onSubmitForReview,
   onAdminAction,
@@ -63,11 +65,6 @@ export default function WorkflowSection({
       : null;
   }
 
-  function formatDate(ts) {
-    if (!ts) return "—";
-    if (ts?.toDate) return ts.toDate().toLocaleString();
-    return new Date(ts).toLocaleString();
-  }
 
   const createdUser = getUser(state?.createdBy?.uid);
   const updatedUser = getUser(state?.updatedBy?.uid);
@@ -90,19 +87,19 @@ export default function WorkflowSection({
         label1="Creator Email"
         value1={createdUser?.email || "—"}
         label2="Created At"
-        value2={formatDate(rawData?.createdAt)}
+        value2={formatShortDate(rawData?.createdAt)}
       />
 
       <Row
         label1="Last Updated By"
         value1={updatedUser?.displayName || "—"}
         label2="Updated At"
-        value2={formatDate(rawData?.updatedAt)}
+        value2={formatShortDate(rawData?.updatedAt)}
       />
 
       <Row
         label1="Submitted At"
-        value1={formatDate(rawData?.submittedAt)}
+        value1={formatShortDate(rawData?.submittedAt)}
         label2="Status"
         value2={state?.status || "—"}
       />
@@ -140,8 +137,9 @@ export default function WorkflowSection({
           <button
             style={ui.btnPrimary}
             onClick={onSubmitForReview}
+            disabled={submitState?.loading}
           >
-            Submit for Review
+            {submitState?.loading ? "Submitting..." : "Submit for Review"}
           </button>
         )}
 
@@ -168,6 +166,13 @@ export default function WorkflowSection({
           </>
         )}
       </div>
+
+      {submitState?.error && (
+        <div style={ui.errorText}>{submitState.error}</div>
+      )}
+      {submitState?.success && (
+        <div style={ui.successText}>{submitState.success}</div>
+      )}
     </div>
   );
 }
@@ -251,4 +256,15 @@ const ui = {
     cursor: "pointer",
     fontSize: 13,
   },
+  errorText: {
+    marginTop: 8,
+    fontSize: 12,
+    color: "#b91c1c",
+  },
+  successText: {
+    marginTop: 8,
+    fontSize: 12,
+    color: "#15803d",
+  },
 };
+

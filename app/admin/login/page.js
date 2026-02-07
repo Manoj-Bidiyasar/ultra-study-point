@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { auth } from "@/lib/firebase/client";
 
 export default function AdminLogin() {
   const router = useRouter();
@@ -144,3 +144,4 @@ const styles = {
     textAlign: "center",
   },
 };
+

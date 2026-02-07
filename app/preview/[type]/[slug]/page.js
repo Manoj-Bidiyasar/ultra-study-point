@@ -1,7 +1,7 @@
 export const runtime = "nodejs";
 
 import { notFound } from "next/navigation";
-import adminDb from "@/lib/server/firebaseAdminDb";
+import adminDb from "@/lib/firebase/adminDb";
 import UniversalRenderer from "@/components/content/renderer/UniversalRenderer";
 import ExitPreviewButton from "@/components/preview/ExitPreviewButton";
 
@@ -118,3 +118,5 @@ export default async function PreviewPage({
     </article>
   );
 }
+
+

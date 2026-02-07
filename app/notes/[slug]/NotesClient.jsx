@@ -4,6 +4,8 @@ import Link from "next/link";
 import Head from "next/head";
 import { useEffect } from "react";
 import UniversalRenderer from "@/components/content/renderer/UniversalRenderer";
+import CurrentAffairsBlock from "@/components/related/CurrentAffairsBlock";
+import ImportantNotesBlock from "@/components/related/ImportantNotesBlock";
 
 
 export default function NotesClient({
@@ -11,6 +13,7 @@ export default function NotesClient({
   note,
   notes,
   breadcrumbSchema,
+  relatedCA,
 }) {
   /* ================= KaTeX AUTO RENDER ================= */
   useEffect(() => {
@@ -68,6 +71,11 @@ export default function NotesClient({
     .join(" ")
     .slice(0, 5000),
 };
+
+  const showSidebar =
+    (note.relatedContent?.length || 0) > 0 ||
+    (relatedCA?.currentAffairs?.length || 0) > 0 ||
+    (relatedCA?.importantNotes?.length || 0) > 0;
 
   return (
     <>
@@ -141,21 +149,40 @@ export default function NotesClient({
             </div>
 
             {/* Related Content */}
-            {note.relatedContent?.length > 0 && (
-              <aside className="bg-white rounded-2xl shadow-lg p-4 md:p-6 md:sticky md:top-6 h-fit">
-                <h3 className="font-bold mb-4">Related Content</h3>
-                <ul className="space-y-2">
-                  {note.relatedContent.map((item, i) => (
-                    <li key={i}>
-                      <Link
-                        href={`/notes/${item.slug}`}
-                        className="hover:underline"
-                      >
-                        {item.title}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
+            {showSidebar && (
+              <aside className="bg-white rounded-2xl shadow-lg p-4 md:p-6 md:sticky md:top-6 h-fit space-y-6">
+                {note.relatedContent?.length > 0 && (
+                  <section>
+                    <h3 className="font-bold mb-4">
+                      Related Notes
+                    </h3>
+                    <ul className="space-y-2">
+                      {note.relatedContent.map((item, i) => (
+                        <li key={i}>
+                          <Link
+                            href={`/notes/${item.slug}`}
+                            className="hover:underline"
+                          >
+                            {item.title}
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                )}
+
+                {relatedCA?.currentAffairs?.length > 0 && (
+                  <CurrentAffairsBlock
+                    items={relatedCA.currentAffairs}
+                    pageType="notes"
+                  />
+                )}
+
+                {relatedCA?.importantNotes?.length > 0 && (
+                  <ImportantNotesBlock
+                    items={relatedCA.importantNotes}
+                  />
+                )}
               </aside>
             )}
           </div>

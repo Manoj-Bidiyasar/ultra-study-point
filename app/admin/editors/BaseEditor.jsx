@@ -16,8 +16,8 @@ import {
 
 /* ================= FIREBASE ================= */
 
-import { auth, db } from "@/lib/firebase";
-import { validateEditorSlug } from "@/lib/caValidation";
+import { auth, db } from "@/lib/firebase/client";
+import { validateEditorSlug } from "@/lib/ca/validation";
 import { createPreviewToken } from "@/lib/preview/previewToken";
 
 /* ================= EDITOR CORE ================= */
@@ -38,6 +38,7 @@ import SeoSection from "@/components/admin/sections/SeoSection";
 
 import RelatedContentSection from "@/components/admin/sections/RelatedContentSection";
 import WorkflowSection from "@/components/admin/sections/WorkflowSection";
+import QuizContentEditor from "@/components/admin/sections/QuizContentEditor";
 import CollapsibleCard from "@/components/admin/ui/CollapsibleCard";
 import StatusBadge from "@/components/admin/ui/StatusBadge";
 import StickySidebar from "@/components/admin/ui/StickySidebar";
@@ -79,7 +80,7 @@ export default function BaseEditor({
     /* ---------- BASIC INFO ---------- */
     title: rawData.title || "",
     slug: rawData.slug || "",
-    summary: rawData.summary || "",
+    summary: rawData.summary || rawData.description || "",
     language: rawData.language || "en",
     tags: rawData.tags || [],
 
@@ -103,7 +104,16 @@ notesMeta: rawData.notesMeta || {
   subCategoryName: "",
   topic: "",
 },
-quizMeta: rawData.quizMeta || {},
+quizMeta: {
+  durationMinutes: rawData.durationMinutes ?? rawData.quizMeta?.durationMinutes ?? 60,
+  rules: rawData.rules ?? rawData.quizMeta?.rules ?? { minAttemptPercent: 90 },
+  scoring: rawData.scoring ?? rawData.quizMeta?.scoring ?? {
+    defaultPoints: 1,
+    negativeMarking: { type: "fraction", value: 1 / 3 },
+  },
+  sections: rawData.sections ?? rawData.quizMeta?.sections ?? [],
+  questions: rawData.questions ?? rawData.quizMeta?.questions ?? [],
+},
 
     /* ---------- SEO ---------- */
     seo: {
@@ -136,7 +146,12 @@ quizMeta: rawData.quizMeta || {},
   ====================================================== */
 
   const [currentUserProfile, setCurrentUserProfile] = useState(null);
-const [lastSavedAt, setLastSavedAt] = useState(Date.now());
+  const [lastSavedAt, setLastSavedAt] = useState(Date.now());
+  const [submitState, setSubmitState] = useState({
+    loading: false,
+    error: null,
+    success: null,
+  });
 
   useEffect(() => {
     async function loadUser() {
@@ -169,6 +184,20 @@ const [lastSavedAt, setLastSavedAt] = useState(Date.now());
 
     loadUser();
   }, []);
+
+  useEffect(() => {
+    if (!currentUserProfile) return;
+    setState((s) => {
+      const next = { ...s };
+      if (!s.createdBy) {
+        next.createdBy = currentUserProfile;
+      }
+      if (!s.updatedBy) {
+        next.updatedBy = currentUserProfile;
+      }
+      return next;
+    });
+  }, [currentUserProfile]);
 
   /* ======================================================
      TAG INPUT BUFFER
@@ -247,7 +276,7 @@ function getCollectionByType(type) {
   if (type === "monthly") return "currentAffairs";
 
   // future
-  if (type === "quiz") return "master_quiz";
+  if (type === "quiz") return "Quizzes";
 
   return "currentAffairs";
 }
@@ -255,8 +284,9 @@ function getCollectionByType(type) {
   const normalizedSlug = state.slug.trim().toLowerCase();
 
   const isLocked =
-    state.isLocked ||
-    (role === "editor" && state.status !== "draft");
+    role === "admin" || role === "super_admin"
+      ? false
+      : state.isLocked || (role === "editor" && state.status !== "draft");
 
  const collectionName = getCollectionByType(type);
 
@@ -338,9 +368,69 @@ const docRef = doc(
   ====================================================== */
 
   const [autoSaveStatus, setAutoSaveStatus] = useState("Saved ✓");
-const [saveError, setSaveError] = useState(null);
-const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [nowTick, setNowTick] = useState(Date.now());
+  const [saveErrors, setSaveErrors] = useState([]);
 
+  function validateQuizMeta(quizMeta) {
+    const errors = [];
+    if (!quizMeta) return errors;
+    const optionEEnabled = quizMeta?.rules?.optionEEnabled === true;
+    const optionCount = optionEEnabled ? 5 : 4;
+    const questions = Array.isArray(quizMeta?.questions)
+      ? quizMeta.questions
+      : [];
+
+    questions.forEach((q, idx) => {
+      const label = `Q${idx + 1}`;
+      if (!q?.prompt || !String(q.prompt).trim()) {
+        errors.push(`${label}: Missing question text.`);
+      }
+
+      if (q?.type === "single" || q?.type === "multiple") {
+        const opts = Array.isArray(q.options) ? q.options : [];
+        const required = opts.slice(0, optionCount);
+        if (required.some((o) => !String(o || "").trim())) {
+          errors.push(`${label}: Fill all options.`);
+        }
+        if (
+          optionEEnabled &&
+          required.slice(0, optionCount - 1).every((o) => !String(o || "").trim())
+        ) {
+          errors.push(`${label}: Only "Unattempted" option filled.`);
+        }
+        if (q.type === "single") {
+          const ans = Number(q.answer);
+          if (!Number.isInteger(ans) || ans < 0 || ans >= optionCount) {
+            errors.push(`${label}: Correct option index is invalid.`);
+          }
+        }
+        if (q.type === "multiple") {
+          const arr = Array.isArray(q.answer) ? q.answer : [];
+          const bad = arr.some(
+            (v) => !Number.isInteger(Number(v)) || Number(v) < 0 || Number(v) >= optionCount
+          );
+          if (bad) {
+            errors.push(`${label}: Correct option indexes are invalid.`);
+          }
+        }
+      }
+
+      if (q?.type === "fill") {
+        const answers = Array.isArray(q.answerText)
+          ? q.answerText
+          : q.answerText
+          ? [q.answerText]
+          : [];
+        if (answers.every((a) => !String(a || "").trim())) {
+          errors.push(`${label}: Missing accepted answers.`);
+        }
+      }
+    });
+
+    return errors;
+  }
 
   async function saveToFirestore({ mode = "auto" } = {}) {
   if (!currentUserProfile) return;
@@ -354,7 +444,16 @@ const [isSaving, setIsSaving] = useState(false);
   setAutoSaveStatus("Saved ✓");
   setLastSavedAt(Date.now());
 
-try {
+  try {
+    if (type === "quiz") {
+      const quizErrors = validateQuizMeta(state.quizMeta);
+      if (quizErrors.length > 0) {
+        setAutoSaveStatus("Save blocked ⚠");
+        setSaveError(quizErrors[0]);
+        setSaveErrors(quizErrors);
+        return;
+      }
+    }
   const slugError = await validateEditorSlug({
     slug: normalizedSlug,
     type,
@@ -401,6 +500,17 @@ const payload = {
   notesMeta: type === "notes" ? state.notesMeta : {},
   quizMeta: type === "quiz" ? state.quizMeta : {},
 
+  ...(type === "quiz"
+    ? {
+        description: state.summary,
+        durationMinutes: state.quizMeta?.durationMinutes ?? 0,
+        rules: state.quizMeta?.rules || {},
+        scoring: state.quizMeta?.scoring || {},
+        sections: state.quizMeta?.sections || [],
+        questions: state.quizMeta?.questions || [],
+      }
+    : {}),
+
   relatedContent: state.relatedContent,
 
   caDate: isCA ? safeDate(state.caDate) : null,
@@ -438,30 +548,68 @@ const payload = {
     }
 
     setAutoSaveStatus("Saved ✓");
+    setSaveErrors([]);
+
+    if (mode === "manual") {
+      await addDoc(
+        collection(
+          db,
+          "artifacts",
+          "ultra-study-point",
+          "public",
+          "data",
+          "admin_activity"
+        ),
+        {
+          action: "save_manual",
+          docId: state.id,
+          type,
+          title: state.title || "",
+          user: currentUserProfile,
+          createdAt: serverTimestamp(),
+        }
+      );
+    }
   } catch (err) {
     console.error(err);
 
     setAutoSaveStatus("Save failed ❌");
     setSaveError(err.message || "Save failed");
+    setSaveErrors([]);
   } finally {
     setIsSaving(false);
   }
 }
 
   async function submitForReview() {
-    if (!currentUserProfile) return;
     if (isLocked) return;
+    if (!currentUserProfile) {
+      setSubmitState({
+        loading: false,
+        error: "User profile is still loading. Please try again.",
+        success: null,
+      });
+      return;
+    }
+
+    setSubmitState({ loading: true, error: null, success: null });
 
     try {
+      await saveToFirestore({ mode: "manual" });
       await upsertReviewQueue({ action: "submit" });
+
       await updateDoc(docRef, {
+        status: "draft",
         submittedAt: serverTimestamp(),
+        updatedBy: currentUserProfile,
+        updatedAt: serverTimestamp(),
         isLocked: true,
         review: {
           status: "pending",
           feedback: "",
         },
       });
+
       setState((s) => ({
         ...s,
         isLocked: true,
@@ -470,8 +618,38 @@ const payload = {
           feedback: "",
         },
       }));
+
+      await addDoc(
+        collection(
+          db,
+          "artifacts",
+          "ultra-study-point",
+          "public",
+          "data",
+          "admin_activity"
+        ),
+        {
+          action: "submit_review",
+          docId: state.id,
+          type,
+          title: state.title || "",
+          user: currentUserProfile,
+          createdAt: serverTimestamp(),
+        }
+      );
+
+      setSubmitState({
+        loading: false,
+        error: null,
+        success: "Submitted for review.",
+      });
     } catch (err) {
       console.error(err);
+      setSubmitState({
+        loading: false,
+        error: err?.message || "Failed to submit for review.",
+        success: null,
+      });
     }
   }
 
@@ -480,6 +658,14 @@ const payload = {
     if (role !== "admin" && role !== "super_admin") return;
 
     try {
+      if (nextStatus === "published" && type === "quiz") {
+        const snapshot = {
+          ...state,
+          snapshotAt: serverTimestamp(),
+          snapshotBy: currentUserProfile,
+        };
+        await addDoc(collection(docRef, "versions"), snapshot);
+      }
       const update = {
         status: nextStatus,
         updatedBy: currentUserProfile,
@@ -520,13 +706,32 @@ const payload = {
         ...s,
         ...update,
       }));
+
+      await addDoc(
+        collection(
+          db,
+          "artifacts",
+          "ultra-study-point",
+          "public",
+          "data",
+          "admin_activity"
+        ),
+        {
+          action: `status_${nextStatus}`,
+          docId: state.id,
+          type,
+          title: state.title || "",
+          user: currentUserProfile,
+          createdAt: serverTimestamp(),
+        }
+      );
     } catch (err) {
       console.error(err);
     }
   }
 
 
-  useEffect(() => {
+useEffect(() => {
   if (!currentUserProfile) return;
   if (isLocked) return;
   if (state.status !== "draft") return;
@@ -544,9 +749,37 @@ const payload = {
   state.caDate,
   state.pdfUrl,
   state.notesMeta,
+  state.quizMeta,
   state.status,
   state.publishedAt,
 ]);
+
+  useEffect(() => {
+    const t = setInterval(() => setNowTick(Date.now()), 30000);
+    return () => clearInterval(t);
+  }, []);
+
+  useEffect(() => {
+    const onKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
+        e.preventDefault();
+        saveToFirestore({ mode: "manual" });
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [saveToFirestore]);
+
+  function formatSince(ts) {
+    const diff = Math.max(0, nowTick - ts);
+    const s = Math.floor(diff / 1000);
+    if (s < 10) return "just now";
+    if (s < 60) return `${s}s ago`;
+    const m = Math.floor(s / 60);
+    if (m < 60) return `${m}m ago`;
+    const h = Math.floor(m / 60);
+    return `${h}h ago`;
+  }
 
 
   /* ======================================================
@@ -564,6 +797,7 @@ const payload = {
             <span><b>ID:</b> {state.id}</span>
             <StatusBadge status={state.status} />
             <span>{autoSaveStatus}</span>
+            <span>Last saved {formatSince(lastSavedAt)}</span>
           </div>
           {state.status === "published" && (
             <div style={ui.warn}>
@@ -571,34 +805,47 @@ const payload = {
               manually update the status.
             </div>
           )}
+          {type === "quiz" && saveErrors.length > 0 && (
+            <div style={ui.warn}>
+              <div style={{ fontWeight: 600, marginBottom: 6 }}>
+                Quiz validation errors:
+              </div>
+              <ul style={{ margin: 0, paddingLeft: 18 }}>
+                {saveErrors.map((e, i) => (
+                  <li key={`${e}-${i}`}>{e}</li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
 
-        <button
-          style={ui.btn}
-          onClick={async () => {
-            const url = await createPreviewToken({
-              docId: state.id,
-              slug: normalizedSlug,
-              type,
-            });
-            const previewWindow = window.open(url, "_blank");
+        <div style={ui.headerActions}>
+          <button
+            style={ui.btnPrimary}
+            onClick={async () => {
+              const url = await createPreviewToken({
+                docId: state.id,
+                slug: normalizedSlug,
+                type,
+              });
+              const previewWindow = window.open(url, "_blank");
 
-setInterval(() => {
-  if (previewWindow && !previewWindow.closed) {
-    previewWindow.location.reload();
-  }
-}, 5000);
-
-          }}
-        >
-          Public Preview
-        </button>
-        <button
-          style={{ ...ui.btn, marginLeft: 8 }}
-          onClick={() => saveToFirestore({ mode: "manual" })}
-        >
-          Save Now
-        </button>
+              setInterval(() => {
+                if (previewWindow && !previewWindow.closed) {
+                  previewWindow.location.reload();
+                }
+              }, 5000);
+            }}
+          >
+            Preview
+          </button>
+          <button
+            style={ui.btnSecondary}
+            onClick={() => saveToFirestore({ mode: "manual" })}
+          >
+            Save
+          </button>
+        </div>
       </div>
 
       {/* ================= LAYOUT ================= */}
@@ -637,6 +884,9 @@ setInterval(() => {
   <CollapsibleCard title="Related Content">
     <RelatedContentSection
       value={state.relatedContent}
+      pageType={type}
+      pageCaDate={state.caDate}
+      notesMeta={state.notesMeta}
       onChange={(val) =>
         setState((s) => ({
           ...s,
@@ -683,6 +933,7 @@ setInterval(() => {
       state={state}
       rawData={rawData}
       role={role}
+      submitState={submitState}
       onReviewChange={(feedback) =>
         setState((s) => ({
           ...s,
@@ -704,32 +955,43 @@ setInterval(() => {
         {/* FULL WIDTH CONTENT */}
         <div style={{ gridColumn: "1 / -1" }}>
           <div style={ui.card}>
-            <h3 style={ui.sectionTitle}>Content</h3>
-            <EditorLayout
-  value={state.content}
-  onChange={(content) =>
-    setState((s) => ({ ...s, content }))
-  }
+            <h3 style={ui.sectionTitle}>
+              {type === "quiz" ? "Quiz Content" : "Content"}
+            </h3>
 
-  documentValue={state}
-  onDocumentChange={setState}
-  role={role}
-
-  /* ✅ REAL SAVE FUNCTION */
-  onSave={saveToFirestore}
-
-  /* ✅ WORKFLOW STATE */
-  workflow={state.status}
-
-  /* ✅ LOCK BANNER */
-  lockedBy={
-    state.isLocked
-      ? state.updatedBy?.displayName || "Another editor"
-      : null
-  }
-/>
-
-
+            {type === "quiz" ? (
+              <QuizContentEditor
+                title={state.title}
+                description={state.summary}
+                value={state.quizMeta}
+                isLocked={isLocked}
+                role={role}
+                docId={state.id}
+                onChange={(quizMeta) =>
+                  setState((s) => ({ ...s, quizMeta }))
+                }
+              />
+            ) : (
+              <EditorLayout
+                value={state.content}
+                onChange={(content) =>
+                  setState((s) => ({ ...s, content }))
+                }
+                documentValue={state}
+                onDocumentChange={setState}
+                role={role}
+                /* ✅ REAL SAVE FUNCTION */
+                onSave={saveToFirestore}
+                /* ✅ WORKFLOW STATE */
+                workflow={state.status}
+                /* ✅ LOCK BANNER */
+                lockedBy={
+                  state.isLocked
+                    ? state.updatedBy?.displayName || "Another editor"
+                    : null
+                }
+              />
+            )}
           </div>
         </div>
 
@@ -745,12 +1007,14 @@ const ui = {
   header: {
     display: "flex",
     justifyContent: "space-between",
+    gap: 16,
+    alignItems: "flex-start",
     marginBottom: 24,
     borderBottom: "1px solid #e5e7eb",
     paddingBottom: 16,
   },
   title: { margin: 0, fontSize: 22 },
-  meta: { display: "flex", gap: 16, fontSize: 13, color: "#6b7280" },
+  meta: { display: "flex", gap: 16, fontSize: 12, color: "#6b7280", flexWrap: "wrap" },
   grid: {
   display: "grid",
   gridTemplateColumns: "3fr 1fr",
@@ -770,11 +1034,26 @@ const ui = {
     fontWeight: 700,
     marginBottom: 14,
   },
-  btn: {
-    padding: "6px 12px",
-    borderRadius: 6,
+  headerActions: {
+    display: "flex",
+    gap: 10,
+    alignItems: "center",
+  },
+  btnPrimary: {
+    padding: "8px 14px",
+    borderRadius: 8,
+    border: "1px solid #1d4ed8",
+    background: "#2563eb",
+    color: "#fff",
+    fontWeight: 600,
+    cursor: "pointer",
+  },
+  btnSecondary: {
+    padding: "8px 14px",
+    borderRadius: 8,
     border: "1px solid #d1d5db",
     background: "#fff",
+    fontWeight: 600,
     cursor: "pointer",
   },
   warn: {
@@ -787,3 +1066,4 @@ const ui = {
     fontSize: 12,
   },
 };
+
