@@ -34,7 +34,55 @@ const getNotesIndex = unstable_cache(
 
 export default async function NotesPage() {
   const notes = await getNotesIndex();
-  return <NotesClient initialNotes={notes} />;
+  const itemList = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    itemListElement: (notes || []).slice(0, 20).map((note, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      name: note.title || note.slug || "Study Note",
+      url: `https://www.ultrastudypoint.in/notes/${note.slug || note.id}`,
+    })),
+  };
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Article",
+            headline: "Study Notes Hub",
+            description:
+              "Subject-wise study notes and revision packs for competitive exams.",
+            mainEntityOfPage: {
+              "@type": "WebPage",
+              "@id": "https://www.ultrastudypoint.in/notes",
+            },
+            author: {
+              "@type": "Organization",
+              name: "Ultra Study Point",
+            },
+            publisher: {
+              "@type": "Organization",
+              name: "Ultra Study Point",
+              logo: {
+                "@type": "ImageObject",
+                url: "https://www.ultrastudypoint.in/logo.png",
+              },
+            },
+          }),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(itemList),
+        }}
+      />
+      <NotesClient initialNotes={notes} />
+    </>
+  );
 }
 
 

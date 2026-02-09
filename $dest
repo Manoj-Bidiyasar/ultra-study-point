@@ -1,0 +1,70 @@
+%PDF-1.4
+1 0 obj<< /Type /Catalog /Pages 2 0 R >>endobj
+2 0 obj<< /Type /Pages /Kids [3 0 R] /Count 1 >>endobj
+3 0 obj<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources<< /Font<< /F1 4 0 R >> >> /Contents 5 0 R >>endobj
+4 0 obj<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>endobj
+5 0 obj<< /Length 2659 >>stream
+BT /F1 11 Tf 50 770 Td (Quiz Page Spec \(Ultra Study Point\)) Tj
+50 756 Td () Tj
+50 742 Td (Primary Public Page) Tj
+50 728 Td (Path: app/quiz/page.js) Tj
+50 714 Td (- Hero banner: left text + right focus card \(focus card hidden on mobile\).) Tj
+50 700 Td (- Login choice section: compact on mobile; two cards on desktop.) Tj
+50 686 Td (- Search: separate card below login section.) Tj
+50 672 Td (- Latest Quizzes: mobile shows 6 \(2 cols\), desktop shows 10 \(4 cols\).) Tj
+50 658 Td (- Categories grid: 2 cols mobile, 4 cols desktop; cards are clickable.) Tj
+50 644 Td () Tj
+50 630 Td (Category Sub-Page) Tj
+50 616 Td (Path: app/quiz/category/[slug]/page.js) Tj
+50 602 Td (- Shows quizzes by category; uses subcategory chips.) Tj
+50 588 Td (- Non-exam categories show: All, Full Test, then subcategories in one line.) Tj
+50 574 Td (- Exam category shows: All + exam names \(SSC, Patwar, RPSC, Railways\).) Tj
+50 560 Td (- When exam selected: shows Full Test + GS, Math, Reasoning, English, Hindi.) Tj
+50 546 Td () Tj
+50 532 Td (Categories + Slugs) Tj
+50 518 Td (- Current Affairs -> current-affairs) Tj
+50 504 Td (- General Science -> general-science) Tj
+50 490 Td (- Indian GK -> indian-gk) Tj
+50 476 Td (- Rajasthan GK -> rajasthan-gk) Tj
+50 462 Td (- Miscellaneous -> miscellaneous) Tj
+50 448 Td (- Exams by Pattern -> exams) Tj
+50 434 Td (- Mock Marathon -> mock-marathon) Tj
+50 420 Td (- Quick Revision -> quick-revision) Tj
+50 406 Td (- Math -> math) Tj
+50 392 Td (- Reasoning -> reasoning) Tj
+50 378 Td () Tj
+50 364 Td (Subcategories \(non-exam\)) Tj
+50 350 Td (- Current Affairs: Daily CA, Monthly CA) Tj
+50 336 Td (- General Science: Physics, Chemistry, Biology) Tj
+50 322 Td (- Indian GK: Polity, Economy, Geography, History, Culture) Tj
+50 308 Td (- Rajasthan GK: History, Geography, Polity, Economy, Culture) Tj
+50 294 Td (- Miscellaneous: Awards, First in India, Important Days) Tj
+50 280 Td (- Mock Marathon: Full Length, Sectional) Tj
+50 266 Td (- Quick Revision: One Liners, Mixed Practice) Tj
+50 252 Td (- Math: Arithmetic, Algebra, Geometry, Trigonometry, Mensuration) Tj
+50 238 Td (- Reasoning: Logical, Verbal, Non-Verbal, Analytical) Tj
+50 224 Td () Tj
+50 210 Td (Key UI Notes) Tj
+50 196 Td (- Category cards use light borders and hover glow \(desktop\).) Tj
+50 182 Td (- Search appears as its own section for clarity.) Tj
+50 168 Td (- Mobile spacing tightened for higher density.) Tj
+50 154 Td () Tj
+50 140 Td (Related Paths) Tj
+50 126 Td (- app/quiz/page.js) Tj
+50 112 Td (- app/quiz/category/[slug]/page.js) Tj
+50 98 Td (- app/quiz/[id]/page.js \(if present\)) Tj
+50 84 Td (- app/admin/quizzes/[docId]/page.js \(admin editor\)) Tj ET
+endstream endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000056 00000 n 
+0000000111 00000 n 
+0000000233 00000 n 
+0000000301 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+3010
+%%EOF

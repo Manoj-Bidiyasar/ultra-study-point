@@ -2,6 +2,7 @@ import CurrentAffairsClient from "./CurrentAffairsClient";
 import { unstable_cache } from "next/cache";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { serializeFirestoreData } from "@/lib/serialization/serializeFirestore";
+import { SITE_URL } from "@/lib/seo/siteConfig";
 
 /* ===================== ISR (HYBRID) ===================== */
 /* Revalidate every 5 minutes */
@@ -22,13 +23,13 @@ export async function generateMetadata(props) {
       "Daily and monthly current affairs notes for UPSC, SSC, Banking, Railways and Rajasthan exams. Exam-focused one-liners and monthly PDF compilations.",
     robots: "index, follow",
     alternates: {
-      canonical: `https://ultrastudypoint.in/current-affairs?tab=${activeTab}`,
+      canonical: `${SITE_URL}/current-affairs?tab=${activeTab}`,
     },
     openGraph: {
       title: "Daily & Monthly Current Affairs | Ultra Study Point",
       description:
         "Exam-focused daily and monthly current affairs with PDFs.",
-      url: `https://ultrastudypoint.in/current-affairs?tab=${activeTab}`,
+      url: `${SITE_URL}/current-affairs?tab=${activeTab}`,
       type: "website",
     },
   };
@@ -88,6 +89,23 @@ export default async function CurrentAffairsPage(props) {
     searchParams?.tab === "monthly" ? "monthly" : "daily";
 
   const initialData = await getInitialCurrentAffairs();
+  const listItems =
+    activeTab === "monthly"
+      ? initialData.monthly || []
+      : initialData.daily || [];
+
+  const itemListSchema = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    itemListElement: listItems.slice(0, 20).map((item, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      name: item.title || `${item.type || activeTab} current affairs`,
+      url:
+        item.canonicalUrl ||
+        `${SITE_URL}/current-affairs/${item.type || activeTab}/${item.slug || item.id}`,
+    })),
+  };
 
   return (
     <>
@@ -103,13 +121,13 @@ export default async function CurrentAffairsPage(props) {
                 "@type": "ListItem",
                 position: 1,
                 name: "Home",
-                item: "https://ultrastudypoint.in",
+                item: SITE_URL,
               },
               {
                 "@type": "ListItem",
                 position: 2,
                 name: "Current Affairs",
-                item: "https://ultrastudypoint.in/current-affairs",
+                item: `${SITE_URL}/current-affairs`,
               },
               {
                 "@type": "ListItem",
@@ -118,7 +136,7 @@ export default async function CurrentAffairsPage(props) {
                   activeTab === "monthly"
                     ? "Monthly Current Affairs"
                     : "Daily Current Affairs",
-                item: `https://ultrastudypoint.in/current-affairs?tab=${activeTab}`,
+                item: `${SITE_URL}/current-affairs?tab=${activeTab}`,
               },
             ],
           }),
@@ -135,8 +153,42 @@ export default async function CurrentAffairsPage(props) {
             name: "Daily and Monthly Current Affairs",
             description:
               "Exam-oriented daily and monthly current affairs for competitive exams.",
-            url: `https://ultrastudypoint.in/current-affairs?tab=${activeTab}`,
+            url: `${SITE_URL}/current-affairs?tab=${activeTab}`,
           }),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Article",
+            headline: "Daily & Monthly Current Affairs",
+            description:
+              "Daily and monthly current affairs updates with summaries and PDFs.",
+            mainEntityOfPage: {
+              "@type": "WebPage",
+              "@id": `${SITE_URL}/current-affairs?tab=${activeTab}`,
+            },
+            author: {
+              "@type": "Organization",
+              name: "Ultra Study Point",
+            },
+            publisher: {
+              "@type": "Organization",
+              name: "Ultra Study Point",
+              logo: {
+                "@type": "ImageObject",
+                url: `${SITE_URL}/logo.png`,
+              },
+            },
+          }),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(itemListSchema),
         }}
       />
 

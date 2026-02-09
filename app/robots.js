@@ -4,8 +4,10 @@ export default function robots() {
       {
         userAgent: "*",
         allow: "/",
+        disallow: ["/admin", "/preview", "/api"],
       },
     ],
-    sitemap: "https://ultrastudypoint.in/sitemap.xml",
+    sitemap: "https://www.ultrastudypoint.in/sitemap-index.xml",
+    host: "https://www.ultrastudypoint.in",
   };
 }

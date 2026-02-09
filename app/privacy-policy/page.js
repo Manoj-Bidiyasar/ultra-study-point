@@ -3,7 +3,7 @@ export default function PrivacyPolicy() {
     <div className="max-w-4xl mx-auto px-4 py-12">
       <h1 className="text-3xl font-bold mb-8 text-gray-900">Privacy Policy</h1>
       <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 text-gray-600 leading-relaxed space-y-6">
-        <p>At Ultra Study Point, accessible from https://ultrastudypoint.in/, one of our main priorities is the privacy of our visitors.</p>
+        <p>At Ultra Study Point, accessible from https://www.ultrastudypoint.in/, one of our main priorities is the privacy of our visitors.</p>
         
         <h3 className="text-gray-900 font-bold text-lg">Information We Collect</h3>
         <p>We do not require users to create an account. We only collect the information you voluntarily provide via our contact forms (Name, Email).</p>

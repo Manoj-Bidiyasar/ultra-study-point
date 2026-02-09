@@ -5,7 +5,7 @@ export async function GET() {
 <rss version="2.0">
   <channel>
     <title>Ultra Study Point - Monthly</title>
-    <link>https://ultrastudypoint.in</link>
+    <link>https://www.ultrastudypoint.in</link>
     <description>Monthly updates</description>
     <lastBuildDate>${now}</lastBuildDate>
   </channel>

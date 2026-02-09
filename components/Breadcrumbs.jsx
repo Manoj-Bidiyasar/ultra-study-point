@@ -39,13 +39,20 @@ export default function Breadcrumbs({ items }) {
         aria-label="Breadcrumb"
         className="md:hidden px-4 py-2 text-xs text-gray-600"
       >
-        <span>
-          <a href="/current-affairs" className="text-blue-600">
-            Current Affairs
-          </a>
-          {" / "}
-          <strong>Daily</strong>
-        </span>
+        <ol className="flex flex-wrap items-center gap-1">
+          {items.map((item, i) => (
+            <li key={i} className="flex items-center gap-1">
+              {item.href ? (
+                <a href={item.href} className="text-blue-600">
+                  {item.label}
+                </a>
+              ) : (
+                <strong>{item.label}</strong>
+              )}
+              {i < items.length - 1 && <span>/</span>}
+            </li>
+          ))}
+        </ol>
       </nav>
     </>
   );

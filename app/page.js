@@ -65,7 +65,16 @@ const getHomeData = unstable_cache(
     "master_notes"
   );
 
-  const [dailySnap, monthlySnap, notesSnap] = await Promise.all([
+  const quizRef = collection(
+    db,
+    "artifacts",
+    "ultra-study-point",
+    "public",
+    "data",
+    "Quizzes"
+  );
+
+  const [dailySnap, monthlySnap, notesSnap, quizSnap] = await Promise.all([
     getDocs(
       query(
         caRef,
@@ -92,12 +101,21 @@ const getHomeData = unstable_cache(
         limit(6)
       )
     ),
+    getDocs(
+      query(
+        quizRef,
+        where("status", "==", "published"),
+        orderBy("updatedAt", "desc"),
+        limit(6)
+      )
+    ),
   ]);
 
   return {
     dailyCA: dailySnap.docs.map(serializeDoc),
     monthlyCA: monthlySnap.docs.map(serializeDoc),
     latestNotes: notesSnap.docs.map(serializeDoc),
+    latestQuizzes: quizSnap.docs.map(serializeDoc),
   };
   },
   ["home-data"],
@@ -123,11 +141,50 @@ export default async function Page() {
           }),
         }}
       />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "FAQPage",
+            mainEntity: [
+              {
+                "@type": "Question",
+                name: "What is Ultra Study Point?",
+                acceptedAnswer: {
+                  "@type": "Answer",
+                  text:
+                    "Ultra Study Point provides daily current affairs, monthly compilations, and exam-focused study notes for competitive exam preparation.",
+                },
+              },
+              {
+                "@type": "Question",
+                name: "Are the notes and current affairs free?",
+                acceptedAnswer: {
+                  "@type": "Answer",
+                  text:
+                    "Yes, most notes and current affairs content are available for free, and you can practice quizzes without login.",
+                },
+              },
+              {
+                "@type": "Question",
+                name: "Which exams does Ultra Study Point cover?",
+                acceptedAnswer: {
+                  "@type": "Answer",
+                  text:
+                    "We cover SSC, Railways, Banking, RPSC, and other competitive exams with CA, notes, PYQs, and quizzes.",
+                },
+              },
+            ],
+          }),
+        }}
+      />
 
       <HomeClient
         dailyCA={data.dailyCA}
         monthlyCA={data.monthlyCA}
         latestNotes={data.latestNotes}
+        latestQuizzes={data.latestQuizzes}
       />
     </>
   );

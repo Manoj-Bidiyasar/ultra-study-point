@@ -7,6 +7,7 @@ import { resolveRelatedContent } from "@/lib/related/relatedEngine";
 import { serializeFirestoreData } from "@/lib/serialization/serializeFirestore";
 import { unstable_cache } from "next/cache";
 import { formatIndianDate } from "@/lib/dates/formatters";
+import { SITE_URL, DEFAULT_OG_IMAGE } from "@/lib/seo/siteConfig";
 
 /* ================= RENDER MODE ================= */
 export const dynamic = "force-dynamic";
@@ -55,12 +56,14 @@ export async function generateMetadata(props) {
 
 
   const formattedDate = formatIndianDate(data.caDate?.toDate?.());
+  const canonicalUrl =
+    data.canonicalUrl || `${SITE_URL}/current-affairs/daily/${slug}`;
   return {
     title: data.seoTitle || `${formattedDate} Current Affairs`,
     description: data.seoDescription || data.summary,
     keywords: data.tags || [],
     alternates: {
-      canonical: data.canonicalUrl,
+      canonical: canonicalUrl,
     },
     robots: "index,follow",
 
@@ -68,13 +71,13 @@ export async function generateMetadata(props) {
       type: "article",
       title: data.seoTitle,
       description: data.seoDescription,
-      url: data.canonicalUrl,
+      url: canonicalUrl,
       siteName: "Ultra Study Point",
       publishedTime: publishedAt,
       modifiedTime: updatedAt,
       images: [
         {
-          url: data.featuredImage || "https://ultrastudypoint.in/og-default.png",
+          url: data.featuredImage || DEFAULT_OG_IMAGE,
           width: 1200,
           height: 630,
           alt: data.seoTitle,
@@ -218,7 +221,7 @@ const articleSchema = {
   description:
     data.seoDescription || data.summary,
   articleSection: data.subject || "Current Affairs",
-  image: data.featuredImage || "https://ultrastudypoint.in/og-default.png",
+  image: data.featuredImage || DEFAULT_OG_IMAGE,
 
   articleBody: data.content?.blocks
   ?.map(block => {
@@ -234,7 +237,7 @@ const articleSchema = {
   dateModified: data.updatedAt?.toDate?.().toISOString(),
   mainEntityOfPage: {
     "@type": "WebPage",
-    "@id": data.canonicalUrl,
+    "@id": data.canonicalUrl || `${SITE_URL}/current-affairs/daily/${slug}`,
   },
   author: {
     "@type": "Person",
@@ -245,7 +248,7 @@ const articleSchema = {
     name: "Ultra Study Point",
     logo: {
       "@type": "ImageObject",
-      url: "https://ultrastudypoint.in/logo.png",
+      url: `${SITE_URL}/logo.png`,
     },
     
   },

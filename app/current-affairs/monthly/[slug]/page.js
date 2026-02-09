@@ -6,6 +6,7 @@ import { buildBreadcrumbSchema } from "@/lib/breadcrumbs/buildBreadcrumbSchema";
 import { resolveRelatedContent } from "@/lib/related/relatedEngine";
 import { serializeFirestoreData } from "@/lib/serialization/serializeFirestore";
 import { unstable_cache } from "next/cache";
+import { SITE_URL, DEFAULT_OG_IMAGE } from "@/lib/seo/siteConfig";
 
 /* ================= RENDER MODE ================= */
 export const dynamic = "force-dynamic";
@@ -67,6 +68,8 @@ export async function generateMetadata(props) {
   const data = cached.data;
 
   const monthYear = formatMonthYearFromDate(data.caDate);
+  const canonicalUrl =
+    data.canonicalUrl || `${SITE_URL}/current-affairs/monthly/${slug}`;
 
   const title =
     data.seoTitle ||
@@ -77,7 +80,7 @@ export async function generateMetadata(props) {
     description: data.seoDescription || data.summary,
     keywords: data.tags || [],
     alternates: {
-      canonical: data.canonicalUrl,
+      canonical: canonicalUrl,
     },
     robots: "index,follow",
 
@@ -85,13 +88,11 @@ export async function generateMetadata(props) {
       type: "article",
       title,
       description: data.seoDescription || data.summary,
-      url: data.canonicalUrl,
+      url: canonicalUrl,
       siteName: "Ultra Study Point",
       images: [
         {
-          url:
-            data.featuredImage ||
-            "https://ultrastudypoint.in/og-default.png",
+          url: data.featuredImage || DEFAULT_OG_IMAGE,
           width: 1200,
           height: 630,
         },
@@ -191,7 +192,7 @@ export default async function MonthlyArticlePage(props) {
     ],
     image:
       data.featuredImage ||
-      "https://ultrastudypoint.in/og-default.png",
+      DEFAULT_OG_IMAGE,
 
     datePublished:
       publishedAt?.toISOString() ||
@@ -210,7 +211,7 @@ export default async function MonthlyArticlePage(props) {
 
     mainEntityOfPage: {
       "@type": "WebPage",
-      "@id": data.canonicalUrl,
+      "@id": data.canonicalUrl || `${SITE_URL}/current-affairs/monthly/${slug}`,
     },
 
     author: {
@@ -223,7 +224,7 @@ export default async function MonthlyArticlePage(props) {
       name: "Ultra Study Point",
       logo: {
         "@type": "ImageObject",
-        url: "https://ultrastudypoint.in/logo.png",
+        url: `${SITE_URL}/logo.png`,
       },
     },
   };

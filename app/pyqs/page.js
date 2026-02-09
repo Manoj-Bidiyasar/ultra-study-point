@@ -50,24 +50,25 @@ export default async function PyqsPage() {
   }
 
   const exams = [
-    "SSC",
-    "Banking",
-    "Railways",
-    "State Exams",
-    "Teaching",
-    "Defence",
+    { label: "SSC", slug: "ssc-exams" },
+    { label: "Banking", slug: "banking" },
+    { label: "Railways", slug: "railways" },
+    { label: "State Exams", slug: "state-exams" },
+    { label: "Teaching", slug: "teaching" },
+    { label: "Defence", slug: "defence" },
   ];
   const years = ["2024", "2023", "2022", "2021", "2020", "2019"];
 
   return (
-    <div className="min-h-screen bg-gray-50 text-gray-900">
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.18),transparent_45%),radial-gradient(circle_at_top_right,rgba(34,197,94,0.18),transparent_40%),radial-gradient(circle_at_70%_80%,rgba(99,102,241,0.18),transparent_35%)]" />
-        <div className="relative max-w-5xl mx-auto px-6 pt-10 pb-8 md:pt-12 md:pb-10">
-          <div className="inline-flex items-center gap-2 rounded-full border border-sky-300 bg-sky-50 px-3 py-1 text-xs font-semibold tracking-wide text-sky-700">
-            <span className="h-2 w-2 rounded-full bg-sky-400" />
-            Previous Year Questions
-          </div>
+    <div className="min-h-screen bg-[#f5f7fb] text-gray-900">
+      <div className="max-w-6xl mx-auto px-4 py-6 md:py-8">
+        <div className="relative overflow-hidden rounded-3xl bg-white border border-sky-100 shadow-sm mb-8">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.18),transparent_55%),radial-gradient(circle_at_bottom_right,rgba(34,197,94,0.18),transparent_45%)]" />
+          <div className="relative px-6 py-6 md:px-10 md:py-10">
+            <div className="inline-flex items-center gap-2 rounded-full border border-sky-300 bg-sky-50 px-3 py-1 text-xs font-semibold tracking-wide text-sky-700">
+              <span className="h-2 w-2 rounded-full bg-sky-400" />
+              Previous Year Questions
+            </div>
 
           <div className="mt-5 grid gap-6 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
             <div>
@@ -95,22 +96,22 @@ export default async function PyqsPage() {
               </div>
             </div>
 
-            <div className="relative rounded-3xl border border-gray-200 bg-white p-5 shadow-2xl">
-              <div className="absolute -top-5 -right-5 h-14 w-14 rounded-2xl bg-sky-100 border border-sky-200" />
+            <div className="hidden sm:block relative rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+              <div className="absolute -top-4 -right-4 h-12 w-12 rounded-2xl bg-sky-100 border border-sky-200" />
               <div className="text-xs uppercase tracking-widest text-gray-500">
                 Focus Set
               </div>
               <div className="mt-2 text-xl font-semibold">
-                SSC CGL PYQs - 2023
+                Start With a Targeted PYQ Set
               </div>
               <div className="mt-1 text-sm text-gray-500">
-                120 questions • 3 papers
+                Pick your exam and year to practice smart.
               </div>
               <div className="mt-5 grid gap-3">
                 {[
-                  "Solved answers included",
-                  "Topic tags for revision",
-                  "Printable PDF format",
+                  "Exam-wise collections",
+                  "Year-wise filters",
+                  "Quick revision workflow",
                 ].map((item) => (
                   <div
                     key={item}
@@ -126,8 +127,8 @@ export default async function PyqsPage() {
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-6 pb-16">
-        <section className="pt-8 md:pt-10">
+        <div className="pb-16">
+        <section className="hidden sm:block pt-8 md:pt-10">
           <div className="grid gap-4 md:grid-cols-3">
             {[
               {
@@ -158,7 +159,60 @@ export default async function PyqsPage() {
           </div>
         </section>
 
-        <section id="latest-pyqs" className="pt-8 md:pt-10">
+                        <section className="pt-8 md:pt-10">
+          <div className="rounded-2xl border border-gray-200 bg-white p-4">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <form action="/pyqs" className="flex flex-wrap gap-3">
+                <input
+                  type="text"
+                  name="q"
+                  placeholder="Search PYQs by exam, topic, year"
+                  className="w-full md:w-80 rounded-full border border-gray-300 bg-white px-4 py-2 text-sm text-gray-800 placeholder:text-gray-400"
+                />
+                <select className="rounded-full border border-gray-300 bg-white px-4 py-2 text-sm text-gray-800">
+                  <option>All Exams</option>
+                  {exams.map((exam) => (
+                    <option key={exam.label}>{exam.label}</option>
+                  ))}
+                </select>
+                <select className="rounded-full border border-gray-300 bg-white px-4 py-2 text-sm text-gray-800">
+                  <option>All Years</option>
+                  {years.map((year) => (
+                    <option key={year}>{year}</option>
+                  ))}
+                </select>
+                <button
+                  type="submit"
+                  className="rounded-full border border-sky-500 bg-sky-500 px-4 py-2 text-xs font-semibold text-white"
+                >
+                  Search
+                </button>
+              </form>
+
+              <div className="flex flex-wrap gap-2 text-xs font-semibold">
+                <span className="rounded-full border border-gray-300 px-3 py-1 text-gray-700">
+                  Solved
+                </span>
+                <span className="rounded-full border border-gray-300 px-3 py-1 text-gray-500">
+                  Unsolved
+                </span>
+              </div>
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-2 text-xs text-gray-500">
+              {years.map((year) => (
+                <span
+                  key={year}
+                  className="rounded-full border border-gray-300 px-3 py-1"
+                >
+                  {year}
+                </span>
+              ))}
+            </div>
+          </div>
+        </section>
+
+<section id="latest-pyqs" className="pt-8 md:pt-10">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
               <h2 className="text-2xl md:text-3xl font-semibold">Latest PYQs</h2>
@@ -190,58 +244,7 @@ export default async function PyqsPage() {
 
           <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_280px]">
             <div>
-              <div className="rounded-2xl border border-gray-200 bg-white p-4">
-                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                  <form action="/pyqs" className="flex flex-wrap gap-3">
-                    <input
-                      type="text"
-                      name="q"
-                      placeholder="Search PYQs by exam, topic, year"
-                      className="w-full md:w-80 rounded-full border border-gray-300 bg-white px-4 py-2 text-sm text-gray-800 placeholder:text-gray-400"
-                    />
-                    <select className="rounded-full border border-gray-300 bg-white px-4 py-2 text-sm text-gray-800">
-                      <option>All Exams</option>
-                      {exams.map((exam) => (
-                        <option key={exam}>{exam}</option>
-                      ))}
-                    </select>
-                    <select className="rounded-full border border-gray-300 bg-white px-4 py-2 text-sm text-gray-800">
-                      <option>All Years</option>
-                      {years.map((year) => (
-                        <option key={year}>{year}</option>
-                      ))}
-                    </select>
-                    <button
-                      type="submit"
-                      className="rounded-full border border-sky-500 bg-sky-500 px-4 py-2 text-xs font-semibold text-white"
-                    >
-                      Search
-                    </button>
-                  </form>
-
-                  <div className="flex flex-wrap gap-2 text-xs font-semibold">
-                    <span className="rounded-full border border-gray-300 px-3 py-1 text-gray-700">
-                      Solved
-                    </span>
-                    <span className="rounded-full border border-gray-300 px-3 py-1 text-gray-500">
-                      Unsolved
-                    </span>
-                  </div>
-                </div>
-
-                <div className="mt-4 flex flex-wrap gap-2 text-xs text-gray-500">
-                  {years.map((year) => (
-                    <span
-                      key={year}
-                      className="rounded-full border border-gray-300 px-3 py-1"
-                    >
-                      {year}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              <div className="mt-6 grid gap-4 md:grid-cols-2">
+                            <div className="mt-6 grid gap-4 md:grid-cols-2">
                 {pyqs.length === 0 && (
                   <div className="rounded-2xl border border-dashed border-gray-300 p-6 text-gray-500">
                     No PYQs published yet.
@@ -290,41 +293,7 @@ export default async function PyqsPage() {
               </div>
             </div>
 
-            <aside className="hidden lg:block">
-              <div className="sticky top-24 space-y-4">
-                <div className="rounded-2xl border border-gray-200 bg-white p-4">
-                  <div className="text-sm font-semibold text-gray-900">
-                    Quick Access
-                  </div>
-                  <div className="mt-3 space-y-2 text-sm text-gray-600">
-                    {exams.map((exam) => (
-                      <div
-                        key={exam}
-                        className="rounded-lg border border-gray-200 px-3 py-2"
-                      >
-                        {exam}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="rounded-2xl border border-gray-200 bg-white p-4">
-                  <div className="text-sm font-semibold text-gray-900">
-                    Years
-                  </div>
-                  <div className="mt-3 flex flex-wrap gap-2 text-xs text-gray-600">
-                    {years.map((year) => (
-                      <span
-                        key={year}
-                        className="rounded-full border border-gray-300 px-3 py-1"
-                      >
-                        {year}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </aside>
+            <aside className="hidden lg:block" />
           </div>
         </section>
 
@@ -341,92 +310,73 @@ export default async function PyqsPage() {
             </div>
           </div>
 
-          <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-2 xl:grid-cols-4">
             {[
               {
                 title: "SSC Exams",
                 desc: "CGL, CHSL, MTS, GD",
                 accent: "from-sky-400/30 to-indigo-400/20",
+                slug: "ssc-exams",
+                icon: "🧾",
               },
               {
                 title: "Banking",
                 desc: "IBPS, SBI, RBI",
                 accent: "from-emerald-400/30 to-lime-400/20",
+                slug: "banking",
+                icon: "🏦",
               },
               {
                 title: "Railways",
                 desc: "RRB NTPC, Group D",
                 accent: "from-amber-400/30 to-orange-400/20",
+                slug: "railways",
+                icon: "🚆",
               },
               {
                 title: "State Exams",
                 desc: "RPSC, UPPSC, MPPSC",
                 accent: "from-rose-400/30 to-amber-400/20",
+                slug: "state-exams",
+                icon: "🏛️",
               },
               {
                 title: "Teaching",
                 desc: "CTET, REET, KVS",
                 accent: "from-violet-400/30 to-sky-400/20",
+                slug: "teaching",
+                icon: "🧑‍🏫",
               },
               {
                 title: "Defence",
                 desc: "NDA, CDS, AFCAT",
                 accent: "from-teal-400/30 to-cyan-400/20",
-              },
-              {
-                title: "Reasoning",
-                desc: "Topic-wise PYQ sets",
-                accent: "from-indigo-400/30 to-slate-400/20",
-              },
-              {
-                title: "Current Affairs",
-                desc: "Yearly CA PYQ",
-                accent: "from-emerald-400/30 to-sky-400/20",
+                slug: "defence",
+                icon: "🪖",
               },
             ].map((card) => (
-              <div
+              <Link
                 key={card.title}
-                className="rounded-2xl border border-gray-200 bg-white p-5"
+                href={`/pyqs/category/${card.slug}`}
+                className="rounded-2xl border border-gray-200 bg-white p-5 transition hover:-translate-y-1 hover:border-sky-300 hover:shadow-md hover:shadow-sky-500/10"
               >
                 <div
-                  className={`h-12 w-12 rounded-2xl bg-gradient-to-br ${card.accent} border border-gray-200`}
-                />
+                  className={`h-12 w-12 rounded-2xl bg-gradient-to-br ${card.accent} border border-gray-200 flex items-center justify-center text-xl`}
+                >
+                  {card.icon}
+                </div>
                 <div className="mt-4 text-lg font-semibold text-gray-900">
                   {card.title}
                 </div>
                 <div className="mt-2 text-sm text-gray-600">
                   {card.desc}
                 </div>
-              </div>
+              </Link>
             ))}
-          </div>
-        </section>
-
-        <section className="pt-12">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="rounded-2xl border border-gray-200 bg-white p-5">
-              <div className="text-lg font-semibold text-gray-900">
-                Recently Added
-              </div>
-              <ul className="mt-3 space-y-2 text-sm text-gray-600">
-                <li>SSC CGL 2023 Tier 1</li>
-                <li>RRB NTPC 2022 CBT</li>
-                <li>IBPS PO 2023 Prelims</li>
-              </ul>
-            </div>
-            <div className="rounded-2xl border border-gray-200 bg-white p-5">
-              <div className="text-lg font-semibold text-gray-900">
-                Most Practiced
-              </div>
-              <ul className="mt-3 space-y-2 text-sm text-gray-600">
-                <li>Rajasthan GK PYQs 2021</li>
-                <li>SSC CHSL 2022 Tier 1</li>
-                <li>Banking Reasoning PYQs</li>
-              </ul>
-            </div>
           </div>
         </section>
       </div>
     </div>
+  </div>
   );
 }

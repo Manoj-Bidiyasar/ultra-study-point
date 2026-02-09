@@ -163,6 +163,19 @@ export default function StudentLoginPage() {
                   placeholder="At least 6 characters"
                   required
                 />
+                {mode === "login" && (
+                  <div className="mt-2 text-right">
+                    <a
+                      href="/student/forgot-password"
+                      className="text-xs font-semibold text-slate-600 hover:text-slate-900"
+                    >
+                      Forgot password?
+                    </a>
+                    <div className="mt-1 text-[11px] text-slate-400">
+                      Reset link will be sent to your email.
+                    </div>
+                  </div>
+                )}
               </div>
 
               {error && (

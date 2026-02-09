@@ -11,6 +11,7 @@ export default function NotesSection({
   onChange,
 }) {
   const {
+    section = "subject",
     categoryId = "",
     categoryName = "",
     subCategoryId = "",
@@ -35,8 +36,20 @@ export default function NotesSection({
 
     onChange({
       ...value,
+      section,
       categoryId: id,
       categoryName: cat?.name || "",
+      subCategoryId: "",
+      subCategoryName: "",
+    });
+  }
+
+  function handleSectionChange(nextSection) {
+    onChange({
+      ...value,
+      section: nextSection,
+      categoryId: "",
+      categoryName: "",
       subCategoryId: "",
       subCategoryName: "",
     });
@@ -47,6 +60,7 @@ export default function NotesSection({
 
     onChange({
       ...value,
+      section,
       subCategoryId: id,
       subCategoryName: meta?.label || "",
     });
@@ -54,6 +68,19 @@ export default function NotesSection({
 
   return (
     <div style={ui.wrapper}>
+      {/* ================= SECTION ================= */}
+      <div style={ui.field}>
+        <label style={ui.label}>Section</label>
+        <select
+          style={ui.input}
+          disabled={isLocked}
+          value={section}
+          onChange={(e) => handleSectionChange(e.target.value)}
+        >
+          <option value="subject">Subject Wise</option>
+          <option value="exam">Exam Wise</option>
+        </select>
+      </div>
 
       {/* ================= CATEGORY ================= */}
       <div style={ui.field}>
@@ -61,7 +88,7 @@ export default function NotesSection({
 
         <select
           style={ui.input}
-          disabled={isLocked}
+          disabled={isLocked || section !== "subject"}
           value={categoryId}
           onChange={(e) =>
             handleCategoryChange(e.target.value)
@@ -78,7 +105,7 @@ export default function NotesSection({
         {/* manual override */}
         <input
           style={ui.inputMuted}
-          disabled={isLocked}
+          disabled={isLocked || section !== "subject"}
           placeholder="Category ID (auto-filled, editable)"
           value={categoryId}
           onChange={(e) =>
@@ -93,7 +120,7 @@ export default function NotesSection({
 
         <select
           style={ui.input}
-          disabled={!categoryId || isLocked}
+          disabled={!categoryId || isLocked || section !== "subject"}
           value={subCategoryId}
           onChange={(e) =>
             handleSubCategoryChange(e.target.value)
@@ -111,7 +138,7 @@ export default function NotesSection({
         {/* manual override */}
         <input
           style={ui.inputMuted}
-          disabled={isLocked}
+          disabled={isLocked || section !== "subject"}
           placeholder="Subcategory ID (auto-filled, editable)"
           value={subCategoryId}
           onChange={(e) =>

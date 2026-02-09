@@ -98,6 +98,7 @@ export default function BaseEditor({
 dailyMeta: rawData.dailyMeta || {},
 monthlyMeta: rawData.monthlyMeta || {},
 notesMeta: rawData.notesMeta || {
+  section: "subject",
   categoryId: "",
   categoryName: "",
   subCategoryId: "",

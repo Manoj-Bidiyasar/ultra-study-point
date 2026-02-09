@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import Head from "next/head";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import UniversalRenderer from "@/components/content/renderer/UniversalRenderer";
 import CurrentAffairsBlock from "@/components/related/CurrentAffairsBlock";
 import ImportantNotesBlock from "@/components/related/ImportantNotesBlock";
+import LatestQuizBlock from "@/components/related/LatestQuizBlock";
+import PyqBlock from "@/components/related/PyqBlock";
 
 
 export default function NotesClient({
@@ -15,6 +17,16 @@ export default function NotesClient({
   breadcrumbSchema,
   relatedCA,
 }) {
+  const formatUpdatedAt = (value) => {
+    if (!value) return "";
+    const d = value?.toDate ? value.toDate() : new Date(value);
+    if (Number.isNaN(d.getTime())) return "";
+    return d.toLocaleDateString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  };
   /* ================= KaTeX AUTO RENDER ================= */
   useEffect(() => {
     if (typeof window !== "undefined" && window.renderMathInElement) {
@@ -75,7 +87,11 @@ export default function NotesClient({
   const showSidebar =
     (note.relatedContent?.length || 0) > 0 ||
     (relatedCA?.currentAffairs?.length || 0) > 0 ||
-    (relatedCA?.importantNotes?.length || 0) > 0;
+    (relatedCA?.importantNotes?.length || 0) > 0 ||
+    (relatedCA?.latestQuizzes?.length || 0) > 0 ||
+    (relatedCA?.pyqs?.length || 0) > 0;
+  const [isRelatedOpen, setIsRelatedOpen] = useState(false);
+
 
   return (
     <>
@@ -114,75 +130,118 @@ export default function NotesClient({
       {/* ================= PAGE UI ================= */}
       <article className="min-h-screen bg-gradient-to-br from-slate-100 to-indigo-100 pb-20">
         <div className="max-w-6xl mx-auto px-4 py-8">
+          {/* Header */}
+          <header className="mb-6">
+            <nav className="text-sm text-gray-500 mb-2">
+              <Link href="/notes" className="hover:underline">
+                Notes
+              </Link>
+              {note.category && <> {"›"} {note.category}</>}
+              {note.subCategory && <> {"›"} {note.subCategory}</>}
+            </nav>
 
-          {/* Breadcrumb */}
-          <nav className="text-sm text-gray-500 mb-2">
-            <Link href="/notes" className="hover:underline">
-              Notes
-            </Link>
-            {note.category && <> › {note.category}</>}
-            {note.subCategory && <> › {note.subCategory}</>}
-          </nav>
+            {(note.subCategory || note.topic || note.category) && (
+              <div className="text-xs font-semibold uppercase tracking-widest text-sky-600 mb-2">
+                {note.subCategory || note.topic || note.category}
+              </div>
+            )}
 
-          {/* Title */}
-          <h1 className="text-2xl md:text-4xl font-extrabold mb-3">
-            {note.title}
-          </h1>
+            <h1 className="text-2xl md:text-4xl font-extrabold mb-3">
+              {note.title}
+            </h1>
+
+            {Array.isArray(note.tags) && note.tags.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {note.tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="rounded-full border border-gray-200 bg-white px-3 py-1 text-xs text-gray-600"
+                  >
+                    #{tag}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {note.updatedAt && (
+              <div className="mt-3 text-xs text-gray-500">
+                Last updated {formatUpdatedAt(note.updatedAt)}
+              </div>
+            )}
+          </header>
 
           {/* Summary */}
           {note.summary && (
-            <div className="bg-white/90 border-l-4 border-blue-500 rounded-xl p-5 mb-8">
+            <div className="bg-white/90 border-l-4 border-sky-500 rounded-2xl p-5 mb-6">
               <h3 className="font-semibold mb-1">Summary</h3>
               <p className="text-gray-700">{note.summary}</p>
             </div>
           )}
 
           {/* Layout */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-
+          <div className="grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-6">
             {/* Main Content */}
-            <div className="md:col-span-2 bg-white p-6 md:p-8 rounded-2xl shadow-lg">
+            <div className="bg-white p-6 md:p-8 rounded-2xl shadow-lg min-h-[360px]">
               <UniversalRenderer
-  blocks={Array.isArray(note.blocks) ? note.blocks : []}
-/>
-
+                blocks={Array.isArray(note.blocks) ? note.blocks : []}
+              />
             </div>
 
             {/* Related Content */}
             {showSidebar && (
-              <aside className="bg-white rounded-2xl shadow-lg p-4 md:p-6 md:sticky md:top-6 h-fit space-y-6">
-                {note.relatedContent?.length > 0 && (
-                  <section>
-                    <h3 className="font-bold mb-4">
-                      Related Notes
-                    </h3>
-                    <ul className="space-y-2">
-                      {note.relatedContent.map((item, i) => (
-                        <li key={i}>
-                          <Link
-                            href={`/notes/${item.slug}`}
-                            className="hover:underline"
-                          >
-                            {item.title}
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  </section>
-                )}
+              <aside className="bg-white rounded-2xl shadow-lg p-0 md:p-6 h-fit md:sticky md:top-6">
+                <button
+                  type="button"
+                  className="md:hidden w-full rounded-xl bg-sky-500 text-white font-semibold py-3 px-4 text-center"
+                  onClick={() => setIsRelatedOpen((s) => !s)}
+                >
+                  Related Content
+                </button>
 
-                {relatedCA?.currentAffairs?.length > 0 && (
-                  <CurrentAffairsBlock
-                    items={relatedCA.currentAffairs}
-                    pageType="notes"
-                  />
-                )}
+                <div
+                  className={`px-4 pb-4 pt-4 md:p-0 ${
+                    isRelatedOpen ? "block" : "hidden md:block"
+                  }`}
+                >
+                  <div className="space-y-6">
+                    {note.relatedContent?.length > 0 && (
+                      <section>
+                        <h3 className="font-bold mb-4">Related Notes</h3>
+                        <ul className="space-y-2">
+                          {note.relatedContent.map((item, i) => (
+                            <li key={i}>
+                              <Link
+                                href={`/notes/${item.slug}`}
+                                className="hover:underline"
+                              >
+                                {item.title}
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                      </section>
+                    )}
 
-                {relatedCA?.importantNotes?.length > 0 && (
-                  <ImportantNotesBlock
-                    items={relatedCA.importantNotes}
-                  />
-                )}
+                    {relatedCA?.currentAffairs?.length > 0 && (
+                      <CurrentAffairsBlock
+                        items={relatedCA.currentAffairs}
+                        pageType="notes"
+                      />
+                    )}
+
+                    {relatedCA?.latestQuizzes?.length > 0 && (
+                      <LatestQuizBlock items={relatedCA.latestQuizzes} />
+                    )}
+
+                    {relatedCA?.pyqs?.length > 0 && (
+                      <PyqBlock items={relatedCA.pyqs} />
+                    )}
+
+                    {relatedCA?.importantNotes?.length > 0 && (
+                      <ImportantNotesBlock items={relatedCA.importantNotes} />
+                    )}
+                  </div>
+                </div>
               </aside>
             )}
           </div>
