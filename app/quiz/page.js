@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { serializeFirestoreData } from "@/lib/serialization/serializeFirestore";
+import QuizClientFallback from "./QuizClientFallback";
 
 export const dynamic = "force-dynamic";
 
@@ -9,9 +10,7 @@ export default async function QuizListPage(props) {
   const adminDb = getAdminDb();
   if (!adminDb) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        Quiz service unavailable.
-      </div>
+      <QuizClientFallback searchParams={searchParams} />
     );
   }
 
