@@ -194,6 +194,7 @@ export default function HomeClient({
         </div>
 
         {/* Notes */}
+        {latestNotes.length > 0 && (
         <div className="mb-10">
           <div className="flex items-center justify-between mb-6 border-b border-gray-200 pb-3">
             <div className="flex items-center gap-2">
@@ -232,8 +233,10 @@ export default function HomeClient({
             ))}
           </div>
         </div>
+        )}
 
         {/* Quizzes */}
+        {latestQuizzes.length > 0 && (
         <div className="mb-10">
           <div className="flex items-center justify-between mb-6 border-b border-gray-200 pb-3">
             <div className="flex items-center gap-2">
@@ -274,6 +277,7 @@ export default function HomeClient({
             ))}
           </div>
         </div>
+        )}
       </div>
     </div>
   );

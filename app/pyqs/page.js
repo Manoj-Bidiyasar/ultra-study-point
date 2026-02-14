@@ -4,7 +4,46 @@ import { serializeFirestoreData } from "@/lib/serialization/serializeFirestore";
 
 export const dynamic = "force-dynamic";
 
-export default async function PyqsPage() {
+function detectSolvedState(item) {
+  const explicit = item?.isSolved ?? item?.solved ?? item?.hasSolution;
+  if (typeof explicit === "boolean") return explicit;
+
+  const statusText = String(
+    item?.solveStatus || item?.solutionStatus || item?.statusLabel || ""
+  ).toLowerCase();
+  if (statusText.includes("solved")) return true;
+  if (statusText.includes("unsolved")) return false;
+
+  const tags = Array.isArray(item?.tags)
+    ? item.tags.map((t) => String(t).toLowerCase())
+    : [];
+  if (tags.includes("solved")) return true;
+  if (tags.includes("unsolved")) return false;
+
+  if (
+    item?.solution ||
+    item?.solutions ||
+    item?.solutionUrl ||
+    item?.answerKey ||
+    item?.answerKeyUrl ||
+    item?.explanation
+  ) {
+    return true;
+  }
+
+  const questions = Array.isArray(item?.questions) ? item.questions : [];
+  if (questions.length > 0) {
+    const hasAnySolution = questions.some(
+      (q) => q?.solution || q?.explanation || q?.answer !== undefined
+    );
+    if (hasAnySolution) return true;
+  }
+
+  return false;
+}
+
+export default async function PyqsPage(props) {
+  const searchParams = await props.searchParams;
   const adminDb = getAdminDb();
   const pyqs = [];
 
@@ -48,6 +87,36 @@ export default async function PyqsPage() {
       }
     }
   }
+  const hasPyqData = pyqs.length > 0;
+  const searchQuery =
+    typeof searchParams?.q === "string" ? searchParams.q.trim() : "";
+  const examFilter =
+    typeof searchParams?.exam === "string" ? searchParams.exam.trim() : "";
+  const yearFilter =
+    typeof searchParams?.year === "string" ? searchParams.year.trim() : "";
+  const statusFilter =
+    typeof searchParams?.status === "string" ? searchParams.status.trim().toLowerCase() : "";
+
+  const visiblePyqs = pyqs.filter((item) => {
+    const title = String(item?.title || "");
+    const exam = String(item?.exam || "");
+    const year = String(item?.year || "");
+    const subject = String(item?.subject || "");
+    const tags = Array.isArray(item?.tags) ? item.tags.join(" ") : "";
+    const haystack = `${title} ${exam} ${year} ${subject} ${tags}`.toLowerCase();
+
+    const matchesSearch = !searchQuery || haystack.includes(searchQuery.toLowerCase());
+    const matchesExam =
+      !examFilter || String(item?.exam || "").toLowerCase().includes(examFilter.toLowerCase());
+    const matchesYear = !yearFilter || String(item?.year || "") === yearFilter;
+    const solvedState = detectSolvedState(item);
+    const matchesStatus =
+      !statusFilter ||
+      (statusFilter === "solved" && solvedState) ||
+      (statusFilter === "unsolved" && !solvedState);
+
+    return matchesSearch && matchesExam && matchesYear && matchesStatus;
+  });
 
   const exams = [
     { label: "SSC", slug: "ssc-exams" },
@@ -71,8 +140,8 @@ export default async function PyqsPage() {
                   PYQs that mirror real exam patterns.
                 </h1>
                 <p className="mt-3 text-base md:text-lg text-gray-600 max-w-2xl">
-                  Download, practice, and revise with topic-focused PYQ sets.
-                  Sorted by exam, year, and subject for fast preparation.
+                  Practice exam-level PYQs with clear, topic-wise sets for quick
+                  preparation.
                 </p>
 
                 <div className="mt-6 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-3">
@@ -82,12 +151,14 @@ export default async function PyqsPage() {
                   >
                     Browse PYQs
                   </a>
-                  <a
-                    href="#pyq-categories"
-                    className="rounded-full border border-gray-300 px-3 py-2 text-xs text-center font-semibold text-gray-700 transition hover:border-gray-400 sm:px-5 sm:text-sm"
-                  >
-                    View Categories
-                  </a>
+                  {hasPyqData && (
+                    <a
+                      href="#pyq-categories"
+                      className="rounded-full border border-gray-300 px-3 py-2 text-xs text-center font-semibold text-gray-700 transition hover:border-gray-400 sm:px-5 sm:text-sm"
+                    >
+                      View Categories
+                    </a>
+                  )}
                 </div>
               </div>
 
@@ -160,20 +231,42 @@ export default async function PyqsPage() {
                 <input
                   type="text"
                   name="q"
+                  defaultValue={searchQuery}
                   placeholder="Search PYQs by exam, topic, year"
                   className="w-full md:w-80 rounded-full border border-gray-300 bg-white px-4 py-2 text-sm text-gray-800 placeholder:text-gray-400"
                 />
-                <select className="rounded-full border border-gray-300 bg-white px-4 py-2 text-sm text-gray-800">
-                  <option>All Exams</option>
+                <select
+                  name="exam"
+                  defaultValue={examFilter}
+                  className="rounded-full border border-gray-300 bg-white px-4 py-2 text-sm text-gray-800"
+                >
+                  <option value="">All Exams</option>
                   {exams.map((exam) => (
-                    <option key={exam.label}>{exam.label}</option>
+                    <option key={exam.label} value={exam.label}>
+                      {exam.label}
+                    </option>
                   ))}
                 </select>
-                <select className="rounded-full border border-gray-300 bg-white px-4 py-2 text-sm text-gray-800">
-                  <option>All Years</option>
+                <select
+                  name="year"
+                  defaultValue={yearFilter}
+                  className="rounded-full border border-gray-300 bg-white px-4 py-2 text-sm text-gray-800"
+                >
+                  <option value="">All Years</option>
                   {years.map((year) => (
-                    <option key={year}>{year}</option>
+                    <option key={year} value={year}>
+                      {year}
+                    </option>
                   ))}
+                </select>
+                <select
+                  name="status"
+                  defaultValue={statusFilter}
+                  className="rounded-full border border-gray-300 bg-white px-4 py-2 text-sm text-gray-800"
+                >
+                  <option value="">All</option>
+                  <option value="solved">Solved</option>
+                  <option value="unsolved">Unsolved</option>
                 </select>
                 <button
                   type="submit"
@@ -183,7 +276,10 @@ export default async function PyqsPage() {
                 </button>
               </form>
 
-              <div className="flex flex-wrap gap-2 text-xs font-semibold">
+              <div className="hidden md:flex flex-wrap gap-2 text-xs font-semibold">
+                <span className="rounded-full border border-gray-300 px-3 py-1 text-gray-700">
+                  All
+                </span>
                 <span className="rounded-full border border-gray-300 px-3 py-1 text-gray-700">
                   Solved
                 </span>
@@ -193,16 +289,6 @@ export default async function PyqsPage() {
               </div>
             </div>
 
-            <div className="mt-4 flex flex-wrap gap-2 text-xs text-gray-500">
-              {years.map((year) => (
-                <span
-                  key={year}
-                  className="rounded-full border border-gray-300 px-3 py-1"
-                >
-                  {year}
-                </span>
-              ))}
-            </div>
           </div>
         </section>
 
@@ -239,13 +325,13 @@ export default async function PyqsPage() {
           <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_280px]">
             <div>
                             <div className="mt-6 grid gap-4 md:grid-cols-2">
-                {pyqs.length === 0 && (
+                {visiblePyqs.length === 0 && (
                   <div className="rounded-2xl border border-dashed border-gray-300 p-6 text-gray-500">
-                    No PYQs published yet.
+                    No PYQs match your filters.
                   </div>
                 )}
 
-                {pyqs.map((item) => (
+                {visiblePyqs.map((item) => (
                   <div
                     key={item.id}
                     className="rounded-2xl border border-gray-200 bg-white p-5"
@@ -291,6 +377,7 @@ export default async function PyqsPage() {
           </div>
         </section>
 
+        {hasPyqData && (
         <section id="pyq-categories" className="pt-12">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
@@ -369,6 +456,7 @@ export default async function PyqsPage() {
             ))}
           </div>
         </section>
+        )}
       </div>
     </div>
     </div>

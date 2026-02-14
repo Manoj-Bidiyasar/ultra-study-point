@@ -34,6 +34,7 @@ export default async function QuizListPage(props) {
   const quizzes = snap.docs.map((doc) =>
     serializeFirestoreData({ id: doc.id, ...doc.data() })
   );
+  const hasQuizData = quizzes.length > 0;
   const visibleQuizzes = searchQuery
     ? quizzes.filter((q) => {
         const hay = `${q.title || ""} ${q.description || ""}`.toLowerCase();
@@ -65,12 +66,14 @@ export default async function QuizListPage(props) {
                   >
                     Browse Latest
                   </a>
-                  <a
-                    href="#quiz-categories"
-                    className="rounded-full border border-gray-300 px-5 py-2 text-sm font-semibold text-gray-700 transition hover:border-gray-400"
-                  >
-                    View Categories
-                  </a>
+                  {hasQuizData && (
+                    <a
+                      href="#quiz-categories"
+                      className="rounded-full border border-gray-300 px-5 py-2 text-sm font-semibold text-gray-700 transition hover:border-gray-400"
+                    >
+                      View Categories
+                    </a>
+                  )}
                 </div>
 
                 <div className="mt-4 grid gap-2 text-xs sm:text-sm text-gray-600">
@@ -301,6 +304,7 @@ export default async function QuizListPage(props) {
           </div>
         </section>
 
+        {hasQuizData && (
         <section id="quiz-categories" className="pt-4 sm:pt-10 sm:border-t sm:border-gray-200 sm:pt-6">
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
@@ -407,6 +411,7 @@ export default async function QuizListPage(props) {
             ))}
           </div>
         </section>
+        )}
 
         </div>
       </div>

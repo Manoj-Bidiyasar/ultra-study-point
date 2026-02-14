@@ -103,20 +103,21 @@ export default function NotesClient({ initialNotes }) {
   const [activeCategory, setActiveCategory] = useState(() => {
     if (
       urlCategory &&
-      CATEGORY_DEFINITIONS.some((c) => c.id === urlCategory)
+      CATEGORY_DEFINITIONS.some((c) => c.id === urlCategory) &&
+      notes.some((n) => n.categoryId === urlCategory && n.status === "published")
     ) {
       return urlCategory;
     }
 
     const first = CATEGORY_DEFINITIONS.find((cat) =>
-      notes.some((n) => n.categoryId === cat.id)
+      notes.some((n) => n.categoryId === cat.id && n.status === "published")
     );
 
     return first?.id || "";
   });
 
   const availableCategories = CATEGORY_DEFINITIONS.filter((cat) =>
-    notes.some((note) => note.categoryId === cat.id)
+    notes.some((note) => note.categoryId === cat.id && note.status === "published")
   );
 
   const filteredNotes = notes
@@ -134,8 +135,8 @@ export default function NotesClient({ initialNotes }) {
     return acc;
   }, {});
 
-  const visibleSubcategories =
-    CATEGORY_TO_SUBCATEGORIES[activeCategory] || [];
+  const visibleSubcategories = (CATEGORY_TO_SUBCATEGORIES[activeCategory] || [])
+    .filter((subId) => filteredNotes.some((note) => note.subCategoryId === subId));
 
   return (
     <div className="min-h-screen bg-[#f5f7fb] pb-12 font-sans text-gray-900">
@@ -169,10 +170,11 @@ export default function NotesClient({ initialNotes }) {
           </div>
         </div>
 
+        {availableCategories.length > 0 && (
         <>
             {/* Category Grid */}
             <div className="grid grid-cols-3 md:grid-cols-6 gap-2 md:gap-3 mb-8">
-              {CATEGORY_DEFINITIONS.map((cat) => (
+              {availableCategories.map((cat) => (
                 <button
                   key={cat.id}
                   onClick={() => {
@@ -242,6 +244,7 @@ export default function NotesClient({ initialNotes }) {
               })}
             </div>
         </>
+        )}
       </div>
     </div>
   );
