@@ -143,39 +143,21 @@ export default function NotesClient({ initialNotes }) {
         {/* Hero */}
         <div className="relative overflow-hidden rounded-3xl bg-white border border-indigo-100 shadow-sm mb-8">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(99,102,241,0.12),transparent_55%),radial-gradient(circle_at_bottom_right,rgba(14,165,233,0.12),transparent_45%)]" />
-          <div className="relative px-6 py-6 md:px-10 md:py-10 grid gap-6 md:grid-cols-[1.1fr_0.9fr] items-center">
+          <div className="relative px-6 py-6 md:px-10 md:py-10 grid gap-6 md:grid-cols-[1.2fr_0.8fr] items-center">
             <div>
-              <div className="inline-flex items-center gap-2 rounded-full bg-indigo-50 border border-indigo-200 px-3 py-1 text-xs font-semibold text-indigo-700">
-                <span className="h-2 w-2 rounded-full bg-indigo-500" />
-                Notes Hub
-              </div>
-              <h1 className="mt-4 text-2xl md:text-3xl font-extrabold">
+              <h1 className="text-2xl md:text-3xl font-extrabold">
                 Master concepts with concise, exam-ready notes.
               </h1>
               <p className="mt-3 text-gray-600 text-sm md:text-base max-w-xl">
                 Clear explanations, one-liners, and quick revision packs built
                 for competitive exams.
               </p>
-              <div className="mt-5 flex flex-wrap gap-3">
-                <Link
-                  href="/notes"
-                  className="rounded-full bg-indigo-600 text-white font-semibold px-5 py-2 text-sm shadow hover:bg-indigo-700"
-                >
-                  Browse Notes
-                </Link>
-                <Link
-                  href="/quiz"
-                  className="rounded-full border border-gray-300 text-gray-700 font-semibold px-5 py-2 text-sm hover:border-gray-400"
-                >
-                  Practice Quizzes
-                </Link>
-              </div>
             </div>
-            <div className="bg-white/90 border border-indigo-100 rounded-2xl p-5 shadow-sm">
+            <div className="bg-white/90 border border-indigo-100 rounded-2xl p-5 md:p-6 shadow-sm md:h-full flex flex-col justify-center">
               <div className="text-xs uppercase tracking-widest text-gray-500">
                 Quick Highlights
               </div>
-              <div className="mt-3 grid gap-3 text-sm text-gray-600">
+              <div className="mt-4 grid gap-3 text-sm text-gray-600">
                 {["One-liner notes", "Topic-wise revision", "PDF-ready study packs"].map((item) => (
                   <div key={item} className="flex items-center gap-2">
                     <span className="h-2 w-2 rounded-full bg-indigo-500" />

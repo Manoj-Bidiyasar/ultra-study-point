@@ -148,7 +148,7 @@ export default function CurrentAffairsClient({
       <div className="max-w-6xl mx-auto px-4 py-6 md:py-8">
         <div className="relative overflow-hidden rounded-3xl bg-white border border-blue-100 shadow-sm mb-8">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.12),transparent_55%),radial-gradient(circle_at_bottom_right,rgba(239,68,68,0.12),transparent_45%)]" />
-          <div className="relative px-6 py-6 md:px-10 md:py-8 flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+          <div className="relative px-6 py-6 md:px-10 md:py-8 lg:pr-16 flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
             <div>
               <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900 mb-1">
                 Current Affairs Hub
@@ -156,17 +156,6 @@ export default function CurrentAffairsClient({
               <p className="text-gray-600 text-sm md:text-base font-medium mb-4 max-w-md">
                 Stay up-to-date with concise daily and monthly current affairs.
               </p>
-              <div className="flex flex-wrap gap-2 mb-4">
-                <span className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-[11px] font-semibold text-blue-700">
-                  Daily One-Liners
-                </span>
-                <span className="rounded-full border border-red-200 bg-red-50 px-3 py-1 text-[11px] font-semibold text-red-700">
-                  Monthly PDF
-                </span>
-                <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-[11px] font-semibold text-emerald-700">
-                  Quick Revision
-                </span>
-              </div>
               <div className="flex flex-col gap-2 text-xs md:text-sm text-gray-600 font-semibold">
                 <div className="flex items-center gap-2">
                   <span className="h-2 w-2 rounded-full bg-blue-500" />
@@ -183,15 +172,15 @@ export default function CurrentAffairsClient({
               </div>
             </div>
 
-            <div className="self-start sm:self-auto">
-              <div className="w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 bg-white rounded-2xl shadow-md border border-blue-100 overflow-hidden flex flex-col">
+            <div className="hidden lg:flex lg:items-center lg:justify-end lg:pl-8">
+              <div className="w-36 h-36 xl:w-40 xl:h-40 bg-white rounded-2xl shadow-md border border-blue-100 overflow-hidden flex flex-col">
                 <div className="bg-blue-600 py-1.5 text-center">
-                  <span className="text-white font-black tracking-widest text-[10px] md:text-xs">
+                  <span className="text-white font-black tracking-widest text-xs">
                     {month} {year}
                   </span>
                 </div>
                 <div className="flex-1 flex items-center justify-center bg-white">
-                  <span className="text-3xl sm:text-4xl md:text-5xl font-black text-blue-600">
+                  <span className="text-5xl xl:text-6xl font-black text-blue-600">
                     {day}
                   </span>
                 </div>

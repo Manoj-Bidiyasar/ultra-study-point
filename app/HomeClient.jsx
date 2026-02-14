@@ -45,14 +45,11 @@ export default function HomeClient({
         {/* Hero */}
         <div className="relative overflow-hidden rounded-3xl bg-white border border-blue-100 shadow-sm mb-10">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.12),transparent_55%),radial-gradient(circle_at_bottom_right,rgba(16,185,129,0.12),transparent_45%)]" />
-          <div className="relative px-6 py-8 md:px-10 md:py-12 grid gap-6 lg:grid-cols-[1.2fr_0.8fr] items-center">
+          <div className="relative px-6 py-8 md:px-10 md:py-12 grid gap-6 lg:grid-cols-[1.35fr_0.65fr] items-center">
             <div>
-              <div className="inline-flex items-center gap-2 rounded-full bg-blue-50 border border-blue-200 px-3 py-1 text-xs font-semibold text-blue-700">
-                <span className="h-2 w-2 rounded-full bg-blue-500" />
-                Ultra Study Point
-              </div>
-              <h1 className="mt-4 text-3xl md:text-4xl font-extrabold tracking-tight">
-                Study faster with daily CA, notes, and smart quizzes.
+              <h1 className="text-2xl sm:text-3xl md:text-[2.35rem] font-extrabold tracking-tight leading-tight">
+                Study faster with current affairs, notes, PYQs, and smart
+                quizzes.
               </h1>
               <p className="mt-3 text-gray-600 text-base md:text-lg max-w-xl">
                 Focused preparation for SSC, Patwar, RPSC, Railways, and more.
@@ -77,35 +74,25 @@ export default function HomeClient({
                 >
                   Take a Quiz
                 </Link>
-              </div>
-              <div className="mt-3 flex flex-wrap items-center gap-3 text-xs text-gray-500">
-                <span>Short practice sets to build speed and accuracy.</span>
-                <Link href="/notes" className="text-blue-600 font-semibold hover:underline">
-                  New here? Start with Notes →
+                <Link
+                  href="/pyqs"
+                  className="rounded-full border border-amber-300 text-amber-700 font-semibold px-5 py-2 text-sm hover:border-amber-400 hover:text-amber-800"
+                >
+                  Explore PYQs
                 </Link>
-              </div>
-              <div className="mt-6 grid gap-2 text-xs text-gray-600">
-                <div className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                  Daily current affairs updates
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-blue-500" />
-                  Topic-wise notes and revision packs
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-rose-500" />
-                  PYQs and mock quizzes
-                </div>
               </div>
             </div>
             <div className="hidden sm:block bg-white/90 border border-blue-100 rounded-2xl p-5 shadow-sm">
               <div className="text-xs uppercase tracking-widest text-gray-500">
-                Today’s Focus
+                Prep Highlights
               </div>
-              <div className="mt-2 text-lg font-semibold">Current Affairs Sprint</div>
+              <div className="mt-2 text-lg font-semibold">Exam Prep Essentials</div>
               <div className="mt-4 grid gap-3">
-                {["Fast revision", "Exam-focused", "Track improvements"].map((item) => (
+                {[
+                  "Daily current affairs updates",
+                  "Topic-wise notes and revision packs",
+                  "PYQs and mock quizzes",
+                ].map((item) => (
                   <div
                     key={item}
                     className="flex items-center gap-3 rounded-xl border border-gray-200 bg-gray-50 px-4 py-2 text-sm text-gray-600"
@@ -291,3 +278,5 @@ export default function HomeClient({
     </div>
   );
 }
+
+

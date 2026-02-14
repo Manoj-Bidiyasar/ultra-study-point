@@ -48,221 +48,83 @@ export default async function QuizListPage(props) {
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(20,184,166,0.18),transparent_55%),radial-gradient(circle_at_bottom_right,rgba(99,102,241,0.18),transparent_45%)]" />
 
           <div className="relative px-5 py-5 sm:px-6 sm:py-6 md:px-10 md:py-9">
-            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300 bg-emerald-50 px-3 py-1 text-xs font-semibold tracking-wide text-emerald-700">
-              <span className="h-2 w-2 rounded-full bg-emerald-400" />
-              Practice Quizzes
-            </div>
+            <div className="mt-0 grid gap-5 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+              <div>
+                <h1 className="mt-2 text-2xl sm:text-3xl md:text-4xl font-semibold leading-tight whitespace-nowrap">
+                  Quizzes built for real exam pressure.
+                </h1>
+                <p className="mt-2 text-sm sm:text-base md:text-lg text-gray-600 max-w-xl">
+                  Topic-wise practice, exam-style mocks, and smart revision cycles.
+                  Fast, clean, and built to grow with your preparation.
+                </p>
 
-            <div className="mt-4 grid gap-5 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
-            <div>
-              <h1 className="mt-2 text-2xl sm:text-3xl md:text-4xl font-semibold leading-tight whitespace-nowrap">
-                Quizzes built for real exam pressure.
-              </h1>
-              <p className="mt-2 text-sm sm:text-base md:text-lg text-gray-600 max-w-xl">
-                Topic-wise practice, exam-style mocks, and smart revision cycles.
-                Fast, clean, and built to grow with your preparation.
-              </p>
-
-              <div className="mt-5 flex flex-wrap items-center gap-3">
-                <a
-                  href="#latest-quizzes"
-                  className="rounded-full bg-emerald-500 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-emerald-400/20 transition hover:translate-y-[-1px]"
-                >
-                  Browse Latest
-                </a>
-                <a
-                  href="#quiz-categories"
-                  className="rounded-full border border-gray-300 px-5 py-2 text-sm font-semibold text-gray-700 transition hover:border-gray-400"
-                >
-                  View Categories
-                </a>
-              </div>
-
-              <div className="mt-4 grid gap-2 text-xs sm:text-sm text-gray-600">
-                <div className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-emerald-400" />
-                  Daily current affairs + monthly revision packs
+                <div className="mt-5 flex flex-wrap items-center gap-3">
+                  <a
+                    href="#latest-quizzes"
+                    className="rounded-full bg-emerald-500 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-emerald-400/20 transition hover:translate-y-[-1px]"
+                  >
+                    Browse Latest
+                  </a>
+                  <a
+                    href="#quiz-categories"
+                    className="rounded-full border border-gray-300 px-5 py-2 text-sm font-semibold text-gray-700 transition hover:border-gray-400"
+                  >
+                    View Categories
+                  </a>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-indigo-400" />
-                  Subject-wise quizzes with short explanations
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-sky-400" />
-                  Exam-specific mocks for SSC, Patwar, RPSC, and more
-                </div>
-              </div>
-            </div>
 
-            {(() => {
-              const focusCards = [
-                {
-                  label: "Today's Focus",
-                  title: "Current Affairs Sprint",
-                  sub: "Daily CA practice set",
-                  bullets: [
-                    "Daily current affairs",
-                    "Fast revision mode",
-                    "Quick explanations",
-                  ],
-                },
-                {
-                  label: "Today's Focus",
-                  title: "Exam Mock Boost",
-                  sub: "Exam-style practice",
-                  bullets: [
-                    "SSC, Patwar, RPSC patterns",
-                    "Smart difficulty mix",
-                    "Timed practice feel",
-                  ],
-                },
-                {
-                  label: "Today's Focus",
-                  title: "Topic Practice",
-                  sub: "Subject-wise quiz pack",
-                  bullets: [
-                    "Science, GK, Polity",
-                    "Short explanations",
-                    "Revise weak areas",
-                  ],
-                },
-                {
-                  label: "Today's Focus",
-                  title: "Category Pick",
-                  sub: "Choose your quiz path",
-                  bullets: [
-                    "Daily + Monthly CA",
-                    "Exams + Subjects",
-                    "Quick revision sets",
-                  ],
-                },
-              ];
-
-              const daySeed = new Date().getDate();
-              const focus = focusCards[daySeed % focusCards.length];
-
-              return (
-                <div className="hidden sm:block relative rounded-2xl border border-gray-200 bg-white p-4 sm:p-5 shadow-sm">
-                  <div className="absolute -top-4 -right-4 h-12 w-12 rounded-2xl bg-emerald-100 border border-emerald-200" />
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className="text-xs uppercase tracking-widest text-gray-500">
-                        {focus.label}
-                      </div>
-                      <div className="mt-2 text-xl font-semibold">
-                        {focus.title}
-                      </div>
-                      <div className="mt-1 text-sm text-gray-500">
-                        {focus.sub}
-                      </div>
-                    </div>
-                    <div className="h-14 w-14 rounded-full bg-gradient-to-br from-emerald-400/70 to-sky-500/70 p-[2px]">
-                      <div className="h-full w-full rounded-full bg-white flex items-center justify-center text-emerald-600 font-semibold">
-                        GO
-                      </div>
-                    </div>
+                <div className="mt-4 grid gap-2 text-xs sm:text-sm text-gray-600">
+                  <div className="flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full bg-emerald-400" />
+                    Daily current affairs + monthly revision packs
                   </div>
-
-                  <div className="mt-4 grid gap-2">
-                    {focus.bullets.map((item) => (
-                      <div
-                        key={item}
-                        className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-2 text-sm text-gray-600"
-                      >
-                        <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
-                        {item}
-                      </div>
-                    ))}
+                  <div className="flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full bg-indigo-400" />
+                    Subject-wise quizzes with short explanations
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full bg-sky-400" />
+                    Exam-specific mocks for SSC, Patwar, RPSC, and more
                   </div>
                 </div>
-              );
-            })()}
+              </div>
+
+            <div className="hidden sm:block relative rounded-2xl border border-gray-200 bg-white p-4 sm:p-5 shadow-sm">
+              <div className="absolute -top-4 -right-4 h-12 w-12 rounded-2xl bg-emerald-100 border border-emerald-200" />
+              <div>
+                <div className="text-xs uppercase tracking-widest text-gray-500">
+                  Quiz Focus
+                </div>
+                <div className="mt-2 text-xl font-semibold">
+                  Smart Quiz Practice
+                </div>
+                <div className="mt-1 text-sm text-gray-500">
+                  Build speed, accuracy, and exam confidence.
+                </div>
+              </div>
+
+              <div className="mt-4 grid gap-2">
+                {[
+                  "Practice with timed quiz sets",
+                  "Review answers and explanations",
+                  "Track and improve weak topics",
+                ].map((item) => (
+                  <div
+                    key={item}
+                    className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-2 text-sm text-gray-600"
+                  >
+                    <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
+                    {item}
+                  </div>
+                ))}
+              </div>
+            </div>
 
           </div>
         </div>
       </div>
 
         <div className="pb-16">
-        <section className="pt-1 sm:pt-8 md:pt-10">
-          <div className="sm:rounded-3xl sm:border sm:border-gray-200 sm:bg-white sm:p-7 md:sm:p-9">
-            <div className="hidden sm:flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-              <div>
-                <h3 className="mt-1 text-2xl md:text-3xl font-semibold">
-                  Practice without login, or login to save everything.
-                </h3>
-                <p className="mt-1 text-sm text-gray-600 max-w-2xl">
-                  Both options work. Pick the one that feels right for you today.
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-3 sm:hidden rounded-2xl border border-gray-200 bg-white p-4">
-              <p className="text-sm text-gray-700 whitespace-nowrap">
-                Start practice now, or login to save scores and resume later.
-              </p>
-              <div className="mt-3 flex flex-col gap-2">
-                <a
-                  href="#latest-quizzes"
-                  className="inline-flex justify-center rounded-full bg-emerald-600 px-4 py-2 text-xs font-semibold text-white shadow-sm"
-                >
-                  Start Without Login
-                </a>
-                <a
-                  href="/student/login"
-                  className="inline-flex justify-center rounded-full bg-indigo-600 px-4 py-2 text-xs font-semibold text-white shadow-sm"
-                >
-                  Login & Save Progress
-                </a>
-              </div>
-              <div className="mt-3 text-[11px] text-gray-500">
-                Login lets you save scores, resume attempts, and track progress.
-              </div>
-            </div>
-
-            <div className="mt-6 hidden sm:grid gap-4 md:grid-cols-2">
-              <div className="rounded-2xl border border-emerald-200 bg-emerald-50/40 p-5">
-                <div className="text-sm font-semibold text-emerald-800">
-                  Start Without Login
-                </div>
-                <p className="mt-2 text-sm text-gray-600">
-                  Attempt quizzes instantly. No account needed.
-                </p>
-                <ul className="mt-3 space-y-1 text-xs text-gray-600">
-                  <li>• Quick practice</li>
-                  <li>• No signup</li>
-                  <li>• Try before you login</li>
-                </ul>
-                <a
-                  href="#latest-quizzes"
-                  className="mt-4 inline-flex rounded-full bg-emerald-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-emerald-700"
-                >
-                  Start Without Login
-                </a>
-              </div>
-
-              <div className="rounded-2xl border border-indigo-200 bg-indigo-50/40 p-5">
-                <div className="text-sm font-semibold text-indigo-800">
-                  Login To Save Progress
-                </div>
-                <p className="mt-2 text-sm text-gray-600">
-                  Save scores, resume attempts, and track performance.
-                </p>
-                <ul className="mt-3 space-y-1 text-xs text-gray-600">
-                  <li>• Resume later</li>
-                  <li>• See your scores</li>
-                  <li>• Track improvement</li>
-                </ul>
-                <a
-                  href="/student/login"
-                  className="mt-4 inline-flex rounded-full bg-indigo-600 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-indigo-700"
-                >
-                  Login & Save Progress
-                </a>
-              </div>
-            </div>
-          </div>
-        </section>
-
         <section className="pt-4 sm:pt-8 md:pt-10 hidden sm:block">
           <div className="grid gap-4 md:grid-cols-3">
             {[
@@ -551,3 +413,4 @@ export default async function QuizListPage(props) {
     </div>
   );
 }
+

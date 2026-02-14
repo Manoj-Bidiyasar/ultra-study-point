@@ -65,68 +65,62 @@ export default async function PyqsPage() {
         <div className="relative overflow-hidden rounded-3xl bg-white border border-sky-100 shadow-sm mb-8">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.18),transparent_55%),radial-gradient(circle_at_bottom_right,rgba(34,197,94,0.18),transparent_45%)]" />
           <div className="relative px-6 py-6 md:px-10 md:py-10">
-            <div className="inline-flex items-center gap-2 rounded-full border border-sky-300 bg-sky-50 px-3 py-1 text-xs font-semibold tracking-wide text-sky-700">
-              <span className="h-2 w-2 rounded-full bg-sky-400" />
-              Previous Year Questions
-            </div>
+            <div className="mt-0 grid gap-6 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+              <div>
+                <h1 className="text-3xl md:text-4xl font-semibold leading-tight">
+                  PYQs that mirror real exam patterns.
+                </h1>
+                <p className="mt-3 text-base md:text-lg text-gray-600 max-w-2xl">
+                  Download, practice, and revise with topic-focused PYQ sets.
+                  Sorted by exam, year, and subject for fast preparation.
+                </p>
 
-          <div className="mt-5 grid gap-6 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
-            <div>
-              <h1 className="text-3xl md:text-4xl font-semibold leading-tight">
-                PYQs that mirror real exam patterns.
-              </h1>
-              <p className="mt-3 text-base md:text-lg text-gray-600 max-w-xl">
-                Download, practice, and revise with topic-focused PYQ sets.
-                Sorted by exam, year, and subject for fast preparation.
-              </p>
-
-              <div className="mt-6 flex flex-wrap items-center gap-3">
-                <a
-                  href="#latest-pyqs"
-                  className="rounded-full bg-sky-500 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-sky-400/20 transition hover:translate-y-[-1px]"
-                >
-                  Browse PYQs
-                </a>
-                <a
-                  href="#pyq-categories"
-                  className="rounded-full border border-gray-300 px-5 py-2 text-sm font-semibold text-gray-700 transition hover:border-gray-400"
-                >
-                  View Categories
-                </a>
-              </div>
-            </div>
-
-            <div className="hidden sm:block relative rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-              <div className="absolute -top-4 -right-4 h-12 w-12 rounded-2xl bg-sky-100 border border-sky-200" />
-              <div className="text-xs uppercase tracking-widest text-gray-500">
-                Focus Set
-              </div>
-              <div className="mt-2 text-xl font-semibold">
-                Start With a Targeted PYQ Set
-              </div>
-              <div className="mt-1 text-sm text-gray-500">
-                Pick your exam and year to practice smart.
-              </div>
-              <div className="mt-5 grid gap-3">
-                {[
-                  "Exam-wise collections",
-                  "Year-wise filters",
-                  "Quick revision workflow",
-                ].map((item) => (
-                  <div
-                    key={item}
-                    className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-600"
+                <div className="mt-6 flex flex-wrap items-center gap-3">
+                  <a
+                    href="#latest-pyqs"
+                    className="rounded-full bg-sky-500 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-sky-400/20 transition hover:translate-y-[-1px]"
                   >
-                    <span className="h-2.5 w-2.5 rounded-full bg-sky-400" />
-                    {item}
-                  </div>
-                ))}
+                    Browse PYQs
+                  </a>
+                  <a
+                    href="#pyq-categories"
+                    className="rounded-full border border-gray-300 px-5 py-2 text-sm font-semibold text-gray-700 transition hover:border-gray-400"
+                  >
+                    View Categories
+                  </a>
+                </div>
+              </div>
+
+              <div className="hidden sm:block relative rounded-2xl border border-gray-200 bg-white p-4 md:p-5 shadow-sm self-start">
+                <div className="absolute -top-4 -right-4 h-12 w-12 rounded-2xl bg-sky-100 border border-sky-200" />
+                <div className="text-xs uppercase tracking-widest text-gray-500">
+                  Focus Set
+                </div>
+                <div className="mt-2 text-xl font-semibold">
+                  Start With a Targeted PYQ Set
+                </div>
+                <div className="mt-1 text-sm text-gray-500">
+                  Pick your exam and year to practice smart.
+                </div>
+                <div className="mt-4 grid gap-2.5">
+                  {[
+                    "Exam-wise collections",
+                    "Year-wise filters",
+                    "Quick revision workflow",
+                  ].map((item) => (
+                    <div
+                      key={item}
+                      className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-600"
+                    >
+                      <span className="h-2.5 w-2.5 rounded-full bg-sky-400" />
+                      {item}
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
-
         <div className="pb-16">
         <section className="hidden sm:block pt-8 md:pt-10">
           <div className="grid gap-4 md:grid-cols-3">
@@ -377,6 +371,6 @@ export default async function PyqsPage() {
         </section>
       </div>
     </div>
-  </div>
+    </div>
   );
 }

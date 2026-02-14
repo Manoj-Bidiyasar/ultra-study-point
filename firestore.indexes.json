@@ -67,6 +67,16 @@
       ]
     },
     {
+      "collectionGroup": "Quizzes",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "quizMeta.category", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "quizMeta.quizDate", "order": "DESCENDING" },
+        { "fieldPath": "__name__", "order": "DESCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "PYQs",
       "queryScope": "COLLECTION_GROUP",
       "fields": [
