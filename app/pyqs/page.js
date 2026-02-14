@@ -75,16 +75,16 @@ export default async function PyqsPage() {
                   Sorted by exam, year, and subject for fast preparation.
                 </p>
 
-                <div className="mt-6 flex flex-wrap items-center gap-3">
+                <div className="mt-6 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-3">
                   <a
                     href="#latest-pyqs"
-                    className="rounded-full bg-sky-500 px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-sky-400/20 transition hover:translate-y-[-1px]"
+                    className="rounded-full bg-sky-500 px-3 py-2 text-xs text-center font-semibold text-white shadow-lg shadow-sky-400/20 transition hover:translate-y-[-1px] sm:px-5 sm:text-sm"
                   >
                     Browse PYQs
                   </a>
                   <a
                     href="#pyq-categories"
-                    className="rounded-full border border-gray-300 px-5 py-2 text-sm font-semibold text-gray-700 transition hover:border-gray-400"
+                    className="rounded-full border border-gray-300 px-3 py-2 text-xs text-center font-semibold text-gray-700 transition hover:border-gray-400 sm:px-5 sm:text-sm"
                   >
                     View Categories
                   </a>
@@ -374,3 +374,4 @@ export default async function PyqsPage() {
     </div>
   );
 }
+

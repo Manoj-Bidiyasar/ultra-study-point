@@ -1,7 +1,7 @@
 export const runtime = "nodejs";
 
 import { notFound } from "next/navigation";
-import adminDb from "@/lib/firebase/adminDb";
+import { getAdminDb } from "@/lib/firebase/admin";
 import UniversalRenderer from "@/components/content/renderer/UniversalRenderer";
 import ExitPreviewButton from "@/components/preview/ExitPreviewButton";
 
@@ -40,6 +40,7 @@ export default async function PreviewPage({
   params,
   searchParams,
 }) {
+  const adminDb = getAdminDb();
   const { type } = await params;
   const { token } = await searchParams;
 

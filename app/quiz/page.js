@@ -48,7 +48,7 @@ export default async function QuizListPage(props) {
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(20,184,166,0.18),transparent_55%),radial-gradient(circle_at_bottom_right,rgba(99,102,241,0.18),transparent_45%)]" />
 
           <div className="relative px-5 py-5 sm:px-6 sm:py-6 md:px-10 md:py-9">
-            <div className="mt-0 grid gap-5 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+            <div className="mt-0 grid gap-5 lg:grid-cols-[1.3fr_0.7fr] lg:items-center">
               <div>
                 <h1 className="mt-2 text-2xl sm:text-3xl md:text-4xl font-semibold leading-tight whitespace-nowrap">
                   Quizzes built for real exam pressure.
@@ -89,7 +89,7 @@ export default async function QuizListPage(props) {
                 </div>
               </div>
 
-            <div className="hidden sm:block relative rounded-2xl border border-gray-200 bg-white p-4 sm:p-5 shadow-sm">
+            <div className="hidden sm:block relative w-full rounded-2xl border border-gray-200 bg-white p-4 sm:p-5 shadow-sm">
               <div className="absolute -top-4 -right-4 h-12 w-12 rounded-2xl bg-emerald-100 border border-emerald-200" />
               <div>
                 <div className="text-xs uppercase tracking-widest text-gray-500">

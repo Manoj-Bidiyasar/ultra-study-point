@@ -55,28 +55,28 @@ export default function HomeClient({
                 Focused preparation for SSC, Patwar, RPSC, Railways, and more.
                 Clean content, quick revision, and confidence-building practice.
               </p>
-              <div className="mt-6 flex flex-wrap gap-3">
+              <div className="mt-6 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-3">
                 <Link
                   href="/current-affairs"
-                  className="rounded-full bg-blue-600 text-white font-semibold px-5 py-2 text-sm shadow hover:bg-blue-700"
+                  className="rounded-full bg-blue-600 text-white font-semibold px-3 py-2 text-xs text-center shadow hover:bg-blue-700 sm:px-5 sm:text-sm"
                 >
                   Read Current Affairs
                 </Link>
                 <Link
                   href="/notes"
-                  className="rounded-full border border-gray-300 text-gray-700 font-semibold px-5 py-2 text-sm hover:border-gray-400"
+                  className="rounded-full border border-gray-300 text-gray-700 font-semibold px-3 py-2 text-xs text-center hover:border-gray-400 sm:px-5 sm:text-sm"
                 >
                   Explore Notes
                 </Link>
                 <Link
                   href="/quiz"
-                  className="rounded-full border border-emerald-300 text-emerald-700 font-semibold px-5 py-2 text-sm hover:border-emerald-400 hover:text-emerald-800"
+                  className="rounded-full border border-emerald-300 text-emerald-700 font-semibold px-3 py-2 text-xs text-center hover:border-emerald-400 hover:text-emerald-800 sm:px-5 sm:text-sm"
                 >
                   Take a Quiz
                 </Link>
                 <Link
                   href="/pyqs"
-                  className="rounded-full border border-amber-300 text-amber-700 font-semibold px-5 py-2 text-sm hover:border-amber-400 hover:text-amber-800"
+                  className="rounded-full border border-amber-300 text-amber-700 font-semibold px-3 py-2 text-xs text-center hover:border-amber-400 hover:text-amber-800 sm:px-5 sm:text-sm"
                 >
                   Explore PYQs
                 </Link>
@@ -278,5 +278,4 @@ export default function HomeClient({
     </div>
   );
 }
-
 

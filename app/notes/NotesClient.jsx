@@ -153,7 +153,7 @@ export default function NotesClient({ initialNotes }) {
                 for competitive exams.
               </p>
             </div>
-            <div className="bg-white/90 border border-indigo-100 rounded-2xl p-5 md:p-6 shadow-sm md:h-full flex flex-col justify-center">
+            <div className="hidden md:flex bg-white/90 border border-indigo-100 rounded-2xl p-5 md:p-6 shadow-sm md:h-full flex-col justify-center">
               <div className="text-xs uppercase tracking-widest text-gray-500">
                 Quick Highlights
               </div>
@@ -246,3 +246,4 @@ export default function NotesClient({ initialNotes }) {
     </div>
   );
 }
+

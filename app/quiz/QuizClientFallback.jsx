@@ -50,6 +50,22 @@ export default function QuizClientFallback({ searchParams }) {
     });
   }, [quizzes, searchQuery]);
 
+  const heroTitle = loading
+    ? "Practice quizzes are loading"
+    : error
+    ? "Quizzes are temporarily unavailable"
+    : visibleQuizzes.length === 0
+    ? "No quizzes match right now"
+    : "Latest quizzes are ready";
+
+  const heroDescription = loading
+    ? "We're fetching the latest quizzes. If it takes a moment, you can still browse categories or search below."
+    : error
+    ? "We could not load quizzes from the fallback source. Please refresh the page and try again."
+    : visibleQuizzes.length === 0
+    ? "Try a different keyword or clear your search to see all available quizzes."
+    : "You can browse the latest sets below or use search to narrow by topic or exam.";
+
   return (
     <div className="min-h-screen bg-[#f5f7fb] text-gray-900">
       <div className="max-w-6xl mx-auto px-4 py-8">
@@ -57,13 +73,8 @@ export default function QuizClientFallback({ searchParams }) {
           <div className="text-xs uppercase tracking-widest text-emerald-700">
             Quizzes
           </div>
-          <h1 className="mt-2 text-2xl md:text-3xl font-semibold">
-            Practice quizzes are loading
-          </h1>
-          <p className="mt-2 text-sm text-gray-600 max-w-2xl">
-            We’re fetching the latest quizzes. If it takes a moment, you can still
-            browse categories or search below.
-          </p>
+          <h1 className="mt-2 text-2xl md:text-3xl font-semibold">{heroTitle}</h1>
+          <p className="mt-2 text-sm text-gray-600 max-w-2xl">{heroDescription}</p>
           <div className="mt-4 flex flex-wrap gap-3">
             <Link
               href="/quiz"
@@ -143,3 +154,4 @@ export default function QuizClientFallback({ searchParams }) {
     </div>
   );
 }
+
