@@ -15,7 +15,7 @@ export const dynamic = "force-dynamic";
 
 const getNotesIndex = unstable_cache(
   async () => {
-    const adminDb = getAdminDb();
+    const adminDb = getAdminDb({ force: true });
     if (!adminDb) return [];
 
     const colRef = adminDb

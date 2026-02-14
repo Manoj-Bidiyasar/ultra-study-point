@@ -73,8 +73,16 @@ const getHomeData = unstable_cache(
     "data",
     "Quizzes"
   );
+  const pyqRef = collection(
+    db,
+    "artifacts",
+    "ultra-study-point",
+    "public",
+    "data",
+    "PYQs"
+  );
 
-  const [dailySnap, monthlySnap, notesSnap, quizSnap] = await Promise.all([
+  const [dailySnap, monthlySnap, notesSnap, quizSnap, pyqSnap] = await Promise.all([
     getDocs(
       query(
         caRef,
@@ -109,6 +117,14 @@ const getHomeData = unstable_cache(
         limit(6)
       )
     ),
+    getDocs(
+      query(
+        pyqRef,
+        where("status", "==", "published"),
+        orderBy("updatedAt", "desc"),
+        limit(6)
+      )
+    ),
   ]);
 
   return {
@@ -116,6 +132,7 @@ const getHomeData = unstable_cache(
     monthlyCA: monthlySnap.docs.map(serializeDoc),
     latestNotes: notesSnap.docs.map(serializeDoc),
     latestQuizzes: quizSnap.docs.map(serializeDoc),
+    latestPyqs: pyqSnap.docs.map(serializeDoc),
   };
   },
   ["home-data"],
@@ -185,6 +202,7 @@ export default async function Page() {
         monthlyCA={data.monthlyCA}
         latestNotes={data.latestNotes}
         latestQuizzes={data.latestQuizzes}
+        latestPyqs={data.latestPyqs}
       />
     </>
   );

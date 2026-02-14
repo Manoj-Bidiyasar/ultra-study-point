@@ -94,6 +94,21 @@ const CATEGORY_TO_SUBCATEGORIES = {
   ],
 };
 
+function normalizeCategoryId(note) {
+  if (note?.categoryId) return String(note.categoryId).trim().toLowerCase();
+  const label = String(note?.category || "").trim().toLowerCase();
+  if (!label) return "";
+  const match = CATEGORY_DEFINITIONS.find(
+    (cat) => cat.name.toLowerCase() === label || cat.id.toLowerCase() === label
+  );
+  return match?.id || "";
+}
+
+function isPublishedNote(note) {
+  const status = String(note?.status || "").trim().toLowerCase();
+  return !status || status === "published";
+}
+
 export default function NotesClient({ initialNotes }) {
   const searchParams = useSearchParams();
   const urlCategory = searchParams.get("category");
@@ -101,30 +116,39 @@ export default function NotesClient({ initialNotes }) {
   const activeSection = "subject";
 
   const [activeCategory, setActiveCategory] = useState(() => {
+    const hasPublishedInCategory = (categoryId) =>
+      notes.some(
+        (n) =>
+          normalizeCategoryId(n) === categoryId &&
+          isPublishedNote(n)
+      );
+
     if (
       urlCategory &&
       CATEGORY_DEFINITIONS.some((c) => c.id === urlCategory) &&
-      notes.some((n) => n.categoryId === urlCategory && n.status === "published")
+      hasPublishedInCategory(urlCategory)
     ) {
       return urlCategory;
     }
 
     const first = CATEGORY_DEFINITIONS.find((cat) =>
-      notes.some((n) => n.categoryId === cat.id && n.status === "published")
+      hasPublishedInCategory(cat.id)
     );
 
     return first?.id || "";
   });
 
   const availableCategories = CATEGORY_DEFINITIONS.filter((cat) =>
-    notes.some((note) => note.categoryId === cat.id && note.status === "published")
+    notes.some(
+      (note) => normalizeCategoryId(note) === cat.id && isPublishedNote(note)
+    )
   );
 
   const filteredNotes = notes
     .filter(
       (note) =>
-        note.categoryId === activeCategory &&
-        note.status === "published"
+        normalizeCategoryId(note) === activeCategory &&
+        isPublishedNote(note)
     )
     .sort((a, b) => b.date - a.date);
 

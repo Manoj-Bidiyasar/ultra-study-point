@@ -24,7 +24,12 @@ export default function HomeClient({
   monthlyCA,
   latestNotes,
   latestQuizzes,
+  latestPyqs,
 }) {
+  const hasNotes = Array.isArray(latestNotes) && latestNotes.length > 0;
+  const hasQuizzes = Array.isArray(latestQuizzes) && latestQuizzes.length > 0;
+  const hasPyqs = Array.isArray(latestPyqs) && latestPyqs.length > 0;
+
   const formatCardDate = (value) => {
     if (!value) return { day: "??", month: "???" };
     const date = new Date(value);
@@ -58,28 +63,34 @@ export default function HomeClient({
               <div className="mt-6 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:gap-3">
                 <Link
                   href="/current-affairs"
-                  className="rounded-full bg-blue-600 text-white font-semibold px-3 py-2 text-xs text-center shadow hover:bg-blue-700 sm:px-5 sm:text-sm"
+                  className="w-full inline-flex items-center justify-center rounded-full bg-blue-600 text-white font-semibold px-3 py-2 text-xs text-center shadow hover:bg-blue-700 sm:w-auto sm:px-5 sm:text-sm"
                 >
                   Read Current Affairs
                 </Link>
-                <Link
-                  href="/notes"
-                  className="rounded-full border border-gray-300 text-gray-700 font-semibold px-3 py-2 text-xs text-center hover:border-gray-400 sm:px-5 sm:text-sm"
-                >
-                  Explore Notes
-                </Link>
-                <Link
-                  href="/quiz"
-                  className="rounded-full border border-emerald-300 text-emerald-700 font-semibold px-3 py-2 text-xs text-center hover:border-emerald-400 hover:text-emerald-800 sm:px-5 sm:text-sm"
-                >
-                  Take a Quiz
-                </Link>
-                <Link
-                  href="/pyqs"
-                  className="rounded-full border border-amber-300 text-amber-700 font-semibold px-3 py-2 text-xs text-center hover:border-amber-400 hover:text-amber-800 sm:px-5 sm:text-sm"
-                >
-                  Explore PYQs
-                </Link>
+                {hasNotes && (
+                  <Link
+                    href="/notes"
+                    className="w-full inline-flex items-center justify-center rounded-full border border-gray-300 text-gray-700 font-semibold px-3 py-2 text-xs text-center hover:border-gray-400 sm:w-auto sm:px-5 sm:text-sm"
+                  >
+                    Explore Notes
+                  </Link>
+                )}
+                {hasQuizzes && (
+                  <Link
+                    href="/quiz"
+                    className="w-full inline-flex items-center justify-center rounded-full border border-emerald-300 text-emerald-700 font-semibold px-3 py-2 text-xs text-center hover:border-emerald-400 hover:text-emerald-800 sm:w-auto sm:px-5 sm:text-sm"
+                  >
+                    Take a Quiz
+                  </Link>
+                )}
+                {hasPyqs && (
+                  <Link
+                    href="/pyqs"
+                    className="w-full inline-flex items-center justify-center rounded-full border border-amber-300 text-amber-700 font-semibold px-3 py-2 text-xs text-center hover:border-amber-400 hover:text-amber-800 sm:w-auto sm:px-5 sm:text-sm"
+                  >
+                    Explore PYQs
+                  </Link>
+                )}
               </div>
             </div>
             <div className="hidden sm:block bg-white/90 border border-blue-100 rounded-2xl p-5 shadow-sm">
@@ -194,7 +205,7 @@ export default function HomeClient({
         </div>
 
         {/* Notes */}
-        {latestNotes.length > 0 && (
+        {hasNotes && (
         <div className="mb-10">
           <div className="flex items-center justify-between mb-6 border-b border-gray-200 pb-3">
             <div className="flex items-center gap-2">
@@ -236,7 +247,7 @@ export default function HomeClient({
         )}
 
         {/* Quizzes */}
-        {latestQuizzes.length > 0 && (
+        {hasQuizzes && (
         <div className="mb-10">
           <div className="flex items-center justify-between mb-6 border-b border-gray-200 pb-3">
             <div className="flex items-center gap-2">
