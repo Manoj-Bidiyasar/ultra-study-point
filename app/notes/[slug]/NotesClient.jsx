@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import Head from "next/head";
+import Script from "next/script";
 import { useEffect, useState } from "react";
 import UniversalRenderer from "@/components/content/renderer/UniversalRenderer";
 import CurrentAffairsBlock from "@/components/related/CurrentAffairsBlock";
@@ -96,36 +96,34 @@ export default function NotesClient({
   return (
     <>
       {/* ================= SEO / SCHEMA ================= */}
-      <Head>
-        <link
-          rel="stylesheet"
-          href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css"
-        />
-        <script
-          defer
-          src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"
-        />
-        <script
-          defer
-          src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
-        />
+      <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css"
+      />
+      <Script
+        strategy="afterInteractive"
+        src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"
+      />
+      <Script
+        strategy="afterInteractive"
+        src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+      />
 
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(articleSchema),
+        }}
+      />
+
+      {breadcrumbSchema && (
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify(articleSchema),
+            __html: JSON.stringify(breadcrumbSchema),
           }}
         />
-
-        {breadcrumbSchema && (
-          <script
-            type="application/ld+json"
-            dangerouslySetInnerHTML={{
-              __html: JSON.stringify(breadcrumbSchema),
-            }}
-          />
-        )}
-      </Head>
+      )}
 
       {/* ================= PAGE UI ================= */}
       <article className="min-h-screen bg-gradient-to-br from-slate-100 to-indigo-100 pb-20">
