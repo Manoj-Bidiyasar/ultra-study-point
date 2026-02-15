@@ -17,6 +17,7 @@ export async function GET() {
   return NextResponse.json(
     {
       ok,
+      httpStatus: ok ? 200 : 503,
       configured: state.configured,
       initialized: state.initialized,
       lastAttemptAt: state.lastAttemptAt,
@@ -26,11 +27,10 @@ export async function GET() {
         : "Set FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, and FIREBASE_PRIVATE_KEY_BASE64 in hosting env.",
     },
     {
-      status: ok ? 200 : 503,
+      status: 200,
       headers: {
         "Cache-Control": "no-store, max-age=0",
       },
     }
   );
 }
-
