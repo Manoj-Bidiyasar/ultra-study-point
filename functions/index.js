@@ -2,7 +2,6 @@ const { setGlobalOptions } = require("firebase-functions");
 const { onDocumentWritten } = require("firebase-functions/v2/firestore");
 const { defineSecret } = require("firebase-functions/params");
 const logger = require("firebase-functions/logger");
-const fetch = require("node-fetch");
 
 setGlobalOptions({ maxInstances: 10 });
 

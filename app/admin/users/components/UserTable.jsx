@@ -29,13 +29,15 @@ export default function UserTable({ users }) {
   return (
     <table style={ui.table}>
       <colgroup>
-        <col style={{ width: "22%" }} />
-        <col style={{ width: "26%" }} />
-        <col style={{ width: "12%" }} />
-        <col style={{ width: "14%" }} />
-        <col style={{ width: "8%" }} />
-        <col style={{ width: "8%" }} />
+        <col style={{ width: "18%" }} />
+        <col style={{ width: "24%" }} />
         <col style={{ width: "10%" }} />
+        <col style={{ width: "14%" }} />
+        <col style={{ width: "6%" }} />
+        <col style={{ width: "6%" }} />
+        <col style={{ width: "7%" }} />
+        <col style={{ width: "7%" }} />
+        <col style={{ width: "8%" }} />
       </colgroup>
       <thead>
         <tr>
@@ -43,9 +45,11 @@ export default function UserTable({ users }) {
           <th style={ui.th}>Email</th>
           <th style={ui.th}>Role</th>
           <th style={ui.th}>Status</th>
-          <th style={ui.th}>Daily</th>
-          <th style={ui.th}>Monthly</th>
-          <th style={ui.th}>Notes</th>
+          <th style={{ ...ui.th, ...ui.centerCell }}>Daily</th>
+          <th style={{ ...ui.th, ...ui.centerCell }}>Monthly</th>
+          <th style={{ ...ui.th, ...ui.centerCell }}>Notes</th>
+          <th style={{ ...ui.th, ...ui.centerCell }}>Quiz</th>
+          <th style={{ ...ui.th, ...ui.centerCell }}>PYQ</th>
         </tr>
       </thead>
 
@@ -80,7 +84,7 @@ export default function UserTable({ users }) {
               </select>
             </td>
 
-            <td style={ui.td}>
+            <td style={{ ...ui.td, ...ui.centerCell }}>
               <AccessToggle
                 userId={u.id}
                 accessKey="dailyCA"
@@ -88,7 +92,7 @@ export default function UserTable({ users }) {
               />
             </td>
 
-            <td style={ui.td}>
+            <td style={{ ...ui.td, ...ui.centerCell }}>
               <AccessToggle
                 userId={u.id}
                 accessKey="monthlyCA"
@@ -96,11 +100,27 @@ export default function UserTable({ users }) {
               />
             </td>
 
-            <td style={ui.td}>
+            <td style={{ ...ui.td, ...ui.centerCell }}>
               <AccessToggle
                 userId={u.id}
                 accessKey="notes"
                 value={u.contentAccess?.notes}
+              />
+            </td>
+
+            <td style={{ ...ui.td, ...ui.centerCell }}>
+              <AccessToggle
+                userId={u.id}
+                accessKey="quizzes"
+                value={u.contentAccess?.quizzes}
+              />
+            </td>
+
+            <td style={{ ...ui.td, ...ui.centerCell }}>
+              <AccessToggle
+                userId={u.id}
+                accessKey="pyqs"
+                value={u.contentAccess?.pyqs}
               />
             </td>
           </tr>
@@ -117,7 +137,7 @@ const ui = {
     borderRadius: 10,
     borderCollapse: "collapse",
     overflow: "hidden",
-    tableLayout: "auto",
+    tableLayout: "fixed",
   },
   th: {
     textAlign: "left",
@@ -141,6 +161,9 @@ const ui = {
     alignItems: "center",
     gap: 6,
     flexWrap: "wrap",
+  },
+  centerCell: {
+    textAlign: "center",
   },
   tr: {
     background: "#fff",

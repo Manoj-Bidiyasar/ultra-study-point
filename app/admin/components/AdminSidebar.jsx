@@ -6,14 +6,19 @@ import { useEffect, useState } from "react";
 import {
   collection,
   getCountFromServer,
+  onSnapshot,
   query,
   where,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 
-export default function AdminSidebar({ permissions, role }) {
+export default function AdminSidebar({ permissions, role, user, onLogout }) {
   const pathname = usePathname();
-  const [pendingReviews, setPendingReviews] = useState(0);
+  const [dashboardBadgeCount, setDashboardBadgeCount] = useState(0);
+  const roleLabel = (role || user?.role || "admin")
+    .toString()
+    .replaceAll("_", " ")
+    .toUpperCase();
 
   const [caOpen, setCaOpen] = useState(
     pathname.startsWith("/admin/current-affairs")
@@ -21,48 +26,168 @@ export default function AdminSidebar({ permissions, role }) {
   const caActive = pathname.startsWith("/admin/current-affairs");
 
   useEffect(() => {
-    async function loadPending() {
-      if (role !== "admin" && role !== "super_admin") return;
+    let unsub = null;
 
+    async function loadPendingFallbackForAdmin() {
       try {
-        const reviewRef = collection(
-          db,
-          "artifacts",
-          "ultra-study-point",
-          "public",
-          "data",
-          "review_queue"
+        const base = ["artifacts", "ultra-study-point", "public", "data"];
+        const [caReview, notesReview, quizReview, pyqReview] = await Promise.all([
+          getCountFromServer(
+            query(collection(db, ...base, "currentAffairs"), where("status", "==", "review"))
+          ),
+          getCountFromServer(
+            query(collection(db, ...base, "master_notes"), where("status", "==", "review"))
+          ),
+          getCountFromServer(
+            query(collection(db, ...base, "Quizzes"), where("status", "==", "review"))
+          ),
+          getCountFromServer(
+            query(collection(db, ...base, "PYQs"), where("status", "==", "review"))
+          ),
+        ]);
+
+        setDashboardBadgeCount(
+          (caReview.data().count || 0) +
+            (notesReview.data().count || 0) +
+            (quizReview.data().count || 0) +
+            (pyqReview.data().count || 0)
         );
-        const snap = await getCountFromServer(
-          query(reviewRef, where("status", "==", "pending"))
-        );
-        setPendingReviews(snap.data().count || 0);
-      } catch (e) {
-        setPendingReviews(0);
+      } catch {
+        setDashboardBadgeCount(0);
       }
     }
 
-    loadPending();
-  }, [role]);
+    async function loadReturnedFallbackForEditor() {
+      if (!user?.uid) {
+        setDashboardBadgeCount(0);
+        return;
+      }
+      try {
+        const base = ["artifacts", "ultra-study-point", "public", "data"];
+        const [ca, notes, quiz, pyq] = await Promise.all([
+          getCountFromServer(
+            query(
+              collection(db, ...base, "currentAffairs"),
+              where("createdBy.uid", "==", user.uid),
+              where("review.status", "==", "rejected")
+            )
+          ),
+          getCountFromServer(
+            query(
+              collection(db, ...base, "master_notes"),
+              where("createdBy.uid", "==", user.uid),
+              where("review.status", "==", "rejected")
+            )
+          ),
+          getCountFromServer(
+            query(
+              collection(db, ...base, "Quizzes"),
+              where("createdBy.uid", "==", user.uid),
+              where("review.status", "==", "rejected")
+            )
+          ),
+          getCountFromServer(
+            query(
+              collection(db, ...base, "PYQs"),
+              where("createdBy.uid", "==", user.uid),
+              where("review.status", "==", "rejected")
+            )
+          ),
+        ]);
+        setDashboardBadgeCount(
+          (ca.data().count || 0) +
+            (notes.data().count || 0) +
+            (quiz.data().count || 0) +
+            (pyq.data().count || 0)
+        );
+      } catch {
+        setDashboardBadgeCount(0);
+      }
+    }
+
+    if (role === "admin" || role === "super_admin") {
+      const reviewRef = collection(
+        db,
+        "artifacts",
+        "ultra-study-point",
+        "public",
+        "data",
+        "review_queue"
+      );
+      const pendingQ = query(reviewRef, where("status", "==", "pending"));
+
+      unsub = onSnapshot(
+        pendingQ,
+        (snap) => {
+          const count = snap?.size || 0;
+          if (count > 0) {
+            setDashboardBadgeCount(count);
+            return;
+          }
+          loadPendingFallbackForAdmin();
+        },
+        () => {
+          loadPendingFallbackForAdmin();
+        }
+      );
+    } else if (role === "editor" && user?.uid) {
+      const reviewRef = collection(
+        db,
+        "artifacts",
+        "ultra-study-point",
+        "public",
+        "data",
+        "review_queue"
+      );
+      const rejectedQ = query(
+        reviewRef,
+        where("status", "==", "rejected"),
+        where("createdBy.uid", "==", user.uid)
+      );
+      unsub = onSnapshot(
+        rejectedQ,
+        (snap) => {
+          const count = snap?.size || 0;
+          if (count > 0) {
+            setDashboardBadgeCount(count);
+            return;
+          }
+          loadReturnedFallbackForEditor();
+        },
+        () => {
+          loadReturnedFallbackForEditor();
+        }
+      );
+    } else {
+      setDashboardBadgeCount(0);
+      return undefined;
+    }
+
+    return () => {
+      if (unsub) unsub();
+    };
+  }, [role, user?.uid]);
 
   return (
     <aside style={styles.sidebar}>
-
-      {/* ROLE BADGE */}
-      <div style={styles.roleBadge}>
-        {role.replaceAll("_", " ").toUpperCase()}
+      <div style={styles.accountTopBlock}>
+        <div style={styles.accountIdentityRow}>
+          <div style={styles.accountName}>{user?.displayName || "Admin"}</div>
+          <span style={styles.accountRole}>{roleLabel}</span>
+        </div>
+        <div style={styles.accountEmail}>{user?.email || "-"}</div>
       </div>
 
-      {/* NAVIGATION */}
       <nav style={styles.nav}>
-        <div style={styles.navGroup}>
+        <div style={{ ...styles.navGroup, ...styles.navGroupDashboard }}>
           <NavLink
             href="/admin/dashboard"
             label="Dashboard"
-            badge={pendingReviews > 0 ? pendingReviews : null}
+            badge={dashboardBadgeCount > 0 ? dashboardBadgeCount : null}
           />
+        </div>
 
-          {/* CURRENT AFFAIRS */}
+        <div style={{ ...styles.navGroup, ...styles.navGroupContent }}>
           {permissions?.canManageContent && (
             <>
               <div
@@ -73,7 +198,12 @@ export default function AdminSidebar({ permissions, role }) {
                 onClick={() => setCaOpen(!caOpen)}
               >
                 Current Affairs
-                <span>{caOpen ? "▾" : "▸"}</span>
+                <span
+                  style={{
+                    ...styles.chevron,
+                    transform: caOpen ? "rotate(45deg)" : "rotate(-45deg)",
+                  }}
+                />
               </div>
 
               {caOpen && (
@@ -93,45 +223,35 @@ export default function AdminSidebar({ permissions, role }) {
             </>
           )}
 
-          {/* NOTES */}
           {permissions?.canManageContent && (
             <NavLink href="/admin/notes" label="Notes" />
           )}
-
-          {/* QUIZZES */}
           {permissions?.canManageContent && (
             <NavLink href="/admin/quizzes" label="Quizzes" />
           )}
-
-          {/* PYQs */}
           {permissions?.canManageContent && (
             <NavLink href="/admin/pyqs" label="PYQs" />
           )}
-
-          {/* CONTACT */}
-          {permissions?.canViewMessages && (
-            <NavLink
-              href="/admin/messages"
-              label="Contact Messages"
-            />
-          )}
         </div>
 
-        {/* USERS */}
-        {permissions?.canManageUsers && (
-          <div style={styles.navGroup}>
-            <NavLink href="/admin/users" label="Users" />
+        {(permissions?.canViewMessages || permissions?.canManageUsers) && (
+          <div style={{ ...styles.navGroup, ...styles.navGroupUsers }}>
+            {permissions?.canViewMessages && (
+              <NavLink href="/admin/messages" label="Contact Messages" />
+            )}
+            {permissions?.canManageUsers && (
+              <NavLink href="/admin/users" label="Users" />
+            )}
           </div>
         )}
       </nav>
 
+      <button style={styles.logoutBtn} onClick={onLogout}>
+        Logout
+      </button>
     </aside>
   );
 }
-
-/* ======================================================
-   NAV LINK
-====================================================== */
 
 function NavLink({ href, label, small, badge }) {
   const pathname = usePathname();
@@ -154,14 +274,16 @@ function NavLink({ href, label, small, badge }) {
           ? "rgba(59,130,246,0.16)"
           : "transparent",
         fontWeight: active ? 700 : 600,
-        display: "block",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 8,
         color: active ? "#1e3a8a" : "inherit",
         border: active ? "1px solid #93c5fd" : "1px solid transparent",
         borderLeft: active ? "4px solid #2563eb" : "4px solid transparent",
-        boxShadow: hover
-          ? "0 1px 6px rgba(15,23,42,0.08)"
-          : "none",
+        boxShadow: hover ? "0 1px 6px rgba(15,23,42,0.08)" : "none",
         transition: "all 0.15s ease",
+        whiteSpace: "nowrap",
       }}
     >
       <span>{label}</span>
@@ -170,60 +292,69 @@ function NavLink({ href, label, small, badge }) {
   );
 }
 
-/* ======================================================
-   STYLES
-====================================================== */
-
 const styles = {
   sidebar: {
-    width: 230,
-    height: "100vh",
-    position: "sticky",
-    top: 0,
+    width: 250,
+    position: "fixed",
+    top: 76,
+    left: 12,
+    bottom: 12,
     flexShrink: 0,
-
     borderRight: "1px solid #e5e7eb",
-    padding: 16,
-
+    padding: 14,
+    borderRadius: 14,
+    boxShadow: "0 10px 24px rgba(15, 23, 42, 0.08)",
+    zIndex: 30,
     display: "flex",
     flexDirection: "column",
-
     background: "#ffffff",
     color: "#111827",
-
     overflowY: "auto",
   },
-
-  roleBadge: {
-    fontSize: 11,
-    fontWeight: 800,
-    letterSpacing: 0.6,
-    color: "#2563eb",
-    marginBottom: 14,
-    background: "#eff6ff",
-    border: "1px solid #bfdbfe",
-    padding: "6px 10px",
-    borderRadius: 999,
-    alignSelf: "flex-start",
+  accountTopBlock: {
+    marginBottom: 12,
+    padding: 12,
+    borderRadius: 10,
+    border: "1px solid #e5e7eb",
+    background: "#f8fafc",
+    display: "flex",
+    flexDirection: "column",
+    gap: 6,
   },
-
+  accountIdentityRow: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
   nav: {
     display: "flex",
     flexDirection: "column",
     gap: 6,
     flex: 1,
   },
-
   navGroup: {
     display: "flex",
     flexDirection: "column",
     gap: 6,
     padding: 8,
     borderRadius: 12,
-    border: "1px solid #e5e7eb",
+    border: "1px solid #dbe3ef",
     background: "#f8fafc",
+    boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.65)",
   },
-
+  navGroupDashboard: {
+    borderColor: "#bfdbfe",
+    background: "#eff6ff",
+  },
+  navGroupContent: {
+    borderColor: "#bae6fd",
+    background: "#f0f9ff",
+  },
+  navGroupUsers: {
+    borderColor: "#c4b5fd",
+    background: "#f5f3ff",
+  },
   dropdownHeader: {
     cursor: "pointer",
     padding: "8px 12px",
@@ -236,23 +367,25 @@ const styles = {
     border: "1px solid #e5e7eb",
     transition: "all 0.15s ease",
   },
-
   dropdownActive: {
     background: "linear-gradient(90deg, rgba(16,185,129,0.24), rgba(16,185,129,0.08))",
     border: "1px solid #6ee7b7",
     color: "#064e3b",
   },
-
   dropdownItems: {
     marginLeft: 6,
     display: "flex",
     flexDirection: "column",
     gap: 6,
   },
-
-  divider: {
-    margin: "12px 0",
-    borderTop: "1px solid #e5e7eb",
+  chevron: {
+    width: 8,
+    height: 8,
+    borderRight: "2px solid #334155",
+    borderBottom: "2px solid #334155",
+    display: "inline-block",
+    transition: "transform 0.15s ease",
+    alignSelf: "center",
   },
   badge: {
     marginLeft: "auto",
@@ -262,5 +395,43 @@ const styles = {
     padding: "2px 6px",
     borderRadius: 999,
     fontWeight: 700,
+  },
+  accountName: {
+    fontSize: 13,
+    fontWeight: 700,
+    color: "#111827",
+  },
+  accountRole: {
+    fontSize: 11,
+    fontWeight: 800,
+    letterSpacing: 0.5,
+    color: "#1e3a8a",
+    background: "#dbeafe",
+    border: "1px solid #93c5fd",
+    borderRadius: 999,
+    padding: "4px 10px",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: "fit-content",
+    whiteSpace: "nowrap",
+  },
+  accountEmail: {
+    fontSize: 12,
+    color: "#64748b",
+    wordBreak: "break-all",
+  },
+  logoutBtn: {
+    marginTop: 14,
+    padding: "10px 12px",
+    borderRadius: 10,
+    border: "1px solid #fecaca",
+    background: "linear-gradient(180deg, #fff1f2 0%, #ffe4e6 100%)",
+    color: "#9f1239",
+    fontSize: 13,
+    fontWeight: 700,
+    cursor: "pointer",
+    width: "100%",
+    boxShadow: "0 4px 10px rgba(190, 24, 93, 0.12)",
   },
 };

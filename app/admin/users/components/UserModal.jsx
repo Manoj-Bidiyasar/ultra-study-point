@@ -1,7 +1,22 @@
 import { useState } from "react";
 
+const DEFAULT_CONTENT_ACCESS = {
+  dailyCA: true,
+  monthlyCA: true,
+  notes: true,
+  quizzes: true,
+  pyqs: true,
+  messages: false,
+};
+
 export default function UserModal({ user, onClose, onSave }) {
-  const [form, setForm] = useState({ ...user });
+  const [form, setForm] = useState({
+    ...user,
+    contentAccess: {
+      ...DEFAULT_CONTENT_ACCESS,
+      ...(user.contentAccess || {}),
+    },
+  });
 
   const isSuperAdmin = user.role === "super_admin";
 

@@ -36,6 +36,19 @@ export default function SectionEditor({ block, onChange }) {
         />
       </div>
 
+      <div>
+        <label className={label}>Section theme</label>
+        <select
+          className={input}
+          value={block.tone || "simple"}
+          onChange={(e) => update("tone", e.target.value)}
+        >
+          <option value="simple">Simple (Default)</option>
+          <option value="blue">Light Blue</option>
+          <option value="red">Classic Red</option>
+        </select>
+      </div>
+
       {/* NESTED BLOCK EDITOR */}
       <div className="border-t pt-4">
         <UniversalEditor

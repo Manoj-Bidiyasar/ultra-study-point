@@ -2,13 +2,25 @@ import { notFound } from "next/navigation";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { serializeFirestoreData } from "@/lib/serialization/serializeFirestore";
 import QuizClient from "./QuizClient";
+import { verifyPreviewToken } from "@/lib/preview/verifyPreviewToken";
 
 export const dynamic = "force-dynamic";
 
-export default async function QuizPage({ params }) {
+export default async function QuizPage({ params, searchParams }) {
   const { quizId } = params;
   const adminDb = getAdminDb();
   if (!adminDb || !quizId) notFound();
+
+  const isPreview = searchParams?.preview === "true";
+  if (isPreview) {
+    const token = searchParams?.token;
+    const valid = await verifyPreviewToken({
+      token,
+      expectedType: "quiz",
+      expectedDocId: quizId,
+    });
+    if (!valid.ok) notFound();
+  }
 
   const docRef = adminDb
     .collection("artifacts")
@@ -26,7 +38,7 @@ export default async function QuizPage({ params }) {
     ...snap.data(),
   });
 
-  if (data.status !== "published") {
+  if (!isPreview && data.status !== "published") {
     notFound();
   }
 

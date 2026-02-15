@@ -10,7 +10,7 @@ import { BLOCK_RENDERERS } from "../registry/blockComponents";
  * ❌ no role logic
  * ✅ same JSON → same HTML
  */
-export default function renderBlock(block, index) {
+export default function renderBlock(block, index, context = {}) {
   if (!block || !block.type) return null;
 
   const key = block.id || index;
@@ -18,5 +18,5 @@ export default function renderBlock(block, index) {
 
   if (!Renderer) return null;
 
-  return <Renderer key={key} block={block} />;
+  return <Renderer key={key} block={block} context={context} />;
 }

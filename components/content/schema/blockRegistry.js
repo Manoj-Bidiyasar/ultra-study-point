@@ -47,6 +47,7 @@ export const BLOCK_REGISTRY = {
   default: {
     title: "",
     subtitle: "",
+    tone: "simple",
     blocks: [],
   },
   fields: ["title", "subtitle", "blocks"],

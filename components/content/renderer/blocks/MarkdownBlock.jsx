@@ -4,6 +4,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
+import rehypeRaw from "rehype-raw";
 import "katex/dist/katex.min.css";
 
 export default function MarkdownBlock({ block }) {
@@ -15,7 +16,7 @@ export default function MarkdownBlock({ block }) {
 
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath]}
-        rehypePlugins={[rehypeKatex]}
+        rehypePlugins={[rehypeKatex, rehypeRaw]}
         components={{
           h1: ({ children }) => (
             <h1 className="mt-8 mb-4 text-2xl font-bold text-gray-900">
@@ -42,7 +43,7 @@ export default function MarkdownBlock({ block }) {
           ),
 
           strong: ({ children }) => (
-            <strong className="font-semibold text-blue-600">
+            <strong className="font-semibold text-gray-900">
               {children}
             </strong>
           ),

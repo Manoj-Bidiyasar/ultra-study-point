@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import {
@@ -137,7 +137,15 @@ quizMeta: {
     /* ---------- WORKFLOW ---------- */
     createdBy: rawData.createdBy || null,
     updatedBy: rawData.updatedBy || null,
-    review: rawData.review || null,
+    review: {
+      ...(rawData.review || {}),
+      feedback: rawData.review?.feedback || "",
+      editorMessage:
+        rawData.review?.editorMessage || rawData.review?.message || "",
+      messageThread: Array.isArray(rawData.review?.messageThread)
+        ? rawData.review.messageThread
+        : [],
+    },
 
     __isNew: rawData.__isNew === true,
   }));
@@ -200,6 +208,54 @@ quizMeta: {
     });
   }, [currentUserProfile]);
 
+  useEffect(() => {
+    const canCleanup = role === "admin" || role === "super_admin";
+    if (!canCleanup) return;
+    if (state.status !== "published") return;
+    if (!hasWorkflowMessages(state.review)) return;
+
+    const publishedMs = dateToMs(rawData?.publishedAt || state.publishedAt);
+    if (!publishedMs) return;
+
+    const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+    if (Date.now() - publishedMs < sevenDaysMs) return;
+
+    let cancelled = false;
+
+    async function clearOldWorkflowMessages() {
+      try {
+        await updateDoc(docRef, {
+          review: {
+            ...(state.review || {}),
+            feedback: "",
+            editorMessage: "",
+            messageThread: [],
+          },
+        });
+
+        if (cancelled) return;
+        setState((s) => ({
+          ...s,
+          review: {
+            ...(s.review || {}),
+            feedback: "",
+            editorMessage: "",
+            messageThread: [],
+          },
+        }));
+      } catch (err) {
+        if (!isPermissionDenied(err)) {
+          console.error("Workflow message cleanup failed:", err);
+        }
+      }
+    }
+
+    clearOldWorkflowMessages();
+    return () => {
+      cancelled = true;
+    };
+  }, [role, state.status, state.publishedAt, state.review, rawData?.publishedAt]);
+
   /* ======================================================
      TAG INPUT BUFFER
   ====================================================== */
@@ -245,7 +301,7 @@ useEffect(() => {
       slug: state.slug,
     });
 
-  // ✅ prevent unnecessary setState
+  // âœ… prevent unnecessary setState
   if (
     nextTitle === state.title &&
     nextSeoTitle === state.seo.seoTitle &&
@@ -278,9 +334,15 @@ function getCollectionByType(type) {
 
   // future
   if (type === "quiz") return "Quizzes";
+  if (type === "pyq") return "PYQs";
 
   return "currentAffairs";
 }
+
+  function isPermissionDenied(err) {
+    const msg = String(err?.message || "").toLowerCase();
+    return err?.code === "permission-denied" || msg.includes("insufficient") || msg.includes("permission");
+  }
 
   const normalizedSlug = state.slug.trim().toLowerCase();
 
@@ -305,6 +367,24 @@ const docRef = doc(
     if (!v) return null;
     const d = new Date(v);
     return isNaN(d.getTime()) ? null : d;
+  }
+
+  function dateToMs(value) {
+    if (!value) return 0;
+    if (typeof value === "object" && typeof value.toDate === "function") {
+      const d = value.toDate();
+      return d instanceof Date && !Number.isNaN(d.getTime()) ? d.getTime() : 0;
+    }
+    const d = new Date(value);
+    return Number.isNaN(d.getTime()) ? 0 : d.getTime();
+  }
+
+  function hasWorkflowMessages(review) {
+    const feedback = String(review?.feedback || "").trim();
+    const editorMessage = String(review?.editorMessage || "").trim();
+    const thread = Array.isArray(review?.messageThread) ? review.messageThread : [];
+    const threadHasText = thread.some((m) => String(m?.text || "").trim());
+    return Boolean(feedback || editorMessage || threadHasText);
   }
 
   function cleanSeo(seo) {
@@ -346,8 +426,11 @@ const docRef = doc(
         docId: state.id,
         type,
         title: state.title || "",
+        slug: state.slug || "",
         status: "pending",
         createdBy: currentUserProfile,
+        message: String(state.review?.editorMessage || "").trim(),
+        editorMessage: String(state.review?.editorMessage || "").trim(),
         submittedAt: serverTimestamp(),
       });
       return;
@@ -368,7 +451,7 @@ const docRef = doc(
      AUTO SAVE
   ====================================================== */
 
-  const [autoSaveStatus, setAutoSaveStatus] = useState("Saved ✓");
+  const [autoSaveStatus, setAutoSaveStatus] = useState("Saved âœ“");
   const [saveError, setSaveError] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [nowTick, setNowTick] = useState(Date.now());
@@ -434,153 +517,137 @@ const docRef = doc(
   }
 
   async function saveToFirestore({ mode = "auto" } = {}) {
-  if (!currentUserProfile) return;
-  if (isLocked) return;
-  if (isSaving) return;
+    if (!currentUserProfile) return false;
+    if (isLocked) return false;
+    if (isSaving) return false;
 
-  setIsSaving(true);
-  setSaveError(null);
+    setIsSaving(true);
+    setSaveError(null);
 
-  // ✅ OPTIMISTIC UI
-  setAutoSaveStatus("Saved ✓");
-  setLastSavedAt(Date.now());
+    // Optimistic UI state.
+    setAutoSaveStatus("Saved");
+    setLastSavedAt(Date.now());
 
-  try {
-    if (type === "quiz") {
-      const quizErrors = validateQuizMeta(state.quizMeta);
-      if (quizErrors.length > 0) {
-        setAutoSaveStatus("Save blocked ⚠");
-        setSaveError(quizErrors[0]);
-        setSaveErrors(quizErrors);
-        return;
-      }
-    }
-  const slugError = await validateEditorSlug({
-    slug: normalizedSlug,
-    type,
-    currentId: state.id,
-  });
-
-  if (slugError) {
-    throw new Error(slugError);
-  }
-
-    const userMeta = {
-      uid: currentUserProfile.uid,
-      email: currentUserProfile.email,
-      displayName: currentUserProfile.displayName,
-      role: currentUserProfile.role,
-    };
-
-    const {
-  __isNew,
-  ...cleanState
-} = state;
-
-  // Auto-save should never publish. Keep scheduled if set, otherwise draft.
-  const safeStatus =
-    mode === "auto"
-      ? state.status === "scheduled"
-        ? "scheduled"
-        : "draft"
-      : state.status;
-
-const payload = {
-  id: state.id,
-
-  title: state.title,
-  slug: normalizedSlug,
-  summary: state.summary,
-  language: state.language,
-  tags: state.tags,
-
-  content: state.content,
-
-  dailyMeta: isCA ? state.dailyMeta : {},
-  monthlyMeta: isCA ? state.monthlyMeta : {},
-  notesMeta: type === "notes" ? state.notesMeta : {},
-  quizMeta: type === "quiz" ? state.quizMeta : {},
-
-  ...(type === "quiz"
-    ? {
-        description: state.summary,
-        durationMinutes: state.quizMeta?.durationMinutes ?? 0,
-        rules: state.quizMeta?.rules || {},
-        scoring: state.quizMeta?.scoring || {},
-        sections: state.quizMeta?.sections || [],
-        questions: state.quizMeta?.questions || [],
-      }
-    : {}),
-
-  relatedContent: state.relatedContent,
-
-  caDate: isCA ? safeDate(state.caDate) : null,
-  pdfUrl: isCA ? state.pdfUrl : "",
-
-  status: safeStatus,
-  publishedAt:
-    safeStatus === "scheduled"
-      ? safeDate(state.publishedAt)
-      : null,
-
-  seo: cleanSeo(state.seo),
-};
-
-
-
-    if (state.__isNew) {
-      await setDoc(docRef, {
-  ...payload,
-
-  // 🔴 REQUIRED BY RULES
-  type,                 // "daily" | "monthly"
-  isDeleted: false,
-  status: "draft",
-
-  // audit
-  createdAt: serverTimestamp(),
-  createdBy: userMeta,
-});
-
-
-      setState((s) => ({ ...s, __isNew: false }));
-    } else {
-      await updateDoc(docRef, payload);
-    }
-
-    setAutoSaveStatus("Saved ✓");
-    setSaveErrors([]);
-
-    if (mode === "manual") {
-      await addDoc(
-        collection(
-          db,
-          "artifacts",
-          "ultra-study-point",
-          "public",
-          "data",
-          "admin_activity"
-        ),
-        {
-          action: "save_manual",
-          docId: state.id,
-          type,
-          title: state.title || "",
-          user: currentUserProfile,
-          createdAt: serverTimestamp(),
+    try {
+      if (type === "quiz") {
+        const quizErrors = validateQuizMeta(state.quizMeta);
+        if (quizErrors.length > 0) {
+          setAutoSaveStatus("Save blocked");
+          setSaveError(quizErrors[0]);
+          setSaveErrors(quizErrors);
+          return false;
         }
-      );
-    }
-  } catch (err) {
-    console.error(err);
+      }
 
-    setAutoSaveStatus("Save failed ❌");
-    setSaveError(err.message || "Save failed");
-    setSaveErrors([]);
-  } finally {
-    setIsSaving(false);
+      const slugError = await validateEditorSlug({
+        slug: normalizedSlug,
+        type,
+        currentId: state.id,
+      });
+      if (slugError) throw new Error(slugError);
+
+      const userMeta = {
+        uid: currentUserProfile.uid,
+        email: currentUserProfile.email,
+        displayName: currentUserProfile.displayName,
+        role: currentUserProfile.role,
+      };
+
+      const safeStatus =
+        mode === "auto"
+          ? state.status === "scheduled"
+            ? "scheduled"
+            : "draft"
+          : state.status;
+
+      const payload = {
+        id: state.id,
+        title: state.title,
+        slug: normalizedSlug,
+        summary: state.summary,
+        language: state.language,
+        tags: state.tags,
+        content: state.content,
+        dailyMeta: isCA ? state.dailyMeta : {},
+        monthlyMeta: isCA ? state.monthlyMeta : {},
+        notesMeta: type === "notes" ? state.notesMeta : {},
+        quizMeta: type === "quiz" ? state.quizMeta : {},
+        ...(type === "quiz"
+          ? {
+              description: state.summary,
+              durationMinutes: state.quizMeta?.durationMinutes ?? 0,
+              rules: state.quizMeta?.rules || {},
+              scoring: state.quizMeta?.scoring || {},
+              sections: state.quizMeta?.sections || [],
+              questions: state.quizMeta?.questions || [],
+            }
+          : {}),
+        relatedContent: state.relatedContent,
+        caDate: isCA ? safeDate(state.caDate) : null,
+        pdfUrl: isCA ? state.pdfUrl : "",
+        status: safeStatus,
+        publishedAt: safeStatus === "scheduled" ? safeDate(state.publishedAt) : null,
+        review: {
+          ...(state.review || {}),
+          feedback: String(state.review?.feedback || ""),
+          editorMessage: String(state.review?.editorMessage || ""),
+        },
+        seo: cleanSeo(state.seo),
+      };
+
+      if (state.__isNew) {
+        await setDoc(docRef, {
+          ...payload,
+          type,
+          isDeleted: false,
+          status: "draft",
+          createdAt: serverTimestamp(),
+          createdBy: userMeta,
+        });
+        setState((s) => ({ ...s, __isNew: false }));
+      } else {
+        await updateDoc(docRef, payload);
+      }
+
+      setAutoSaveStatus("Saved");
+      setSaveErrors([]);
+
+      if (mode === "manual") {
+        try {
+          await addDoc(
+            collection(
+              db,
+              "artifacts",
+              "ultra-study-point",
+              "public",
+              "data",
+              "admin_activity"
+            ),
+            {
+              action: "save_manual",
+              docId: state.id,
+              type,
+              title: state.title || "",
+              user: currentUserProfile,
+              createdAt: serverTimestamp(),
+            }
+          );
+        } catch (err) {
+          if (!isPermissionDenied(err)) throw err;
+        }
+      }
+
+      return true;
+    } catch (err) {
+      console.error(err);
+      setAutoSaveStatus("Save failed");
+      setSaveError(err.message || "Save failed");
+      setSaveErrors([]);
+      return false;
+    } finally {
+      setIsSaving(false);
+    }
   }
-}
 
   async function submitForReview() {
     if (isLocked) return;
@@ -596,48 +663,98 @@ const payload = {
     setSubmitState({ loading: true, error: null, success: null });
 
     try {
-      await saveToFirestore({ mode: "manual" });
-      await upsertReviewQueue({ action: "submit" });
+      const saved = await saveToFirestore({ mode: "manual" });
+      if (!saved) {
+        setSubmitState({
+          loading: false,
+          error: "Please fix save errors before submitting for review.",
+          success: null,
+        });
+        return;
+      }
+      const nextReviewThread = Array.isArray(state.review?.messageThread)
+        ? [...state.review.messageThread]
+        : [];
+      const editorMessage = String(state.review?.editorMessage || "").trim();
+      if (editorMessage) {
+        nextReviewThread.push({
+          by: "editor",
+          text: editorMessage,
+          at: new Date().toISOString(),
+          uid: currentUserProfile.uid,
+          name: currentUserProfile.displayName || "",
+          email: currentUserProfile.email || "",
+        });
+      }
 
-      await updateDoc(docRef, {
-        status: "draft",
-        submittedAt: serverTimestamp(),
-        updatedBy: currentUserProfile,
-        updatedAt: serverTimestamp(),
-        isLocked: true,
-        review: {
-          status: "pending",
-          feedback: "",
-        },
-      });
+      try {
+        // Keep submit payload minimal to satisfy stricter Firestore rules.
+        await updateDoc(docRef, {
+          status: "review",
+          submittedAt: serverTimestamp(),
+          updatedBy: currentUserProfile,
+          updatedAt: serverTimestamp(),
+          review: {
+            ...(state.review || {}),
+            status: "pending",
+            editorMessage,
+            messageThread: nextReviewThread,
+          },
+        });
+      } catch (err) {
+        // Retry with the smallest possible payload if field-level rules are strict.
+        if (!isPermissionDenied(err)) throw err;
+        await updateDoc(docRef, {
+          status: "review",
+          submittedAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        });
+      }
 
       setState((s) => ({
         ...s,
+        status: "review",
         isLocked: true,
         review: {
+          ...(s.review || {}),
           status: "pending",
-          feedback: "",
+          editorMessage,
+          messageThread: nextReviewThread,
         },
       }));
 
-      await addDoc(
-        collection(
-          db,
-          "artifacts",
-          "ultra-study-point",
-          "public",
-          "data",
-          "admin_activity"
-        ),
-        {
-          action: "submit_review",
-          docId: state.id,
-          type,
-          title: state.title || "",
-          user: currentUserProfile,
-          createdAt: serverTimestamp(),
+      try {
+        await upsertReviewQueue({ action: "submit" });
+      } catch (err) {
+        if (isPermissionDenied(err)) {
+          // Optional queue entry; status=review is the primary signal for admins.
+        } else {
+          throw err;
         }
-      );
+      }
+
+      try {
+        await addDoc(
+          collection(
+            db,
+            "artifacts",
+            "ultra-study-point",
+            "public",
+            "data",
+            "admin_activity"
+          ),
+          {
+            action: "submit_review",
+            docId: state.id,
+            type,
+            title: state.title || "",
+            user: currentUserProfile,
+            createdAt: serverTimestamp(),
+          }
+        );
+      } catch (err) {
+        if (!isPermissionDenied(err)) throw err;
+      }
 
       setSubmitState({
         loading: false,
@@ -646,9 +763,12 @@ const payload = {
       });
     } catch (err) {
       console.error(err);
+      const friendlyError = isPermissionDenied(err)
+        ? "Submit failed due to Firestore permissions for this document. Please ensure the editor owns this document (createdBy.uid) and has submit access."
+        : err?.message || "Failed to submit for review.";
       setSubmitState({
         loading: false,
-        error: err?.message || "Failed to submit for review.",
+        error: friendlyError,
         success: null,
       });
     }
@@ -659,6 +779,17 @@ const payload = {
     if (role !== "admin" && role !== "super_admin") return;
 
     try {
+      const reviewFeedback = String(state.review?.feedback || "").trim();
+
+      if (nextStatus === "draft" && !reviewFeedback) {
+        setSubmitState({
+          loading: false,
+          error: "Please add feedback before returning to editor.",
+          success: null,
+        });
+        return;
+      }
+
       if (nextStatus === "published" && type === "quiz") {
         const snapshot = {
           ...state,
@@ -680,33 +811,114 @@ const payload = {
       if (nextStatus === "scheduled") {
         update.publishedAt = state.publishedAt || null;
       }
+      if (nextStatus === "published") {
+        update.review = {
+          status: "approved",
+          feedback: reviewFeedback,
+          editorMessage: String(state.review?.editorMessage || ""),
+          messageThread: Array.isArray(state.review?.messageThread)
+            ? [
+                ...state.review.messageThread,
+                ...(reviewFeedback
+                  ? [
+                      {
+                        by: "admin",
+                        text: reviewFeedback,
+                        at: new Date().toISOString(),
+                        uid: currentUserProfile.uid,
+                        name: currentUserProfile.displayName || "",
+                        email: currentUserProfile.email || "",
+                      },
+                    ]
+                  : []),
+              ]
+            : reviewFeedback
+            ? [
+                {
+                  by: "admin",
+                  text: reviewFeedback,
+                  at: new Date().toISOString(),
+                  uid: currentUserProfile.uid,
+                  name: currentUserProfile.displayName || "",
+                  email: currentUserProfile.email || "",
+                },
+              ]
+            : [],
+          reviewedBy: currentUserProfile,
+          reviewedByUid: currentUserProfile.uid,
+          reviewedByEmail: currentUserProfile.email,
+          reviewedAt: serverTimestamp(),
+        };
+      }
+      if (nextStatus === "draft") {
+        update.review = {
+          status: "rejected",
+          feedback: reviewFeedback,
+          editorMessage: String(state.review?.editorMessage || ""),
+          messageThread: Array.isArray(state.review?.messageThread)
+            ? [
+                ...state.review.messageThread,
+                {
+                  by: "admin",
+                  text: reviewFeedback,
+                  at: new Date().toISOString(),
+                  uid: currentUserProfile.uid,
+                  name: currentUserProfile.displayName || "",
+                  email: currentUserProfile.email || "",
+                },
+              ]
+            : [
+                {
+                  by: "admin",
+                  text: reviewFeedback,
+                  at: new Date().toISOString(),
+                  uid: currentUserProfile.uid,
+                  name: currentUserProfile.displayName || "",
+                  email: currentUserProfile.email || "",
+                },
+              ],
+          reviewedBy: currentUserProfile,
+          reviewedByUid: currentUserProfile.uid,
+          reviewedByEmail: currentUserProfile.email,
+          reviewedAt: serverTimestamp(),
+        };
+      }
 
       await updateDoc(docRef, update);
 
       if (nextStatus === "published") {
-        await upsertReviewQueue({ action: "approve" });
-        update.review = {
-          status: "approved",
-          feedback: state.review?.feedback || "",
-          reviewedBy: currentUserProfile,
-        };
+        try {
+          await upsertReviewQueue({ action: "approve" });
+        } catch (err) {
+          if (!isPermissionDenied(err)) throw err;
+        }
       }
       if (nextStatus === "draft") {
-        await upsertReviewQueue({
-          action: "reject",
-          feedback: state.review?.feedback || "",
-        });
-        update.review = {
-          status: "rejected",
-          feedback: state.review?.feedback || "",
-          reviewedBy: currentUserProfile,
-        };
+        try {
+          await upsertReviewQueue({
+            action: "reject",
+            feedback: reviewFeedback,
+          });
+        } catch (err) {
+          if (!isPermissionDenied(err)) throw err;
+        }
       }
 
       setState((s) => ({
         ...s,
         ...update,
       }));
+
+      setSubmitState({
+        loading: false,
+        error: null,
+        success:
+          nextStatus === "draft"
+            ? "Returned to editor with feedback."
+            : nextStatus === "published"
+            ? "Published successfully."
+            : "Status updated.",
+      });
 
       await addDoc(
         collection(
@@ -728,6 +940,11 @@ const payload = {
       );
     } catch (err) {
       console.error(err);
+      setSubmitState({
+        loading: false,
+        error: err?.message || "Failed to update status.",
+        success: null,
+      });
     }
   }
 
@@ -740,7 +957,7 @@ useEffect(() => {
   const t = setTimeout(() => saveToFirestore({ mode: "auto" }), 3000);
   return () => clearTimeout(t);
 }, [
-  currentUserProfile, // ✅ CRITICAL
+  currentUserProfile, // âœ… CRITICAL
   state.title,
   state.slug,
   state.summary,
@@ -802,7 +1019,7 @@ useEffect(() => {
           </div>
           {state.status === "published" && (
             <div style={ui.warn}>
-              This document is published. Changes won’t auto‑publish until you
+              This document is published. Changes wonâ€™t autoâ€‘publish until you
               manually update the status.
             </div>
           )}
@@ -824,18 +1041,15 @@ useEffect(() => {
           <button
             style={ui.btnPrimary}
             onClick={async () => {
+              const saved = await saveToFirestore({ mode: "manual" });
+              if (!saved) return;
+              const previewSlug = type === "notes" ? state.id : normalizedSlug;
               const url = await createPreviewToken({
                 docId: state.id,
-                slug: normalizedSlug,
+                slug: previewSlug,
                 type,
               });
-              const previewWindow = window.open(url, "_blank");
-
-              setInterval(() => {
-                if (previewWindow && !previewWindow.closed) {
-                  previewWindow.location.reload();
-                }
-              }, 5000);
+              window.open(url, "_blank");
             }}
           >
             Preview
@@ -859,7 +1073,6 @@ useEffect(() => {
   <CollapsibleCard title="Basic Information" defaultOpen>
     <BasicInfoSection
       state={state}
-      role={role}
       isLocked={isLocked}
       onChange={setState}
     />
@@ -935,12 +1148,24 @@ useEffect(() => {
       rawData={rawData}
       role={role}
       submitState={submitState}
-      onReviewChange={(feedback) =>
+      onStatusChange={(status) =>
+        setState((s) => ({
+          ...s,
+          status,
+        }))
+      }
+      onPublishedAtChange={(publishedAt) =>
+        setState((s) => ({
+          ...s,
+          publishedAt,
+        }))
+      }
+      onReviewChange={(value, field = "feedback") =>
         setState((s) => ({
           ...s,
           review: {
             ...s.review,
-            feedback,
+            [field]: value,
           },
         }))
       }
@@ -981,11 +1206,11 @@ useEffect(() => {
                 documentValue={state}
                 onDocumentChange={setState}
                 role={role}
-                /* ✅ REAL SAVE FUNCTION */
+                /* âœ… REAL SAVE FUNCTION */
                 onSave={saveToFirestore}
-                /* ✅ WORKFLOW STATE */
+                /* âœ… WORKFLOW STATE */
                 workflow={state.status}
-                /* ✅ LOCK BANNER */
+                /* âœ… LOCK BANNER */
                 lockedBy={
                   state.isLocked
                     ? state.updatedBy?.displayName || "Another editor"
@@ -1020,7 +1245,7 @@ const ui = {
   display: "grid",
   gridTemplateColumns: "3fr 1fr",
   gap: 24,
-  alignItems: "start", // ⭐ THIS FIXES HEIGHT
+  alignItems: "start", // â­ THIS FIXES HEIGHT
 },
 
   card: {

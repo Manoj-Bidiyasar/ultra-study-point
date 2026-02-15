@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { onAuthStateChanged, signOut } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, onSnapshot } from "firebase/firestore";
 
 import { auth, db } from "@/lib/firebase/client";
 import { permissionsByRole } from "@/lib/admin/permissions";
@@ -17,8 +17,15 @@ export default function AdminLayout({ children }) {
   const [adminUser, setAdminUser] = useState(null);
 
   useEffect(() => {
+    let stopUserDocListener = null;
+
     const unsub = onAuthStateChanged(auth, async (user) => {
       try {
+        if (stopUserDocListener) {
+          stopUserDocListener();
+          stopUserDocListener = null;
+        }
+
         /* 🚫 Not logged in */
         if (!user) {
           if (!pathname.startsWith("/admin/login")) {
@@ -49,6 +56,10 @@ export default function AdminLayout({ children }) {
         }
 
         const userData = snap.data();
+        const localSessionId =
+          typeof window !== "undefined"
+            ? window.localStorage.getItem("admin_session_id")
+            : null;
 
         /* ❌ Disabled user */
         if (userData.status && userData.status !== "active") {
@@ -64,12 +75,46 @@ export default function AdminLayout({ children }) {
           return;
         }
 
+        if (
+          localSessionId &&
+          userData.activeSessionId &&
+          userData.activeSessionId !== localSessionId
+        ) {
+          if (typeof window !== "undefined") {
+            window.localStorage.removeItem("admin_session_id");
+          }
+          await signOut(auth);
+          router.replace("/admin/login");
+          return;
+        }
+
         /* ✅ Authorized admin */
         setAdminUser({
           uid: user.uid,
           email: user.email,
           ...userData,
           permissions: permissionsByRole[userData.role],
+        });
+
+        stopUserDocListener = onSnapshot(userRef, async (docSnap) => {
+          if (!docSnap.exists()) return;
+          const latest = docSnap.data();
+          const localId =
+            typeof window !== "undefined"
+              ? window.localStorage.getItem("admin_session_id")
+              : null;
+
+          if (
+            localId &&
+            latest.activeSessionId &&
+            latest.activeSessionId !== localId
+          ) {
+            if (typeof window !== "undefined") {
+              window.localStorage.removeItem("admin_session_id");
+            }
+            await signOut(auth);
+            router.replace("/admin/login");
+          }
         });
 
         setLoading(false);
@@ -80,7 +125,10 @@ export default function AdminLayout({ children }) {
       }
     });
 
-    return () => unsub();
+    return () => {
+      if (stopUserDocListener) stopUserDocListener();
+      unsub();
+    };
   }, [router, pathname]);
 
   /* ⏳ Loading */
@@ -105,41 +153,20 @@ export default function AdminLayout({ children }) {
   /* 🧱 Admin Shell */
   return (
     <div className="admin-layout">
-      {/* ===== TOP BAR ===== */}
-      <header style={styles.header}>
-        {/* LEFT: Name + Role */}
-        <div style={styles.left}>
-          <span style={styles.name}>
-            {adminUser.displayName || "Admin"}
-          </span>
-
-          <span style={styles.roleBadge}>
-            {adminUser.role.replace("_", " ").toUpperCase()}
-          </span>
-        </div>
-
-        {/* RIGHT: Email + Logout */}
-        <div style={styles.right}>
-          <span style={styles.email}>{adminUser.email}</span>
-
-          <button
-            style={styles.logout}
-            onClick={async () => {
-              await signOut(auth);
-              router.replace("/admin/login");
-            }}
-          >
-            Logout
-          </button>
-        </div>
-      </header>
-
       {/* ===== BODY ===== */}
       <div style={styles.body}>
         {/* SIDEBAR */}
         <AdminSidebar
           permissions={adminUser.permissions}
           role={adminUser.role}
+          user={adminUser}
+          onLogout={async () => {
+            if (typeof window !== "undefined") {
+              window.localStorage.removeItem("admin_session_id");
+            }
+            await signOut(auth);
+            router.replace("/admin/login");
+          }}
         />
 
         {/* MAIN CONTENT */}
@@ -152,54 +179,11 @@ export default function AdminLayout({ children }) {
 /* ================= STYLES ================= */
 
 const styles = {
-  header: {
-    height: 56,
-    padding: "0 20px",
-    borderBottom: "1px solid #e5e7eb",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    background: "#ffffff",
-  },
-  left: {
-    display: "flex",
-    alignItems: "center",
-    gap: 10,
-  },
-  name: {
-    fontWeight: 600,
-    fontSize: 15,
-  },
-  roleBadge: {
-    fontSize: 11,
-    padding: "2px 6px",
-    borderRadius: 4,
-    background: "#e0e7ff",
-    color: "#1e40af",
-    fontWeight: 600,
-  },
-  right: {
-    display: "flex",
-    alignItems: "center",
-    gap: 14,
-  },
-  email: {
-    fontSize: 13,
-    color: "#64748b",
-  },
-  logout: {
-    padding: "6px 12px",
-    borderRadius: 6,
-    cursor: "pointer",
-    border: "1px solid #e5e7eb",
-    background: "#ffffff",
-  },
   body: {
-    display: "flex",
-    minHeight: "calc(100vh - 56px)",
+    minHeight: "100vh",
   },
   content: {
-    flex: 1,
+    marginLeft: 274,
     padding: 24,
     background: "#f8fafc",
     minWidth: 0,

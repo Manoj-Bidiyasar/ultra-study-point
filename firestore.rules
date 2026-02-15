@@ -1,0 +1,240 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function role() {
+      return request.auth.token.role != null
+        ? request.auth.token.role
+        : get(/databases/$(database)/documents/artifacts/ultra-study-point/public/data/users/$(request.auth.uid)).data.role;
+    }
+
+    function isEditor() {
+      return isSignedIn() && role() == "editor";
+    }
+
+    function isAdmin() {
+      return isSignedIn() && role() == "admin";
+    }
+
+    function isSuperAdmin() {
+      return isSignedIn() && role() == "super_admin";
+    }
+
+    function isAdminOrSuper() {
+      return isAdmin() || isSuperAdmin();
+    }
+
+    match /artifacts/{artifactId}/public/data/currentAffairs/{docId} {
+      allow read: if request.query != null;
+      allow read: if resource != null && resource.data.status == "published" && resource.data.isDeleted == false;
+      allow read: if isSignedIn();
+
+      allow create: if
+        isSignedIn() &&
+        (isEditor() || isAdminOrSuper()) &&
+        request.resource.data.status == "draft" &&
+        request.resource.data.type in ["daily", "monthly"] &&
+        request.resource.data.isDeleted == false &&
+        (
+          request.resource.data.createdBy.uid == request.auth.uid ||
+          request.resource.data.createdBy == null
+        );
+
+      allow update: if
+        isSignedIn() &&
+        (
+          isSuperAdmin() ||
+          (isAdmin() && request.resource.data.isDeleted == resource.data.isDeleted) ||
+          (
+            isEditor() &&
+            (
+              resource.data.createdBy.uid == request.auth.uid ||
+              request.resource.data.createdBy.uid == request.auth.uid
+            ) &&
+            (
+              resource.data.status in ["draft", "rejected", "review"] ||
+              resource.data.review.status == "rejected"
+            ) &&
+            request.resource.data.status in ["draft", "review"]
+          )
+        );
+
+      allow delete: if isSuperAdmin();
+    }
+
+    match /artifacts/{artifactId}/public/data/master_notes/{docId} {
+      allow read: if request.query != null;
+      allow read: if resource != null && resource.data.status == "published" && resource.data.isDeleted == false;
+      allow read: if isSignedIn();
+
+      allow create: if
+        isSignedIn() &&
+        (isEditor() || isAdminOrSuper()) &&
+        request.resource.data.createdBy.uid == request.auth.uid &&
+        request.resource.data.status == "draft" &&
+        request.resource.data.isDeleted == false;
+
+      allow update: if
+        isSignedIn() &&
+        (
+          isSuperAdmin() ||
+          (isAdmin() && request.resource.data.isDeleted == resource.data.isDeleted) ||
+          (
+            isEditor() &&
+            (
+              resource.data.createdBy.uid == request.auth.uid ||
+              request.resource.data.createdBy.uid == request.auth.uid
+            ) &&
+            (
+              resource.data.status in ["draft", "rejected", "review"] ||
+              resource.data.review.status == "rejected"
+            ) &&
+            request.resource.data.status in ["draft", "review"]
+          )
+        );
+
+      allow delete: if isSuperAdmin();
+    }
+
+    match /artifacts/{artifactId}/public/data/Quizzes/{docId} {
+      allow read: if request.query != null;
+      allow read: if resource != null && resource.data.status == "published" && resource.data.isDeleted == false;
+      allow read: if isSignedIn();
+
+      allow create: if
+        isSignedIn() &&
+        (isEditor() || isAdminOrSuper()) &&
+        request.resource.data.status == "draft" &&
+        request.resource.data.type == "quiz" &&
+        request.resource.data.isDeleted == false &&
+        (
+          request.resource.data.createdBy.uid == request.auth.uid ||
+          request.resource.data.createdBy == null
+        );
+
+      allow update: if
+        isSignedIn() &&
+        (
+          isSuperAdmin() ||
+          (isAdmin() && request.resource.data.isDeleted == resource.data.isDeleted) ||
+          (
+            isEditor() &&
+            (
+              resource.data.createdBy.uid == request.auth.uid ||
+              request.resource.data.createdBy.uid == request.auth.uid
+            ) &&
+            (
+              resource.data.status in ["draft", "rejected", "review"] ||
+              resource.data.review.status == "rejected"
+            ) &&
+            request.resource.data.status in ["draft", "review"]
+          )
+        );
+
+      allow delete: if isSuperAdmin();
+    }
+
+    match /artifacts/{artifactId}/public/data/PYQs/{docId} {
+      allow read: if request.query != null;
+      allow read: if resource != null && resource.data.status == "published" && resource.data.isDeleted == false;
+      allow read: if isSignedIn();
+
+      allow create: if
+        isSignedIn() &&
+        (isEditor() || isAdminOrSuper()) &&
+        request.resource.data.status == "draft" &&
+        request.resource.data.isDeleted == false &&
+        (
+          request.resource.data.createdBy.uid == request.auth.uid ||
+          request.resource.data.createdBy == null
+        );
+
+      allow update: if
+        isSignedIn() &&
+        (
+          isSuperAdmin() ||
+          (isAdmin() && request.resource.data.isDeleted == resource.data.isDeleted) ||
+          (
+            isEditor() &&
+            (
+              resource.data.createdBy.uid == request.auth.uid ||
+              request.resource.data.createdBy.uid == request.auth.uid
+            ) &&
+            (
+              resource.data.status in ["draft", "rejected", "review"] ||
+              resource.data.review.status == "rejected"
+            ) &&
+            request.resource.data.status in ["draft", "review"]
+          )
+        );
+
+      allow delete: if isSuperAdmin();
+    }
+
+    match /artifacts/{artifactId}/public/data/question_bank/{docId} {
+      allow read: if isAdminOrSuper();
+      allow create, update, delete: if isAdminOrSuper();
+    }
+
+    match /artifacts/{artifactId}/public/data/question_stats/{docId} {
+      allow read: if isAdminOrSuper();
+      allow create, update: if isAdminOrSuper();
+      allow delete: if isSuperAdmin();
+    }
+
+    match /artifacts/{artifactId}/public/data/contact_messages/{id} {
+      allow create: if true;
+      allow read, update: if isAdminOrSuper();
+      allow delete: if isSuperAdmin();
+    }
+
+    match /artifacts/{artifactId}/public/data/users/{uid} {
+      allow read: if isSignedIn() && (request.auth.uid == uid || isAdminOrSuper());
+
+      allow update: if isSuperAdmin()
+        && !("role" in request.resource.data.diff(resource.data).changedKeys());
+
+      allow create, delete: if isSuperAdmin();
+    }
+
+    match /artifacts/{artifactId}/public/data/review_queue/{reviewId} {
+      allow create: if
+        isEditor() &&
+        request.resource.data.createdBy.uid == request.auth.uid &&
+        request.resource.data.status == "pending";
+
+      allow read: if
+        isSignedIn() &&
+        (
+          isAdminOrSuper() ||
+          (
+            isEditor() &&
+            resource.data.createdBy.uid == request.auth.uid
+          )
+        );
+
+      allow update: if isAdminOrSuper();
+      allow delete: if false;
+    }
+
+    match /artifacts/{artifactId}/public/data/admin_activity/{logId} {
+      allow create: if isAdminOrSuper();
+      allow read: if isSuperAdmin();
+      allow update, delete: if false;
+    }
+
+    match /artifacts/{artifactId}/private/preview_tokens/items/{token} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow delete: if request.auth != null;
+    }
+
+    match /artifacts/{artifactId}/public/data/system_flags/{flagId} {
+      allow read, create, update, delete: if isSuperAdmin();
+    }
+  }
+}

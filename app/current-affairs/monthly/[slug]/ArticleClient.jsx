@@ -22,9 +22,6 @@ const getMonthYearFromDate = (dateValue) => {
   return { month, year };
 };
 
-const capitalize = (str = "") =>
-  str.charAt(0).toUpperCase() + str.slice(1);
-
 export default function ArticleClient({
   data,
   schema,
@@ -33,7 +30,8 @@ export default function ArticleClient({
 }) {
   const { month, year } = getMonthYearFromDate(data.caDate);
 
-const title = `${month} ${year} Monthly Compilation`;
+const title =
+  month && year ? `${month} ${year} Monthly Compilation` : "Monthly Compilation";
 
 
   return (
@@ -52,27 +50,29 @@ const title = `${month} ${year} Monthly Compilation`;
 
         {/* HEADER */}
 
-        <header className="py-10 mb-12 bg-gray-200 border-b">
-          <div className="max-w-7xl mx-auto px-6">
-            <h1 className="text-3xl md:text-4xl font-extrabold">
-              {title}
-            </h1>
-              <p className="mt-2 text-lg font-semibold text-gray-700">
+        <header className="py-4 md:py-10 mb-5 md:mb-12 bg-gray-200 border-b">
+          <div className="max-w-7xl mx-auto px-4 md:px-6">
+            <div className="flex items-center justify-center md:justify-start gap-2 flex-wrap">
+              <h1 className="text-xl md:text-4xl font-extrabold leading-[1.1] m-0 text-center md:text-left">
+                {title}
+              </h1>
+              <span className="inline-flex items-center align-middle rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-[10px] md:text-xs font-semibold leading-none text-red-700">
                 Monthly Update
-              </p>
+              </span>
+            </div>
               {data.summary && (
-                <p className="mt-4 text-gray-700 max-w-4xl">
+                <p className="mt-2 md:mt-4 text-sm md:text-base text-gray-700">
                   {data.summary}
                 </p>
               )}
               
               {/* TAGS */}
               {data.tags?.length > 0 && (
-                <div className="mt-4 flex flex-wrap gap-2">
+                <div className="mt-2 md:mt-4 flex flex-wrap gap-1.5 md:gap-2">
                   {data.tags.map((tag, i) => (
                     <span
                       key={i}
-                      className="px-3 py-1 text-xs font-semibold bg-red-100 text-red-700 rounded-full"
+                      className="px-2.5 md:px-3 py-0.5 md:py-1 text-[11px] md:text-xs font-semibold bg-red-100 text-red-700 rounded-full"
                     >
                       #{tag}
                     </span>
@@ -83,13 +83,14 @@ const title = `${month} ${year} Monthly Compilation`;
         </header>
 
         {/* CONTENT */}
-        <div className="max-w-7xl mx-auto px-4 grid lg:grid-cols-[1fr_320px] gap-8">
+        <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_280px] gap-6 lg:gap-7">
           <div className="space-y-10">
             {/* ================= MAIN CONTENT ================= */}
 <article className="bg-white rounded-xl shadow p-6">
 
   <UniversalRenderer
     blocks={data.content?.blocks || []}
+    pageType="monthly"
   />
 
 </article>
@@ -115,8 +116,7 @@ const title = `${month} ${year} Monthly Compilation`;
 
                     {/* DESCRIPTION */}
                     <p className="text-gray-500 text-sm mb-6">
-                         Download the complete {month} {year} current affairs magazine for offline study.
-  magazine for offline study.
+                      Download the complete {month} {year} current affairs magazine for offline study.
                     </p>
 
                     {/* DOWNLOAD BUTTON */}

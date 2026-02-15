@@ -115,6 +115,7 @@ export default async function PreviewPage({
 
       <UniversalRenderer
         blocks={data.content?.blocks}
+        pageType={type}
       />
     </article>
   );

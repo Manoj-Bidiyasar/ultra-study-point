@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -11,6 +11,7 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 import QuizContentEditor from "@/components/admin/sections/QuizContentEditor";
+import { createPreviewToken } from "@/lib/preview/previewToken";
 
 const COLLECTION_PATH = [
   "artifacts",
@@ -421,15 +422,33 @@ export default function PyqEditorClient({ docId }) {
 
       await syncQuestionBank(state.questions || []);
       router.replace(`/admin/pyqs/${docId}`);
+      return true;
     } catch (err) {
       setError(err?.message || "Failed to save PYQ.");
+      return false;
     } finally {
       setSaving(false);
     }
   }
 
+  async function openPreview() {
+    setError("");
+    try {
+      const saved = await saveDoc();
+      if (!saved) return;
+      const url = await createPreviewToken({
+        docId,
+        slug: state.slug || docId,
+        type: "pyq",
+      });
+      window.open(url, "_blank");
+    } catch (err) {
+      setError(err?.message || "Failed to open preview.");
+    }
+  }
+
   if (loading) {
-    return <div style={{ padding: 24 }}>Loadingâ€¦</div>;
+    return <div style={{ padding: 24 }}>LoadingÃ¢â‚¬Â¦</div>;
   }
 
   return (
@@ -438,12 +457,15 @@ export default function PyqEditorClient({ docId }) {
         <div>
           <h1 style={styles.title}>{state.title || "Untitled PYQ"}</h1>
           <div style={styles.sub}>
-            ID: {docId} â€¢ {state.status}
+            ID: {docId} Ã¢â‚¬Â¢ {state.status}
           </div>
         </div>
         <div style={styles.headerActions}>
+          <button onClick={openPreview} disabled={saving} style={styles.btnSecondary}>
+            Preview
+          </button>
           <button onClick={saveDoc} disabled={saving} style={styles.btn}>
-            {saving ? "Savingâ€¦" : "Save"}
+            {saving ? "SavingÃ¢â‚¬Â¦" : "Save"}
           </button>
         </div>
       </div>
@@ -766,6 +788,15 @@ const styles = {
     border: "1px solid #1d4ed8",
     background: "#2563eb",
     color: "#fff",
+    fontWeight: 600,
+    cursor: "pointer",
+  },
+  btnSecondary: {
+    padding: "8px 14px",
+    borderRadius: 8,
+    border: "1px solid #d1d5db",
+    background: "#fff",
+    color: "#111827",
     fontWeight: 600,
     cursor: "pointer",
   },

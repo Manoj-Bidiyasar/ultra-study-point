@@ -13,7 +13,7 @@ export default function Breadcrumbs({ items }) {
           hidden md:block
         "
       >
-        <ol className="max-w-4xl mx-auto px-6 py-3 text-sm flex gap-2 items-center">
+        <ol className="max-w-7xl mx-auto px-4 md:px-6 py-3 text-sm flex gap-2 items-center">
           {items.map((item, i) => (
             <li key={i} className="flex gap-2 items-center">
               {item.href ? (
@@ -37,9 +37,9 @@ export default function Breadcrumbs({ items }) {
       {/* ===== MOBILE COLLAPSED BREADCRUMB ===== */}
       <nav
         aria-label="Breadcrumb"
-        className="md:hidden px-4 py-2 text-xs text-gray-600"
+        className="md:hidden px-4 py-1 text-[11px] text-gray-600 overflow-x-auto whitespace-nowrap"
       >
-        <ol className="flex flex-wrap items-center gap-1">
+        <ol className="flex flex-nowrap items-center gap-1">
           {items.map((item, i) => (
             <li key={i} className="flex items-center gap-1">
               {item.href ? (

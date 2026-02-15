@@ -11,6 +11,11 @@ const RelatedContent = dynamic(
 );
 
 export default function ArticleClient({ data, schema, breadcrumbs, related }) {
+  const dateLabel = formatIndianDate(data.caDate);
+  const headingTitle = dateLabel
+    ? `${dateLabel} Current Affairs`
+    : data.title || "Daily Current Affairs";
+
   return (
     <main>
       {/* SEO: JSON-LD Schema */}
@@ -29,32 +34,33 @@ export default function ArticleClient({ data, schema, breadcrumbs, related }) {
         {/* ✅ ONLY RENDER — DO NOT BUILD */}
         <Breadcrumbs items={breadcrumbs} />
       {/* HEADER */}
-      <header className="py-10 mb-12 bg-gray-200 border-b">
-        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8">
+      <header className="py-4 md:py-10 mb-5 md:mb-12 bg-gray-200 border-b">
+        <div className="max-w-7xl mx-auto px-4 md:px-6">
           {/*LEFT TITLE*/}
           {/*MAIN HEADING*/}
           <div>
-            <h1 className="text-2xl md:text-4xl font-extrabold">
-              {formatIndianDate(data.caDate)} Current Affairs
-            </h1>
-            {/* SUB HEADING */}
-              <p className="mt-2 text-lg font-semibold text-gray-700">
+            <div className="flex items-center justify-center md:justify-start gap-2 flex-wrap">
+              <h1 className="text-xl md:text-4xl font-extrabold leading-[1.1] m-0 text-center md:text-left">
+                {headingTitle}
+              </h1>
+              <span className="inline-flex items-center align-middle rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[10px] md:text-xs font-semibold leading-none text-blue-700">
                 Daily Update
-              </p>
+              </span>
+            </div>
               {/* SUMMARY */}
               {data.summary && (
-                <p className="mt-4 text-gray-700 max-w-3xl">
+                <p className="mt-2 md:mt-4 text-sm md:text-base text-gray-700">
                   {data.summary}
                 </p>
               )}
               
               {/* TAGS */}
               {data.tags?.length > 0 && (
-                <div className="mt-4 flex flex-wrap gap-2">
+                <div className="mt-2 md:mt-4 flex flex-wrap gap-1.5 md:gap-2">
                   {data.tags.map((tag, i) => (
                     <span
                       key={i}
-                      className="px-3 py-1 text-xs font-semibold bg-blue-100 text-blue-700 rounded-full"
+                      className="px-2.5 md:px-3 py-0.5 md:py-1 text-[11px] md:text-xs font-semibold bg-blue-100 text-blue-700 rounded-full"
                     >
                       #{tag}
                     </span>
@@ -67,7 +73,7 @@ export default function ArticleClient({ data, schema, breadcrumbs, related }) {
         
 
       {/* CONTENT */}
-      <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-8">
+      <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_280px] gap-6 lg:gap-7">
       {/* MAIN ARTICLE COLUMN */}
       <div className="space-y-10" itemProp="articleBody">
         
@@ -76,6 +82,7 @@ export default function ArticleClient({ data, schema, breadcrumbs, related }) {
 
   <UniversalRenderer
     blocks={data.content?.blocks || []}
+    pageType="daily"
   />
 
 </article>

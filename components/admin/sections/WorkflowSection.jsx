@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { doc, getDoc } from "firebase/firestore";
@@ -13,18 +13,18 @@ export default function WorkflowSection({
   onReviewChange,
   onSubmitForReview,
   onAdminAction,
+  onStatusChange,
+  onPublishedAtChange,
 }) {
   const [userCache, setUserCache] = useState({});
-
-  /* ================= USER FETCH ================= */
+  const [localError, setLocalError] = useState("");
+  const [showOlderEditorMessages, setShowOlderEditorMessages] = useState(false);
+  const [showOlderAdminMessages, setShowOlderAdminMessages] = useState(false);
+  const isAdminRole = role === "admin" || role === "super_admin";
 
   async function loadUser(uid) {
     if (!uid) return;
-
-    setUserCache((prev) => {
-      if (prev[uid]) return prev;
-      return { ...prev };
-    });
+    setUserCache((prev) => (prev[uid] ? prev : { ...prev }));
 
     const ref = doc(
       db,
@@ -36,103 +36,297 @@ export default function WorkflowSection({
       uid
     );
 
-    const snap = await getDoc(ref);
-    if (!snap.exists()) return;
-
-    setUserCache((prev) => ({
-      ...prev,
-      [uid]: snap.data(),
-    }));
+    try {
+      const snap = await getDoc(ref);
+      if (!snap.exists()) return;
+      setUserCache((prev) => ({ ...prev, [uid]: snap.data() }));
+    } catch {
+      // Editor can be blocked from reading admin/super_admin user docs.
+    }
   }
 
   useEffect(() => {
     if (state?.createdBy?.uid) loadUser(state.createdBy.uid);
     if (state?.updatedBy?.uid) loadUser(state.updatedBy.uid);
-    if (state?.review?.reviewedByUid)
-      loadUser(state.review.reviewedByUid);
-  }, [
-    state?.createdBy?.uid,
-    state?.updatedBy?.uid,
-    state?.review?.reviewedByUid,
-  ]);
+    if (state?.review?.reviewedByUid) loadUser(state.review.reviewedByUid);
+  }, [state?.createdBy?.uid, state?.updatedBy?.uid, state?.review?.reviewedByUid]);
 
-  /* ================= SAFE GETTER ================= */
+  const createdUser = userCache?.[state?.createdBy?.uid] || null;
+  const updatedUser = userCache?.[state?.updatedBy?.uid] || null;
+  const reviewedUser = userCache?.[state?.review?.reviewedByUid] || null;
 
-  function getUser(uid) {
-    if (!uid) return null;
-    return userCache && userCache[uid]
-      ? userCache[uid]
-      : null;
+  const creatorName = createdUser?.displayName || state?.createdBy?.displayName || state?.createdBy?.email || "-";
+  const creatorRole = createdUser?.role || state?.createdBy?.role || "-";
+  const creatorEmail = createdUser?.email || state?.createdBy?.email || "-";
+
+  const updatedName = updatedUser?.displayName || state?.updatedBy?.displayName || state?.updatedBy?.email || "-";
+  const updatedRole = updatedUser?.role || state?.updatedBy?.role || "-";
+
+  const reviewerName = reviewedUser?.displayName || state?.review?.reviewedByEmail || "-";
+  const reviewerRole = reviewedUser?.role || "-";
+  const reviewedAt = formatShortDate(state?.review?.reviewedAt);
+  const createdAtText = formatShortDate(rawData?.createdAt);
+  const updatedAtText = formatShortDate(rawData?.updatedAt);
+  const submittedAtText = formatShortDate(rawData?.submittedAt);
+
+  const hasLastUpdated =
+    Boolean(rawData?.updatedAt) ||
+    Boolean(rawData?.submittedAt) ||
+    Boolean(state?.updatedBy?.uid) ||
+    Boolean(state?.updatedBy?.email) ||
+    Boolean(state?.updatedBy?.displayName);
+
+  const hasReviewer =
+    Boolean(state?.review?.reviewedByUid) ||
+    Boolean(state?.review?.reviewedByEmail) ||
+    Boolean(state?.review?.reviewedAt) ||
+    Boolean(String(state?.review?.feedback || "").trim());
+
+  const showRejectFeedback = isAdminRole && state?.status === "rejected";
+  const showEditorMessage = role === "editor";
+  const adminFeedbackValue = state?.review?.feedback || "";
+  const editorMessageValue = state?.review?.editorMessage || "";
+  const reviewThread = Array.isArray(state?.review?.messageThread)
+    ? state.review.messageThread
+    : [];
+  const editorThread = reviewThread.filter(
+    (m) => m && m.by === "editor" && String(m.text || "").trim()
+  );
+  const adminThread = reviewThread.filter(
+    (m) => m && m.by === "admin" && String(m.text || "").trim()
+  );
+  const latestEditorThreadMessage =
+    editorThread.length > 0 ? editorThread[editorThread.length - 1] : null;
+  const latestAdminThreadMessage =
+    adminThread.length > 0 ? adminThread[adminThread.length - 1] : null;
+  const latestEditorMessage = String(
+    latestEditorThreadMessage?.text || editorMessageValue || ""
+  ).trim();
+  const latestAdminMessage = String(
+    latestAdminThreadMessage?.text || adminFeedbackValue || ""
+  ).trim();
+  const olderEditorMessages = latestEditorThreadMessage
+    ? editorThread.slice(0, -1)
+    : editorThread;
+  const olderAdminMessages = latestAdminThreadMessage
+    ? adminThread.slice(0, -1)
+    : adminThread;
+  const olderEditorCount = olderEditorMessages.length;
+  const olderAdminCount = olderAdminMessages.length;
+  const totalEditorMessages = editorThread.length;
+  const totalAdminMessages = adminThread.length;
+  const showAllTwoMessages = totalEditorMessages === 2;
+  const showToggleOlder = totalEditorMessages > 2;
+  const showAllTwoAdminMessages = totalAdminMessages === 2;
+  const showToggleOlderAdmin = totalAdminMessages > 2;
+
+  function handleSubmitStatus() {
+    setLocalError("");
+    if (!isAdminRole) return;
+    if (state?.status === "scheduled" && !state?.publishedAt) {
+      setLocalError("Please choose schedule date and time.");
+      return;
+    }
+    if (state?.status === "rejected" && !String(adminFeedbackValue).trim()) {
+      setLocalError("Please write feedback before returning to editor.");
+      return;
+    }
+    if (state?.status === "rejected") {
+      onAdminAction("draft");
+      return;
+    }
+    onAdminAction(state?.status || "draft");
   }
-
-
-  const createdUser = getUser(state?.createdBy?.uid);
-  const updatedUser = getUser(state?.updatedBy?.uid);
-  const reviewedUser = getUser(state?.review?.reviewedByUid);
-
-  /* ================= UI ================= */
 
   return (
     <div style={ui.card}>
       <h3 style={ui.title}>Workflow & Audit Information</h3>
 
-      <Row
-        label1="Created By"
-        value1={createdUser?.displayName || "—"}
-        label2="Role"
-        value2={createdUser?.role || "—"}
-      />
+      <div style={ui.auditGrid}>
+        <AuditCard title="Creator">
+          <div style={ui.auditMainRow}>
+            <NameWithTooltip value={creatorName} />
+            <span style={ui.roleBadge}>{formatRoleLabel(creatorRole)}</span>
+          </div>
+          <div style={ui.auditLine}>{creatorEmail}</div>
+          {rawData?.createdAt && <div style={ui.auditLine}><b>Created At:</b> {createdAtText}</div>}
+        </AuditCard>
 
-      <Row
-        label1="Creator Email"
-        value1={createdUser?.email || "—"}
-        label2="Created At"
-        value2={formatShortDate(rawData?.createdAt)}
-      />
+        {hasLastUpdated && (
+          <AuditCard title="Last Updated">
+            <div style={ui.auditMainRow}>
+              <NameWithTooltip value={updatedName} />
+              <span style={ui.roleBadgeMuted}>{formatRoleLabel(updatedRole)}</span>
+            </div>
+            {rawData?.updatedAt && <div style={ui.auditLine}><b>Updated At:</b> {updatedAtText}</div>}
+            {rawData?.submittedAt && <div style={ui.auditLine}><b>Submitted At:</b> {submittedAtText}</div>}
+          </AuditCard>
+        )}
 
-      <Row
-        label1="Last Updated By"
-        value1={updatedUser?.displayName || "—"}
-        label2="Updated At"
-        value2={formatShortDate(rawData?.updatedAt)}
-      />
+        {hasReviewer && (
+          <AuditCard title="Reviewer">
+            <div style={ui.auditMainRow}>
+              <NameWithTooltip value={reviewerName} />
+              <span style={ui.roleBadgeMuted}>{formatRoleLabel(reviewerRole)}</span>
+            </div>
+            {state?.review?.reviewedAt && <div style={ui.auditLine}><b>Reviewed At:</b> {reviewedAt}</div>}
+          </AuditCard>
+        )}
 
-      <Row
-        label1="Submitted At"
-        value1={formatShortDate(rawData?.submittedAt)}
-        label2="Status"
-        value2={state?.status || "—"}
-      />
+        <AuditCard title="Status">
+          {isAdminRole ? (
+            <>
+              <select
+                style={ui.select}
+                value={state?.status || "draft"}
+                onChange={(e) => onStatusChange?.(e.target.value)}
+              >
+                <option value="draft">Draft</option>
+                <option value="scheduled">Scheduled</option>
+                <option value="published">Published</option>
+                <option value="rejected">Rejected</option>
+              </select>
+              {state?.status === "scheduled" && (
+                <Field label="Schedule Date & Time">
+                  <input
+                    type="datetime-local"
+                    style={ui.input}
+                    value={state?.publishedAt || ""}
+                    onChange={(e) => onPublishedAtChange?.(e.target.value)}
+                  />
+                </Field>
+              )}
+            </>
+          ) : (
+            <div style={ui.auditMainRow}>
+              <span style={ui.auditName}>{String(state?.status || "-").toUpperCase()}</span>
+            </div>
+          )}
+        </AuditCard>
+      </div>
 
-      {state?.review && (
-        <>
-          <Row
-            label1="Reviewed By"
-            value1={
-              reviewedUser?.displayName ||
-              state.review.reviewedByEmail ||
-              "—"
+      {(showRejectFeedback || showEditorMessage) && (
+        <Field label={showRejectFeedback ? "Feedback" : "Message for Admin"}>
+          <textarea
+            style={ui.textarea}
+            rows={3}
+            disabled={isAdminRole ? !showRejectFeedback : false}
+            placeholder={
+              showRejectFeedback
+                ? "Write feedback before returning to editor."
+                : "Write your question or suggestion for admin review."
             }
-            label2="Reviewer Role"
-            value2={reviewedUser?.role || "—"}
+            value={isAdminRole ? adminFeedbackValue : editorMessageValue}
+            onChange={(e) =>
+              onReviewChange(
+                e.target.value,
+                isAdminRole ? "feedback" : "editorMessage"
+              )
+            }
           />
-
-          <Field label="Feedback">
-            <textarea
-              style={ui.textarea}
-              rows={3}
-              disabled={role === "editor"}
-              value={state.review.feedback || ""}
-              onChange={(e) =>
-                onReviewChange(e.target.value)
-              }
-            />
-          </Field>
-        </>
+        </Field>
       )}
 
-      {/* ACTIONS */}
-      <div style={{ marginTop: 12, display: "flex", gap: 8 }}>
+      {isAdminRole && latestEditorMessage && (
+        <div style={ui.infoText}>
+          <div>
+            <b>Latest Editor Message:</b> {latestEditorMessage}
+          </div>
+          {showAllTwoMessages && (
+            <div style={{ marginTop: 8, display: "grid", gap: 6 }}>
+              {olderEditorMessages
+                .slice()
+                .reverse()
+                .map((msg, idx) => (
+                  <div key={`${msg.at || "old"}-${idx}`} style={ui.historyBox}>
+                    <div>{msg.text}</div>
+                  </div>
+                ))}
+            </div>
+          )}
+          {showToggleOlder && (
+            <>
+              <button
+                type="button"
+                style={ui.inlineLinkBtn}
+                onClick={() => setShowOlderEditorMessages((v) => !v)}
+              >
+                {showOlderEditorMessages
+                  ? "Hide older messages"
+                  : `Show ${olderEditorCount} older messages`}
+              </button>
+              {showOlderEditorMessages && (
+                <div style={{ marginTop: 8, display: "grid", gap: 6 }}>
+                  {olderEditorMessages
+                    .slice()
+                    .reverse()
+                    .map((msg, idx) => (
+                      <div key={`${msg.at || "old"}-${idx}`} style={ui.historyBox}>
+                        <div>{msg.text}</div>
+                      </div>
+                    ))}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      {role === "editor" && latestAdminMessage && (
+        <div style={ui.infoText}>
+          <div>
+            <b>Latest Admin Message:</b> {latestAdminMessage}
+          </div>
+          {showAllTwoAdminMessages && (
+            <div style={{ marginTop: 8, display: "grid", gap: 6 }}>
+              {olderAdminMessages
+                .slice()
+                .reverse()
+                .map((msg, idx) => (
+                  <div key={`${msg.at || "old-admin"}-${idx}`} style={ui.historyBox}>
+                    <div>{msg.text}</div>
+                  </div>
+                ))}
+            </div>
+          )}
+          {showToggleOlderAdmin && (
+            <>
+              <button
+                type="button"
+                style={ui.inlineLinkBtn}
+                onClick={() => setShowOlderAdminMessages((v) => !v)}
+              >
+                {showOlderAdminMessages
+                  ? "Hide older messages"
+                  : `Show ${olderAdminCount} older messages`}
+              </button>
+              {showOlderAdminMessages && (
+                <div style={{ marginTop: 8, display: "grid", gap: 6 }}>
+                  {olderAdminMessages
+                    .slice()
+                    .reverse()
+                    .map((msg, idx) => (
+                      <div key={`${msg.at || "old-admin"}-${idx}`} style={ui.historyBox}>
+                        <div>{msg.text}</div>
+                      </div>
+                    ))}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+
+      <div style={{ marginTop: 12, display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
+        {isAdminRole && (
+          <button
+            type="button"
+            style={ui.btnPrimary}
+            onClick={handleSubmitStatus}
+          >
+            {state?.status === "rejected" ? "Return with Feedback" : "Submit"}
+          </button>
+        )}
         {role === "editor" && (
           <button
             style={ui.btnPrimary}
@@ -142,69 +336,52 @@ export default function WorkflowSection({
             {submitState?.loading ? "Submitting..." : "Submit for Review"}
           </button>
         )}
-
-        {(role === "admin" || role === "super_admin") && (
-          <>
-            <button
-              style={ui.btnPrimary}
-              onClick={() => onAdminAction("published")}
-            >
-              Publish
-            </button>
-            <button
-              style={ui.btn}
-              onClick={() => onAdminAction("scheduled")}
-            >
-              Schedule
-            </button>
-            <button
-              style={ui.btn}
-              onClick={() => onAdminAction("draft")}
-            >
-              Return to Draft
-            </button>
-          </>
-        )}
       </div>
 
-      {submitState?.error && (
-        <div style={ui.errorText}>{submitState.error}</div>
-      )}
-      {submitState?.success && (
-        <div style={ui.successText}>{submitState.success}</div>
-      )}
+      {localError && <div style={ui.errorText}>{localError}</div>}
+      {submitState?.error && <div style={ui.errorText}>{submitState.error}</div>}
+      {submitState?.success && <div style={ui.successText}>{submitState.success}</div>}
     </div>
   );
 }
 
-/* ================= UI HELPERS ================= */
-
-function Row({ label1, value1, label2, value2 }) {
+function AuditCard({ title, children }) {
   return (
-    <div style={ui.row}>
-      <Field label={label1}>
-        <input style={ui.input} disabled value={value1} />
-      </Field>
-
-      <Field label={label2}>
-        <input style={ui.input} disabled value={value2} />
-      </Field>
+    <div style={ui.auditCard}>
+      <div style={ui.auditHead}>{title}</div>
+      {children}
     </div>
   );
 }
 
 function Field({ label, children }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-      <label style={{ fontSize: 13, fontWeight: 600 }}>
-        {label}
-      </label>
+    <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 6 }}>
+      <label style={{ fontSize: 13, fontWeight: 600 }}>{label}</label>
       {children}
     </div>
   );
 }
 
-/* ================= STYLES ================= */
+function NameWithTooltip({ value }) {
+  const [show, setShow] = useState(false);
+  const text = String(value || "-");
+
+  return (
+    <span
+      style={ui.nameWrap}
+      onMouseEnter={() => setShow(true)}
+      onMouseLeave={() => setShow(false)}
+    >
+      <span style={ui.auditName}>{text}</span>
+      {show && text !== "-" && <span style={ui.nameTooltip}>{text}</span>}
+    </span>
+  );
+}
+
+function formatRoleLabel(role) {
+  return String(role || "-").replaceAll("_", " ").toUpperCase();
+}
 
 const ui = {
   card: {
@@ -219,18 +396,108 @@ const ui = {
     fontWeight: 700,
     marginBottom: 14,
     color: "#111827",
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
   },
-  row: {
+  auditGrid: {
     display: "grid",
-    gridTemplateColumns: "1fr",
-    gap: 16,
+    gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+    gap: 10,
     marginBottom: 12,
+  },
+  auditCard: {
+    border: "1px solid #e5e7eb",
+    borderRadius: 8,
+    background: "#f8fafc",
+    padding: 10,
+  },
+  auditHead: {
+    fontSize: 12,
+    fontWeight: 700,
+    color: "#475569",
+    marginBottom: 8,
+    textTransform: "uppercase",
+    letterSpacing: 0.3,
+  },
+  auditMainRow: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+    marginBottom: 6,
+  },
+  auditName: {
+    fontSize: 14,
+    fontWeight: 700,
+    color: "#0f172a",
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    minWidth: 0,
+    flex: 1,
+  },
+  nameWrap: {
+    position: "relative",
+    minWidth: 0,
+    flex: 1,
+    display: "inline-block",
+  },
+  nameTooltip: {
+    position: "absolute",
+    left: 0,
+    bottom: "calc(100% + 6px)",
+    background: "#111827",
+    color: "#fff",
+    borderRadius: 6,
+    padding: "4px 8px",
+    fontSize: 12,
+    lineHeight: 1.3,
+    whiteSpace: "normal",
+    maxWidth: 260,
+    zIndex: 30,
+    boxShadow: "0 8px 20px rgba(0, 0, 0, 0.18)",
+  },
+  auditLine: {
+    fontSize: 12,
+    color: "#475569",
+    marginTop: 4,
+    wordBreak: "break-word",
+  },
+  roleBadge: {
+    fontSize: 10,
+    fontWeight: 800,
+    color: "#1e3a8a",
+    background: "#dbeafe",
+    border: "1px solid #93c5fd",
+    borderRadius: 999,
+    padding: "3px 8px",
+    whiteSpace: "nowrap",
+  },
+  roleBadgeMuted: {
+    fontSize: 10,
+    fontWeight: 700,
+    color: "#334155",
+    background: "#e2e8f0",
+    border: "1px solid #cbd5e1",
+    borderRadius: 999,
+    padding: "3px 8px",
+    whiteSpace: "nowrap",
   },
   input: {
     padding: "8px 10px",
     border: "1px solid #d1d5db",
     borderRadius: 6,
     fontSize: 14,
+    width: "100%",
+  },
+  select: {
+    padding: "8px 10px",
+    border: "1px solid #d1d5db",
+    borderRadius: 6,
+    fontSize: 14,
+    width: "100%",
+    background: "#fff",
   },
   textarea: {
     padding: "8px 10px",
@@ -239,22 +506,25 @@ const ui = {
     fontSize: 14,
     resize: "vertical",
   },
-  btn: {
-    padding: "6px 10px",
-    borderRadius: 6,
-    border: "1px solid #d1d5db",
-    background: "#fff",
-    cursor: "pointer",
-    fontSize: 13,
-  },
   btnPrimary: {
-    padding: "6px 10px",
+    padding: "7px 12px",
     borderRadius: 6,
     border: "1px solid #2563eb",
     background: "#2563eb",
     color: "#fff",
     cursor: "pointer",
     fontSize: 13,
+    fontWeight: 700,
+  },
+  btnDisabled: {
+    padding: "7px 12px",
+    borderRadius: 6,
+    border: "1px solid #cbd5e1",
+    background: "#f1f5f9",
+    color: "#94a3b8",
+    cursor: "not-allowed",
+    fontSize: 13,
+    fontWeight: 700,
   },
   errorText: {
     marginTop: 8,
@@ -266,5 +536,34 @@ const ui = {
     fontSize: 12,
     color: "#15803d",
   },
+  infoText: {
+    marginTop: 8,
+    padding: "8px 10px",
+    borderRadius: 6,
+    border: "1px solid #bfdbfe",
+    background: "#eff6ff",
+    color: "#1e3a8a",
+    fontSize: 12,
+  },
+  inlineLinkBtn: {
+    marginTop: 6,
+    background: "transparent",
+    border: "none",
+    color: "#1d4ed8",
+    fontSize: 12,
+    fontWeight: 700,
+    cursor: "pointer",
+    padding: 0,
+    textAlign: "left",
+  },
+  historyBox: {
+    border: "1px solid #bfdbfe",
+    background: "#f8fbff",
+    borderRadius: 6,
+    padding: "6px 8px",
+    fontSize: 12,
+    color: "#1e3a8a",
+  },
 };
+
 

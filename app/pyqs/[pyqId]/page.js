@@ -2,14 +2,26 @@ import { notFound } from "next/navigation";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { serializeFirestoreData } from "@/lib/serialization/serializeFirestore";
 import PyqDetailClient from "./PyqDetailClient";
+import { verifyPreviewToken } from "@/lib/preview/verifyPreviewToken";
 
 export const dynamic = "force-dynamic";
 
-export default async function PyqDetailPage({ params }) {
+export default async function PyqDetailPage({ params, searchParams }) {
   const { pyqId } = params || {};
   const adminDb = getAdminDb();
 
   if (!adminDb || !pyqId) notFound();
+
+  const isPreview = searchParams?.preview === "true";
+  if (isPreview) {
+    const token = searchParams?.token;
+    const valid = await verifyPreviewToken({
+      token,
+      expectedType: "pyq",
+      expectedDocId: pyqId,
+    });
+    if (!valid.ok) notFound();
+  }
 
   const docRef = adminDb
     .collection("artifacts")
@@ -23,7 +35,7 @@ export default async function PyqDetailPage({ params }) {
   if (!snap.exists) notFound();
 
   const data = serializeFirestoreData({ id: snap.id, ...snap.data() });
-  if (data.status !== "published") notFound();
+  if (!isPreview && data.status !== "published") notFound();
 
   return <PyqDetailClient data={data} />;
 }

@@ -222,8 +222,8 @@ export default function CurrentAffairsClient({
                 key={`${item.type}-${item.id}-${item.caDate}-${index}`}
                 href={
                   item.type === "monthly"
-                    ? `/current-affairs/monthly/${item.slug}`
-                    : `/current-affairs/daily/${item.slug}`
+                    ? `/current-affairs/monthly/${item.slug || item.id}`
+                    : `/current-affairs/daily/${item.slug || item.id}`
                 }
                 className={`bg-white p-3 rounded-xl border border-gray-200 transition-all flex items-center gap-4 group shadow-sm ${
                   activeTab === "daily"

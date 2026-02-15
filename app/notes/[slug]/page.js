@@ -6,6 +6,7 @@ import { serializeFirestoreData } from "@/lib/serialization/serializeFirestore";
 import { unstable_cache } from "next/cache";
 import { resolveRelatedContent } from "@/lib/related/relatedEngine";
 import { SITE_URL } from "@/lib/seo/siteConfig";
+import { verifyPreviewToken } from "@/lib/preview/verifyPreviewToken";
 
 
 /* ================= ISR ================= */
@@ -124,6 +125,15 @@ export default async function NotesPage(props) {
   if (!slug) notFound();
 
   const isPreview = searchParams?.preview === "true";
+  if (isPreview) {
+    const token = searchParams?.token;
+    const valid = await verifyPreviewToken({
+      token,
+      expectedType: "notes",
+      expectedSlug: slug,
+    });
+    if (!valid.ok) notFound();
+  }
 
   const colRef = adminDb
     .collection("artifacts")

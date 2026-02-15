@@ -1,21 +1,48 @@
 import ArticleClient from "./ArticleClient";
 import { notFound } from "next/navigation";
 import { getAdminDb } from "@/lib/firebase/admin";
-import { breadcrumbConfig } from "@/lib/breadcrumbs/config";
 import { buildBreadcrumbSchema } from "@/lib/breadcrumbs/buildBreadcrumbSchema";
 import { resolveRelatedContent } from "@/lib/related/relatedEngine";
 import { serializeFirestoreData } from "@/lib/serialization/serializeFirestore";
 import { unstable_cache } from "next/cache";
 import { formatIndianDate } from "@/lib/dates/formatters";
 import { SITE_URL, DEFAULT_OG_IMAGE } from "@/lib/seo/siteConfig";
+import { verifyPreviewToken } from "@/lib/preview/verifyPreviewToken";
 
 /* ================= RENDER MODE ================= */
 export const dynamic = "force-dynamic";
 
+function toJsDate(value) {
+  if (!value) return null;
+
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value;
+  }
+
+  if (typeof value?.toDate === "function") {
+    const d = value.toDate();
+    return Number.isNaN(d?.getTime?.()) ? null : d;
+  }
+
+  if (typeof value === "string" || typeof value === "number") {
+    const d = new Date(value);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+
+  if (typeof value === "object" && typeof value.seconds === "number") {
+    const ms =
+      value.seconds * 1000 + Math.floor((value.nanoseconds || 0) / 1e6);
+    const d = new Date(ms);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+
+  return null;
+}
+
 /* ================= DATE ================= */
 
 const getDailyBySlug = unstable_cache(
-  async (slug) => {
+  async (slugOrId) => {
     const adminDb = getAdminDb();
     if (!adminDb) return null;
 
@@ -26,15 +53,19 @@ const getDailyBySlug = unstable_cache(
       .doc("data")
       .collection("currentAffairs");
 
-    const snap = await colRef.where("slug", "==", slug).limit(1).get();
-    if (snap.empty) return null;
+    const snap = await colRef.where("slug", "==", slugOrId).limit(1).get();
+    if (!snap.empty) {
+      return {
+        id: snap.docs[0].id,
+        data: snap.docs[0].data(),
+      };
+    }
 
-    return {
-      id: snap.docs[0].id,
-      data: snap.docs[0].data(),
-    };
+    const direct = await colRef.doc(slugOrId).get();
+    if (!direct.exists) return null;
+    return { id: direct.id, data: direct.data() };
   },
-  (slug) => ["daily-ca", slug],
+  (slugOrId) => ["daily-ca", slugOrId],
   { revalidate: 300 }
 );
 
@@ -50,12 +81,10 @@ export async function generateMetadata(props) {
   if (!cached) return {};
 
   const data = cached.data;
-
-  const publishedAt = data.publishedAt?.toDate?.().toISOString();
-  const updatedAt = data.updatedAt?.toDate?.().toISOString();
-
-
-  const formattedDate = formatIndianDate(data.caDate?.toDate?.());
+  const publishedAt = toJsDate(data.publishedAt)?.toISOString();
+  const updatedAt = toJsDate(data.updatedAt)?.toISOString();
+  const caDate = toJsDate(data.caDate);
+  const formattedDate = formatIndianDate(caDate);
   const canonicalUrl =
     data.canonicalUrl || `${SITE_URL}/current-affairs/daily/${slug}`;
   return {
@@ -110,6 +139,15 @@ export default async function ArticlePage(props) {
   }
 
   const isPreview = searchParams?.preview === "true";
+  if (isPreview) {
+    const token = searchParams?.token;
+    const valid = await verifyPreviewToken({
+      token,
+      expectedType: "daily",
+      expectedSlug: slug,
+    });
+    if (!valid.ok) notFound();
+  }
   const cached = isPreview ? null : await getDailyBySlug(slug);
 
   const colRef = adminDb
@@ -125,11 +163,16 @@ export default async function ArticlePage(props) {
       .where("slug", "==", slug)
       .limit(1)
       .get();
-
-    if (snap.empty) notFound();
-    data = snap.docs[0].data();
+    if (!snap.empty) {
+      data = snap.docs[0].data();
+    } else {
+      const direct = await colRef.doc(slug).get();
+      if (!direct.exists) notFound();
+      data = direct.data();
+    }
   }
-  const publishedAt = data.publishedAt?.toDate?.() ?? null;
+  const publishedAt = toJsDate(data.publishedAt);
+  const caDate = toJsDate(data.caDate);
   const now = new Date();
 
   /* ===== RELATED CONTENT ===== */
@@ -159,7 +202,7 @@ export default async function ArticlePage(props) {
 
   const related = await resolveRelatedContent({
     pageType: "daily",
-    pageCaDate: data.caDate?.toDate?.(),
+    pageCaDate: caDate,
     subject: data.subject,
     tags: data.tags,
     manualCA,
@@ -185,9 +228,7 @@ export default async function ArticlePage(props) {
   let prev = null;
   let next = null;
 
-  if (data.caDate) {
-    const caDate = data.caDate.toDate();
-
+  if (caDate) {
     const prevSnap = await colRef
       .where("status", "==", "published")
       .where("caDate", "<", caDate)
@@ -217,7 +258,7 @@ const articleSchema = {
   "@type": "NewsArticle",
   headline: 
   data.seoTitle ||
-    `${formatIndianDate(data.caDate?.toDate?.())} Current Affairs`,
+    `${formatIndianDate(caDate)} Current Affairs`,
   description:
     data.seoDescription || data.summary,
   articleSection: data.subject || "Current Affairs",
@@ -234,7 +275,7 @@ const articleSchema = {
   .slice(0, 5000),
 
   datePublished: publishedAt?.toISOString(),
-  dateModified: data.updatedAt?.toDate?.().toISOString(),
+  dateModified: toJsDate(data.updatedAt)?.toISOString(),
   mainEntityOfPage: {
     "@type": "WebPage",
     "@id": data.canonicalUrl || `${SITE_URL}/current-affairs/daily/${slug}`,
@@ -255,10 +296,17 @@ const articleSchema = {
 };
 
 const breadcrumbItems = [
-  ...breadcrumbConfig.daily.baseNoHome,
   {
-    label: formatIndianDate(data.caDate?.toDate?.()),
-    href: data.canonicalUrl,
+    label: "Current Affairs",
+    href: "/current-affairs",
+  },
+  {
+    label: "Daily",
+    href: "/current-affairs?tab=daily",
+  },
+  {
+    label: `${formatIndianDate(caDate) || "Daily"} Current Affairs`,
+    href: null,
   },
 ];
 

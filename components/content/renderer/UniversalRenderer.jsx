@@ -18,13 +18,13 @@ import renderBlock from "./renderBlock";
  * ❌ no role
  * ❌ no editor logic
  */
-export default function UniversalRenderer({ blocks }) {
+export default function UniversalRenderer({ blocks, pageType }) {
   if (!Array.isArray(blocks)) return null;
 
   return (
     <div className="prose max-w-none">
       {blocks.map((block, index) =>
-        renderBlock(block, index)
+        renderBlock(block, index, { pageType })
       )}
     </div>
   );

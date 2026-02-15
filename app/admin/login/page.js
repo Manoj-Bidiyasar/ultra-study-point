@@ -3,7 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signInWithEmailAndPassword } from "firebase/auth";
+import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
 import { auth } from "@/lib/firebase/client";
+import { db } from "@/lib/firebase/client";
 
 export default function AdminLogin() {
   const router = useRouter();
@@ -12,16 +14,54 @@ export default function AdminLogin() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  function isPermissionDenied(err) {
+    const msg = String(err?.message || "").toLowerCase();
+    return err?.code === "permission-denied" || msg.includes("insufficient") || msg.includes("permission");
+  }
+
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const cred = await signInWithEmailAndPassword(auth, email, password);
+      const sessionId =
+        typeof crypto !== "undefined" && crypto.randomUUID
+          ? crypto.randomUUID()
+          : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+      localStorage.setItem("admin_session_id", sessionId);
+
+      const userRef = doc(
+        db,
+        "artifacts",
+        "ultra-study-point",
+        "public",
+        "data",
+        "users",
+        cred.user.uid
+      );
+
+      try {
+        await updateDoc(userRef, {
+          activeSessionId: sessionId,
+          activeSessionAt: serverTimestamp(),
+          activeSessionDevice: navigator.userAgent || "unknown",
+        });
+      } catch (err) {
+        // Optional session tracking. Some roles may not have permission to update users doc.
+        if (!isPermissionDenied(err)) throw err;
+      }
+
       router.replace("/admin");
     } catch (err) {
-      setError("Invalid email or password");
+      const code = String(err?.code || "");
+      if (code.includes("auth/invalid-credential") || code.includes("auth/wrong-password") || code.includes("auth/user-not-found")) {
+        setError("Invalid email or password");
+      } else {
+        setError(err?.message || "Login failed. Please try again.");
+      }
       setLoading(false);
     }
   };
