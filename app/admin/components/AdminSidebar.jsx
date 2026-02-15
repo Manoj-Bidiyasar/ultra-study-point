@@ -295,10 +295,10 @@ function NavLink({ href, label, small, badge }) {
 const styles = {
   sidebar: {
     width: 250,
-    position: "fixed",
-    top: 76,
-    left: 12,
-    bottom: 12,
+    position: "sticky",
+    top: 84,
+    maxHeight: "calc(100vh - 96px)",
+    alignSelf: "flex-start",
     flexShrink: 0,
     borderRight: "1px solid #e5e7eb",
     padding: 14,

@@ -181,9 +181,13 @@ export default function AdminLayout({ children }) {
 const styles = {
   body: {
     minHeight: "100vh",
+    display: "flex",
+    alignItems: "flex-start",
+    gap: 12,
+    padding: "12px 12px 0 12px",
   },
   content: {
-    marginLeft: 274,
+    flex: 1,
     padding: 24,
     background: "#f8fafc",
     minWidth: 0,

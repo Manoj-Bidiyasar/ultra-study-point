@@ -12,6 +12,7 @@ export default function WorkflowSection({
   submitState,
   onReviewChange,
   onSubmitForReview,
+  onSaveDraft,
   onAdminAction,
   onStatusChange,
   onPublishedAtChange,
@@ -85,6 +86,13 @@ export default function WorkflowSection({
   const showRejectFeedback = isAdminRole && state?.status === "rejected";
   const showEditorMessage = role === "editor";
   const adminFeedbackValue = state?.review?.feedback || "";
+  const creatorRoleForFlow = String(state?.createdBy?.role || "").toLowerCase();
+  const canShowRejectedOption =
+    creatorRoleForFlow === "editor" ||
+    state?.status === "review" ||
+    state?.status === "rejected";
+  const requiresReturnFeedback =
+    isAdminRole && state?.status === "rejected" && creatorRoleForFlow === "editor";
   const editorMessageValue = state?.review?.editorMessage || "";
   const reviewThread = Array.isArray(state?.review?.messageThread)
     ? state.review.messageThread
@@ -127,7 +135,7 @@ export default function WorkflowSection({
       setLocalError("Please choose schedule date and time.");
       return;
     }
-    if (state?.status === "rejected" && !String(adminFeedbackValue).trim()) {
+    if (requiresReturnFeedback && !String(adminFeedbackValue).trim()) {
       setLocalError("Please write feedback before returning to editor.");
       return;
     }
@@ -136,6 +144,15 @@ export default function WorkflowSection({
       return;
     }
     onAdminAction(state?.status || "draft");
+  }
+
+  function getAdminActionLabel() {
+    const status = state?.status || "draft";
+    if (status === "draft") return "Save Draft";
+    if (status === "scheduled") return "Schedule";
+    if (status === "published") return "Publish";
+    if (status === "rejected") return "Return to Editor";
+    return "Update";
   }
 
   return (
@@ -184,7 +201,9 @@ export default function WorkflowSection({
                 <option value="draft">Draft</option>
                 <option value="scheduled">Scheduled</option>
                 <option value="published">Published</option>
-                <option value="rejected">Rejected</option>
+                {canShowRejectedOption && (
+                  <option value="rejected">Rejected</option>
+                )}
               </select>
               {state?.status === "scheduled" && (
                 <Field label="Schedule Date & Time">
@@ -324,17 +343,27 @@ export default function WorkflowSection({
             style={ui.btnPrimary}
             onClick={handleSubmitStatus}
           >
-            {state?.status === "rejected" ? "Return with Feedback" : "Submit"}
+            {getAdminActionLabel()}
           </button>
         )}
-        {role === "editor" && (
-          <button
-            style={ui.btnPrimary}
-            onClick={onSubmitForReview}
-            disabled={submitState?.loading}
-          >
-            {submitState?.loading ? "Submitting..." : "Submit for Review"}
-          </button>
+        {role === "editor" && state?.status === "draft" && (
+          <>
+            <button
+              type="button"
+              style={ui.btnSecondary}
+              onClick={onSaveDraft}
+              disabled={submitState?.loading}
+            >
+              Save Draft
+            </button>
+            <button
+              style={ui.btnPrimary}
+              onClick={onSubmitForReview}
+              disabled={submitState?.loading}
+            >
+              {submitState?.loading ? "Submitting..." : "Submit for Review"}
+            </button>
+          </>
         )}
       </div>
 

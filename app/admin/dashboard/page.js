@@ -754,7 +754,18 @@ export default function DashboardPage() {
 
   return (
     <div>
-      <h1>Dashboard</h1>
+      <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap", marginBottom: 10 }}>
+        <h1 style={{ margin: 0, fontSize: 24, lineHeight: 1.1 }}>Dashboard</h1>
+        {(role === "admin" || role === "super_admin" || role === "editor") && (
+          <div style={{ marginLeft: "auto", display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
+            <a href="/admin/current-affairs/daily/create" style={ui.quickBtn}>+ Create Daily CA</a>
+            <a href="/admin/current-affairs/monthly/create" style={ui.quickBtn}>+ Create Monthly CA</a>
+            <a href="/admin/notes/create" style={ui.quickBtn}>+ Create Notes</a>
+            <a href="/admin/quizzes/create" style={ui.quickBtn}>+ Create Quizzes</a>
+            <a href="/admin/pyqs/create" style={ui.quickBtn}>+ Create PYQs</a>
+          </div>
+        )}
+      </div>
 
       {errors.length > 0 && role !== "editor" && (
         <div style={ui.errorBox}>
@@ -827,16 +838,6 @@ export default function DashboardPage() {
           </tbody>
         </table>
       </div>
-
-      {(role === "admin" || role === "super_admin" || role === "editor") && (
-        <div style={{ marginTop: 24, display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <a href="/admin/current-affairs/daily/create" style={ui.quickBtn}>+ Create Daily CA</a>
-          <a href="/admin/current-affairs/monthly/create" style={ui.quickBtn}>+ Create Monthly CA</a>
-          <a href="/admin/notes/create" style={ui.quickBtn}>+ Create Notes</a>
-          <a href="/admin/quizzes/create" style={ui.quickBtn}>+ Create Quizzes</a>
-          <a href="/admin/pyqs/create" style={ui.quickBtn}>+ Create PYQs</a>
-        </div>
-      )}
 
       {(role === "admin" || role === "super_admin") && (
         <div style={ui.searchCard}>
@@ -1078,11 +1079,13 @@ const ui = {
   rowQuizzes: { background: "#f5f3ff" },
   rowPyqs: { background: "#f0f9ff" },
   quickBtn: {
-    padding: "8px 12px",
+    padding: "6px 10px",
     borderRadius: 8,
     border: "1px solid #d1d5db",
     background: "#fff",
     fontWeight: 600,
+    fontSize: 13,
+    lineHeight: 1.1,
     textDecoration: "none",
   },
   editorNotice: {

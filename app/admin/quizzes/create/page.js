@@ -24,10 +24,28 @@ export default function CreateQuiz() {
   const [error, setError] = useState("");
   const [checking, setChecking] = useState(false);
 
+  function normalizeDocId(text = "") {
+    return text
+      .trim()
+      .replace(/\s+/g, "-")
+      .replace(/-+/g, "-");
+  }
+
+  function toTitleFromDocId(value = "") {
+    return String(value)
+      .replace(/[-_]+/g, " ")
+      .split(" ")
+      .filter(Boolean)
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+      .join(" ");
+  }
+
   async function openEditor() {
     setError("");
+    const normalizedDocId = normalizeDocId(docId);
+    const nextTitle = String(title || "").trim() || toTitleFromDocId(normalizedDocId);
 
-    if (!docId.trim()) {
+    if (!normalizedDocId) {
       setError("Document ID is required");
       return;
     }
@@ -40,7 +58,7 @@ export default function CreateQuiz() {
     setChecking(true);
 
     try {
-      const ref = doc(db, ...COLLECTION_PATH, docId);
+      const ref = doc(db, ...COLLECTION_PATH, normalizedDocId);
       const snap = await getDoc(ref);
 
       if (snap.exists()) {
@@ -49,9 +67,9 @@ export default function CreateQuiz() {
       }
 
       router.push(
-        `/admin/quizzes/${encodeURIComponent(docId)}?slug=${encodeURIComponent(
+        `/admin/quizzes/${encodeURIComponent(normalizedDocId)}?slug=${encodeURIComponent(
           generateSlug(slug)
-        )}&new=true`
+        )}&title=${encodeURIComponent(nextTitle)}&new=true`
       );
     } catch (err) {
       console.error(err);
@@ -65,14 +83,14 @@ export default function CreateQuiz() {
     <div style={{ maxWidth: 520, padding: 24 }}>
       <h1>Create Quiz</h1>
 
-      <label>Document ID (spaces allowed)</label>
+      <label>Document ID (spaces allowed; converted to - on open)</label>
       <input
         value={docId}
         onChange={(e) => {
           const v = e.target.value;
           setDocId(v);
           if (!slugTouched) setSlug(generateSlug(v));
-          setTitle(v);
+          setTitle(toTitleFromDocId(v));
         }}
         placeholder="SSC GK Mock Test 1"
         style={styles.input}

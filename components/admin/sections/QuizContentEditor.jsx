@@ -33,6 +33,11 @@ export default function QuizContentEditor({
   const [sectionDeleteState, setSectionDeleteState] = useState(null);
   const [importFormat, setImportFormat] = useState("csv");
   const [importMode, setImportMode] = useState("append");
+  const [importScope, setImportScope] = useState("questions");
+  const [importSectionStrategy, setImportSectionStrategy] = useState("use_existing");
+  const [importTargetSectionId, setImportTargetSectionId] = useState("none");
+  const [importInsertMode, setImportInsertMode] = useState("end");
+  const [importInsertAt, setImportInsertAt] = useState("");
   const [importText, setImportText] = useState("");
   const [importError, setImportError] = useState("");
   const [importReport, setImportReport] = useState([]);
@@ -54,6 +59,9 @@ export default function QuizContentEditor({
     subcategory: "",
     topic: "",
     subtopic: "",
+    exam: "",
+    year: "",
+    sourceType: "all",
     section: "all",
   });
   const [randomPickCount, setRandomPickCount] = useState("");
@@ -71,9 +79,20 @@ export default function QuizContentEditor({
   const [selectedQuestions, setSelectedQuestions] = useState({});
   const [bulkTags, setBulkTags] = useState("");
   const [bulkDifficulty, setBulkDifficulty] = useState("medium");
+  const [bulkSourceType, setBulkSourceType] = useState("keep");
+  const [bulkSourceName, setBulkSourceName] = useState("");
+  const [bulkExam, setBulkExam] = useState("");
+  const [bulkExamTags, setBulkExamTags] = useState("");
+  const [bulkExamStage, setBulkExamStage] = useState("");
+  const [bulkYear, setBulkYear] = useState("");
+  const [bulkCategory, setBulkCategory] = useState("");
+  const [bulkTopic, setBulkTopic] = useState("");
   const [bankSearch, setBankSearch] = useState("");
   const [bankDifficulty, setBankDifficulty] = useState("all");
   const [bankTag, setBankTag] = useState("");
+  const [bankSubject, setBankSubject] = useState("");
+  const [bankExam, setBankExam] = useState("");
+  const [bankYear, setBankYear] = useState("");
   const [bankTagMode, setBankTagMode] = useState("any");
   const [bankSort, setBankSort] = useState("newest");
   const [bankSource, setBankSource] = useState("all");
@@ -274,7 +293,7 @@ export default function QuizContentEditor({
           answer: q.answer ?? null,
           points: q.points ?? value?.scoring?.defaultPoints ?? 1,
           explanation: q.explanation || "",
-          meta: q.meta || {},
+          meta: normalizeQuestionMeta(q.meta || {}),
           tags: q.tags || [],
           difficulty: q.difficulty || "medium",
           updatedAt: serverTimestamp(),
@@ -361,12 +380,34 @@ export default function QuizContentEditor({
   function applyBulkChanges() {
     const ids = Object.keys(selectedQuestions).filter((k) => selectedQuestions[k]);
     if (!ids.length) return;
+    if (bulkSourceType === "custom" && !String(bulkSourceName || "").trim()) {
+      window.alert("Enter a custom source name for bulk custom source.");
+      return;
+    }
     const next = (value?.questions || []).map((q) => {
       if (!ids.includes(q.id)) return q;
+      const currentMeta = normalizeQuestionMeta(q.meta || {});
+      const nextSourceType =
+        bulkSourceType === "keep" ? currentMeta.sourceType : bulkSourceType;
+      const shouldClearSourceName = bulkSourceType !== "keep" && nextSourceType !== "custom";
       return {
         ...q,
         tags: bulkTags ? normalizeTags(bulkTags) : q.tags || [],
         difficulty: bulkDifficulty || q.difficulty || "medium",
+        meta: {
+          ...currentMeta,
+          sourceType: nextSourceType,
+          sourceName:
+            shouldClearSourceName
+              ? ""
+              : (bulkSourceName ? bulkSourceName : currentMeta.sourceName),
+          exam: bulkExam ? bulkExam : currentMeta.exam,
+          examTags: bulkExamTags ? normalizeTags(bulkExamTags) : currentMeta.examTags,
+          examStage: bulkExamStage ? bulkExamStage : currentMeta.examStage,
+          year: bulkYear ? bulkYear : currentMeta.year,
+          category: bulkCategory ? bulkCategory : currentMeta.category,
+          topic: bulkTopic ? bulkTopic : currentMeta.topic,
+        },
       };
     });
     updateMeta({ questions: next });
@@ -395,7 +436,7 @@ export default function QuizContentEditor({
   function sortBankItems(list) {
     if (!Array.isArray(list)) return [];
     if (bankSort === "difficulty") {
-      const order = { easy: 1, medium: 2, advanced: 3 };
+      const order = { easy: 1, medium: 2, hard: 3, advanced: 4 };
       return [...list].sort(
         (a, b) => (order[a.difficulty || "medium"] || 2) - (order[b.difficulty || "medium"] || 2)
       );
@@ -461,6 +502,18 @@ export default function QuizContentEditor({
         explanation: "",
         tags: [],
         difficulty: "medium",
+        meta: {
+          category: "",
+          subcategory: "",
+          topic: "",
+          subtopic: "",
+          sourceType: "practice",
+          sourceName: "",
+          exam: "",
+          examTags: [],
+          examStage: "",
+          year: "",
+        },
       },
     ];
     updateMeta({ questions: next });
@@ -494,6 +547,25 @@ export default function QuizContentEditor({
 
   function normalizePromptText(val) {
     return String(val || "").toLowerCase().replace(/\s+/g, " ").trim();
+  }
+
+  function normalizeQuestionMeta(meta = {}) {
+    const base = meta && typeof meta === "object" ? meta : {};
+    const yearValue =
+      base.year ?? base.examYear ?? "";
+    return {
+      ...base,
+      category: String(base.category || base.subject || "").trim(),
+      subcategory: String(base.subcategory || "").trim(),
+      topic: String(base.topic || "").trim(),
+      subtopic: String(base.subtopic || "").trim(),
+      sourceType: String(base.sourceType || base.source || "practice").trim().toLowerCase(),
+      sourceName: String(base.sourceName || "").trim(),
+      exam: String(base.exam || base.examName || "").trim(),
+      examTags: normalizeTags(base.examTags || base.exams || []),
+      examStage: String(base.examStage || "").trim(),
+      year: String(yearValue || "").trim(),
+    };
   }
 
   async function loadVersions() {
@@ -570,6 +642,39 @@ export default function QuizContentEditor({
     }));
   }
 
+  function buildMissingSectionsFromNames(names, existingSections = []) {
+    const existing = Array.isArray(existingSections) ? existingSections : [];
+    const existingNames = new Set(
+      existing.map((s) => String(s?.title || "").trim().toLowerCase()).filter(Boolean)
+    );
+    let maxIndex = existing.reduce((max, s) => {
+      const match = /^s(\d+)$/.exec(String(s?.id || ""));
+      return match ? Math.max(max, Number(match[1])) : max;
+    }, 0);
+
+    const uniqueIncoming = [];
+    (names || []).forEach((n) => {
+      const name = String(n || "").trim();
+      if (!name) return;
+      if (!uniqueIncoming.includes(name)) uniqueIncoming.push(name);
+    });
+
+    const created = [];
+    uniqueIncoming.forEach((name) => {
+      const key = name.toLowerCase();
+      if (existingNames.has(key)) return;
+      maxIndex += 1;
+      created.push({
+        id: `s${maxIndex}`,
+        title: name,
+        durationMinutes: 10,
+        questionIds: [],
+      });
+      existingNames.add(key);
+    });
+    return created;
+  }
+
   function parseCsv(text) {
     const rows = [];
     let row = [];
@@ -616,13 +721,35 @@ export default function QuizContentEditor({
       setImportError("Paste CSV or JSON first.");
       return;
     }
+    if (
+      importScope !== "full_test" &&
+      importMode !== "replace" &&
+      importInsertMode === "at" &&
+      (!String(importInsertAt).trim() ||
+        !Number.isInteger(Number(importInsertAt)) ||
+        Number(importInsertAt) < 1)
+    ) {
+      setImportError("Enter a valid question number for insert position.");
+      return;
+    }
+    if (
+      importScope !== "full_test" &&
+      importSectionStrategy === "force_selected" &&
+      (value?.rules?.useSections ?? false) &&
+      importTargetSectionId === "none"
+    ) {
+      setImportError("Select a target section for Force Selected strategy.");
+      return;
+    }
     try {
       let incomingQuestions = [];
       let incomingSections = [];
+      let parsedRoot = null;
       if (importFormat === "json") {
         const parsed = JSON.parse(importText);
-        const rawQuestions = Array.isArray(parsed) ? parsed : parsed.questions || [];
-        const rawSections = Array.isArray(parsed.sections) ? parsed.sections : [];
+        parsedRoot = Array.isArray(parsed) ? null : parsed;
+        const rawQuestions = Array.isArray(parsed) ? parsed : parsedRoot?.questions || [];
+        const rawSections = Array.isArray(parsedRoot?.sections) ? parsedRoot.sections : [];
         incomingSections = rawSections.map((s, i) => ({
           id: s.id || `s${i + 1}`,
           title: s.title || `Section ${i + 1}`,
@@ -673,14 +800,53 @@ export default function QuizContentEditor({
               en: get("explanation_en") || get("explanation") || "",
               hi: get("explanation_hi") || "",
             },
+            meta: {
+              category: get("category") || get("subject") || "",
+              subcategory: get("subcategory") || "",
+              topic: get("topic") || "",
+              subtopic: get("subtopic") || "",
+              sourceType: get("source_type") || get("source") || "practice",
+              sourceName: get("source_name") || "",
+              exam: get("exam") || "",
+              examTags: normalizeTags(get("exam_tags")),
+              examStage: get("exam_stage") || "",
+              year: get("year") || get("exam_year") || "",
+            },
           };
         });
         const sectionNames = incomingQuestions.map((q) => q.section).filter(Boolean);
         incomingSections = buildSectionsFromNames(sectionNames);
       }
 
+      const existingSections = Array.isArray(value?.sections) ? value.sections : [];
+      let nextSectionsForQuestionsOnly = existingSections;
+      let sectionsForMapping = incomingSections;
+
+      if (importScope !== "full_test") {
+        if (importSectionStrategy === "force_selected") {
+          sectionsForMapping = existingSections;
+        } else if (importSectionStrategy === "create_missing") {
+          const namesFromQuestions = incomingQuestions
+            .map((q) => String(q.section || q.sectionTitle || "").trim())
+            .filter(Boolean);
+          const namesSource = incomingSections.length
+            ? incomingSections.map((s) => String(s.title || "").trim())
+            : namesFromQuestions;
+          const missingSections = buildMissingSectionsFromNames(
+            namesSource,
+            existingSections
+          );
+          nextSectionsForQuestionsOnly = [...existingSections, ...missingSections];
+          sectionsForMapping = nextSectionsForQuestionsOnly;
+        } else {
+          sectionsForMapping = existingSections;
+        }
+      }
+
       const sectionByTitle = new Map(
-        incomingSections.map((s) => [String(s.title || "").trim(), s])
+        (sectionsForMapping || [])
+          .map((s) => [String(s?.title || "").trim().toLowerCase(), s])
+          .filter(([k]) => Boolean(k))
       );
 
       const report = [];
@@ -802,14 +968,33 @@ export default function QuizContentEditor({
             });
           }
         }
-        if ((value?.rules?.useSections ?? false) && !String(raw.section || "").trim()) {
+        const sectionName = String(raw.section || raw.sectionTitle || "").trim();
+        if (
+          (value?.rules?.useSections ?? false) &&
+          importScope !== "full_test" &&
+          importSectionStrategy !== "force_selected" &&
+          !sectionName
+        ) {
           report.push({
             row: importFormat === "csv" ? i + 2 : i + 1,
             message: "Section is required (Use Sections on).",
           });
         }
-        const sectionName = String(raw.section || raw.sectionTitle || "").trim();
-        const sectionId = sectionByTitle.get(sectionName)?.id || null;
+        const sectionId =
+          importScope !== "full_test" && importSectionStrategy === "force_selected"
+            ? (importTargetSectionId === "none" ? null : importTargetSectionId)
+            : (sectionByTitle.get(sectionName.toLowerCase())?.id || null);
+        if (
+          importScope !== "full_test" &&
+          importSectionStrategy === "use_existing" &&
+          sectionName &&
+          !sectionId
+        ) {
+          report.push({
+            row: importFormat === "csv" ? i + 2 : i + 1,
+            message: `Section "${sectionName}" not found. Choose "Create Missing Sections" or add section first.`,
+          });
+        }
         return {
           id,
           type,
@@ -828,6 +1013,24 @@ export default function QuizContentEditor({
           answerText: raw.answerText ?? null,
           tags: normalizeTags(raw.tags),
           difficulty: raw.difficulty || "medium",
+          meta: normalizeQuestionMeta({
+            ...(raw.meta || {}),
+            category: raw.category ?? raw.subject ?? raw.meta?.category,
+            subcategory: raw.subcategory ?? raw.meta?.subcategory,
+            topic: raw.topic ?? raw.meta?.topic,
+            subtopic: raw.subtopic ?? raw.meta?.subtopic,
+            sourceType:
+              raw.sourceType ??
+              raw.source ??
+              raw.meta?.sourceType ??
+              raw.meta?.source ??
+              (normalizeTags(raw.tags).includes("pyq") ? "pyq" : "practice"),
+            sourceName: raw.sourceName ?? raw.meta?.sourceName,
+            exam: raw.exam ?? raw.meta?.exam,
+            examTags: raw.examTags ?? raw.meta?.examTags ?? raw.exams ?? raw.meta?.exams,
+            examStage: raw.examStage ?? raw.meta?.examStage,
+            year: raw.year ?? raw.examYear ?? raw.meta?.year ?? raw.meta?.examYear,
+          }),
         };
       });
 
@@ -836,19 +1039,76 @@ export default function QuizContentEditor({
         return;
       }
 
-      const nextQuestions =
-        importMode === "replace" ? questions : [...(value?.questions || []), ...questions];
+      let nextQuestions = [];
+      if (importMode === "replace") {
+        nextQuestions = questions;
+      } else {
+        const current = [...(value?.questions || [])];
+        if (importInsertMode === "start") {
+          nextQuestions = [...questions, ...current];
+        } else if (importInsertMode === "at") {
+          const insertIndex = Math.min(
+            Math.max(Number(importInsertAt) - 1, 0),
+            current.length
+          );
+          nextQuestions = [
+            ...current.slice(0, insertIndex),
+            ...questions,
+            ...current.slice(insertIndex),
+          ];
+        } else {
+          nextQuestions = [...current, ...questions];
+        }
+      }
 
       const shouldUseSections = incomingSections.length > 0;
+
+      if (importScope === "full_test") {
+        const confirmReplace = window.confirm(
+          "Full Test import will replace current sections and questions. Continue?"
+        );
+        if (!confirmReplace) return;
+
+        const importedRules = parsedRoot?.rules && typeof parsedRoot.rules === "object"
+          ? parsedRoot.rules
+          : null;
+        const importedScoring = parsedRoot?.scoring && typeof parsedRoot.scoring === "object"
+          ? parsedRoot.scoring
+          : null;
+        const importedDuration = Number(parsedRoot?.durationMinutes);
+
+        updateMeta({
+          questions,
+          sections: shouldUseSections ? incomingSections : [],
+          rules: {
+            ...(value?.rules || {}),
+            ...(importedRules || {}),
+            useSections: shouldUseSections,
+          },
+          scoring: importedScoring ? { ...(value?.scoring || {}), ...importedScoring } : (value?.scoring || {}),
+          durationMinutes: Number.isFinite(importedDuration) && importedDuration > 0
+            ? importedDuration
+            : (value?.durationMinutes ?? 60),
+        });
+        setActiveSectionTab(shouldUseSections ? "all" : "none");
+        setImportText("");
+        return;
+      }
+
+      const shouldUseSectionsQuestionsOnly =
+        importSectionStrategy === "force_selected"
+          ? (importTargetSectionId !== "none" || (value?.rules?.useSections ?? false))
+          : (nextSectionsForQuestionsOnly.length > 0 || (value?.rules?.useSections ?? false));
+
       updateMeta({
         questions: nextQuestions,
-        sections: shouldUseSections ? incomingSections : value?.sections || [],
+        sections: nextSectionsForQuestionsOnly,
         rules: {
           ...(value?.rules || {}),
-          useSections: shouldUseSections,
+          useSections: shouldUseSectionsQuestionsOnly,
         },
       });
-      setActiveSectionTab(shouldUseSections ? "all" : "none");
+      setActiveSectionTab(shouldUseSectionsQuestionsOnly ? "all" : "none");
       setImportText("");
     } catch (err) {
       setImportError(String(err.message || err));
@@ -878,6 +1138,7 @@ export default function QuizContentEditor({
         tags: q.tags || [],
         difficulty: q.difficulty || "medium",
         type: q.type,
+        meta: normalizeQuestionMeta(q.meta || {}),
         prompt:
           languageMode === "dual"
             ? q.prompt
@@ -891,6 +1152,14 @@ export default function QuizContentEditor({
           : indexToLetter(Number(q.answer)),
         points: q.points,
         section: sectionTitle,
+        category: normalizeQuestionMeta(q.meta || {}).category || "",
+        topic: normalizeQuestionMeta(q.meta || {}).topic || "",
+        sourceType: normalizeQuestionMeta(q.meta || {}).sourceType || "practice",
+        sourceName: normalizeQuestionMeta(q.meta || {}).sourceName || "",
+        exam: normalizeQuestionMeta(q.meta || {}).exam || "",
+        examTags: normalizeQuestionMeta(q.meta || {}).examTags || [],
+        examStage: normalizeQuestionMeta(q.meta || {}).examStage || "",
+        year: normalizeQuestionMeta(q.meta || {}).year || "",
         explanation:
           languageMode === "dual"
             ? q.explanation
@@ -912,6 +1181,16 @@ export default function QuizContentEditor({
     const header = [
       "id",
       "difficulty",
+      "category",
+      "subcategory",
+      "topic",
+      "subtopic",
+      "source_type",
+      "source_name",
+      "exam",
+      "exam_tags",
+      "exam_stage",
+      "year",
       "tags",
       "type",
       "prompt_en",
@@ -941,9 +1220,20 @@ export default function QuizContentEditor({
         q.type === "multiple"
           ? (Array.isArray(q.answer) ? q.answer.map(indexToLetter).join("|") : "")
           : indexToLetter(Number(q.answer));
+      const meta = normalizeQuestionMeta(q.meta || {});
       return [
         q.id || "",
         q.difficulty || "medium",
+        meta.category || "",
+        meta.subcategory || "",
+        meta.topic || "",
+        meta.subtopic || "",
+        meta.sourceType || "practice",
+        meta.sourceName || "",
+        meta.exam || "",
+        Array.isArray(meta.examTags) ? meta.examTags.join("|") : "",
+        meta.examStage || "",
+        meta.year || "",
         Array.isArray(q.tags) ? q.tags.join("|") : "",
         q.type,
         getLangValue(q.prompt, "en"),
@@ -1181,7 +1471,8 @@ export default function QuizContentEditor({
 
   const contentGridStyle = {
     ...ui.contentGrid,
-    gridTemplateColumns: isNarrow ? "1fr" : "minmax(0, 1fr) 420px",
+    gridTemplateColumns:
+      isNarrow || !showPreview ? "1fr" : "minmax(0, 1fr) 420px",
   };
 
   const sectionTabs = [
@@ -1209,19 +1500,38 @@ export default function QuizContentEditor({
     : (value?.questions || []).filter((q) => q.sectionId === activeSectionTab);
 
   const filteredByMeta = baseQuestions.filter((q) => {
-    const meta = q.meta || {};
+    const meta = normalizeQuestionMeta(q.meta || {});
     const categoryMatch = !questionFilter.category || (meta.category || "").includes(questionFilter.category);
     const subcategoryMatch = !questionFilter.subcategory || (meta.subcategory || "").includes(questionFilter.subcategory);
     const topicMatch = !questionFilter.topic || (meta.topic || "").includes(questionFilter.topic);
     const subtopicMatch = !questionFilter.subtopic || (meta.subtopic || "").includes(questionFilter.subtopic);
+    const examTagsText = (Array.isArray(meta.examTags) ? meta.examTags : []).join(" ");
+    const examMatch =
+      !questionFilter.exam ||
+      (meta.exam || "").includes(questionFilter.exam) ||
+      examTagsText.toLowerCase().includes(String(questionFilter.exam || "").toLowerCase());
+    const yearMatch = !questionFilter.year || String(meta.year || "").includes(String(questionFilter.year || ""));
+    const sourceMatch =
+      questionFilter.sourceType === "all"
+        ? true
+        : meta.sourceType === questionFilter.sourceType;
     const tags = Array.isArray(q.tags) ? q.tags : [];
     const normalizedTags = tags.map(normalizePromptText);
     const isPyq =
-      meta.source === "pyq" ||
+      meta.sourceType === "pyq" ||
       !!meta.pyqId ||
       normalizedTags.includes("pyq");
     const pyqMatch = !pyqOnly || isPyq;
-    return categoryMatch && subcategoryMatch && topicMatch && subtopicMatch && pyqMatch;
+    return (
+      categoryMatch &&
+      subcategoryMatch &&
+      topicMatch &&
+      subtopicMatch &&
+      examMatch &&
+      yearMatch &&
+      sourceMatch &&
+      pyqMatch
+    );
   });
 
   const questionById = new Map((value?.questions || []).map((q) => [q.id, q]));
@@ -1249,6 +1559,7 @@ export default function QuizContentEditor({
     const questions = value?.questions || [];
     questions.forEach((q, idx) => {
       const id = q.id || `q${idx + 1}`;
+      const meta = normalizeQuestionMeta(q.meta || {});
       const promptEn = getLangValue(q.prompt, "en");
       const promptHi = getLangValue(q.prompt, "hi");
       const promptNorm = normalizePromptText(promptEn);
@@ -1259,6 +1570,21 @@ export default function QuizContentEditor({
       }
       if (!String(promptEn || "").trim()) {
         issues.push({ id, type: "Missing question text", qid: q.id });
+      }
+      if (!String(meta.category || "").trim()) {
+        issues.push({ id, type: "Missing subject/category", qid: q.id });
+      }
+      if (!String(meta.topic || "").trim()) {
+        issues.push({ id, type: "Missing topic", qid: q.id });
+      }
+      if (!String(meta.sourceType || "").trim()) {
+        issues.push({ id, type: "Missing source type", qid: q.id });
+      }
+      if (meta.sourceType === "custom" && !String(meta.sourceName || "").trim()) {
+        issues.push({ id, type: "Custom source missing name", qid: q.id });
+      }
+      if (meta.sourceType === "pyq" && !String(meta.year || "").trim()) {
+        issues.push({ id, type: "PYQ missing year", qid: q.id });
       }
       if (languageMode === "dual" && String(promptEn || "").trim() && !String(promptHi || "").trim()) {
         issues.push({ id, type: "Missing Hindi question", qid: q.id });
@@ -1330,7 +1656,11 @@ export default function QuizContentEditor({
         
 
       <div style={{ ...ui.block, ...ui.settingsBlock }}>
-        <div style={ui.collapsibleHeader}>
+        <div
+          style={ui.collapsibleHeader}
+          onDoubleClick={() => setIsSettingsOpen((s) => !s)}
+          title="Double-click to expand/collapse"
+        >
           <div style={ui.blockTitle}>Quiz Settings</div>
           <button
             style={ui.btnGhost}
@@ -1714,7 +2044,11 @@ export default function QuizContentEditor({
       </div>
 
       <div style={ui.block}>
-        <div style={ui.collapsibleHeader}>
+        <div
+          style={ui.collapsibleHeader}
+          onDoubleClick={() => setIsRulesOpen((s) => !s)}
+          title="Double-click to expand/collapse"
+        >
           <div style={ui.blockTitle}>Rules</div>
           <button
             style={ui.btnGhost}
@@ -1824,7 +2158,11 @@ export default function QuizContentEditor({
       </div>
 
       <div style={{ ...ui.block, ...ui.tabsBlock }}>
-        <div style={ui.collapsibleHeader}>
+        <div
+          style={ui.collapsibleHeader}
+          onDoubleClick={() => setIsSectionsOpen((s) => !s)}
+          title="Double-click to expand/collapse"
+        >
           <div style={ui.blockTitle}>
             Sections <span style={ui.inlineHint}>(Use tabs to jump between sections.)</span>
           </div>
@@ -1956,7 +2294,11 @@ export default function QuizContentEditor({
       </div>
 
       <div style={ui.block}>
-        <div style={ui.collapsibleHeader}>
+        <div
+          style={ui.collapsibleHeader}
+          onDoubleClick={() => setIsImportOpen((s) => !s)}
+          title="Double-click to expand/collapse"
+        >
           <div style={ui.blockTitle}>Import / Export (CSV or JSON)</div>
           <button
             style={ui.btnGhost}
@@ -1967,148 +2309,246 @@ export default function QuizContentEditor({
           </button>
         </div>
         {isImportOpen && (
-          <>
-            <div style={ui.helper}>
-              Shuffle settings won't affect import/export. You can paste CSV or JSON,
-              then import. Export is available for super admin only.
+          <div style={ui.importCard}>
+            <div style={ui.importTopGrid}>
+              <div style={ui.importPane}>
+                <div style={ui.importPaneTitle}>Import Setup</div>
+                <div style={ui.importGrid}>
+                  <div>
+                    <label style={ui.labelSmall}>Format</label>
+                    <select
+                      style={{ ...ui.input, width: "100%" }}
+                      value={importFormat}
+                      disabled={isLocked}
+                      onChange={(e) => setImportFormat(e.target.value)}
+                    >
+                      <option value="csv">CSV</option>
+                      <option value="json">JSON</option>
+                    </select>
+                  </div>
+              <div>
+                <label style={ui.labelSmall}>Import Mode</label>
+                <select
+                  style={{ ...ui.input, width: "100%" }}
+                  value={importMode}
+                      disabled={isLocked}
+                      onChange={(e) => setImportMode(e.target.value)}
+                    >
+                      <option value="append">Append</option>
+                  <option value="replace">Replace</option>
+                </select>
+              </div>
+              {importScope !== "full_test" && importMode !== "replace" && (
+                <div>
+                  <label style={ui.labelSmall}>Insert Questions</label>
+                  <select
+                    style={{ ...ui.input, width: "100%" }}
+                    value={importInsertMode}
+                    disabled={isLocked}
+                    onChange={(e) => setImportInsertMode(e.target.value)}
+                  >
+                    <option value="end">At End</option>
+                    <option value="start">At Start</option>
+                    <option value="at">At Question Number</option>
+                  </select>
+                </div>
+              )}
+              <div>
+                <label style={ui.labelSmall}>Import Scope</label>
+                <select
+                      style={{ ...ui.input, width: "100%" }}
+                      value={importScope}
+                      disabled={isLocked}
+                      onChange={(e) => setImportScope(e.target.value)}
+                    >
+                      <option value="questions">Questions Only</option>
+                      <option value="full_test">Full Test</option>
+                    </select>
+                  </div>
+                  {importScope !== "full_test" && importMode !== "replace" && importInsertMode === "at" && (
+                    <div>
+                      <label style={ui.labelSmall}>Question Number</label>
+                      <input
+                        style={{ ...ui.input, width: "100%" }}
+                        type="number"
+                        min="1"
+                        value={importInsertAt}
+                        disabled={isLocked}
+                        onChange={(e) => setImportInsertAt(e.target.value)}
+                        placeholder="10"
+                      />
+                    </div>
+                  )}
+                  {importScope !== "full_test" && (
+                    <div>
+                      <label style={ui.labelSmall}>Target Section</label>
+                      <select
+                        style={{ ...ui.input, width: "100%" }}
+                        value={importTargetSectionId}
+                        disabled={isLocked || importSectionStrategy !== "force_selected"}
+                        onChange={(e) => setImportTargetSectionId(e.target.value)}
+                      >
+                        <option value="none">No Section</option>
+                        {(value?.sections || []).map((sec) => (
+                          <option key={sec.id} value={sec.id}>
+                            {sec.title || sec.id}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                </div>
+                <div style={ui.importUploadRow}>
+                  {importScope !== "full_test" && (
+                    <div>
+                      <label style={ui.labelSmall}>Section Strategy</label>
+                      <select
+                        style={{ ...ui.input, width: "100%" }}
+                        value={importSectionStrategy}
+                        disabled={isLocked}
+                        onChange={(e) => setImportSectionStrategy(e.target.value)}
+                      >
+                        <option value="use_existing">Use Existing Sections</option>
+                        <option value="create_missing">Create Missing Sections</option>
+                        <option value="force_selected">Force Selected Section</option>
+                      </select>
+                    </div>
+                  )}
+                  <div>
+                    <label style={ui.labelSmall}>Upload File</label>
+                    <input
+                      style={{ ...ui.input, width: "100%" }}
+                      type="file"
+                      accept=".csv,.json,application/json,text/csv"
+                      disabled={isLocked}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const reader = new FileReader();
+                        reader.onload = () => {
+                          const text = String(reader.result || "");
+                          const isJson = file.name.toLowerCase().endsWith(".json");
+                          setImportFormat(isJson ? "json" : "csv");
+                          setImportText(text);
+                        };
+                        reader.readAsText(file);
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div style={ui.importPane}>
+                <div style={ui.importPaneTitle}>Templates & Export</div>
+                <div style={ui.exportTopRow}>
+                  <div style={ui.exportNameWrap}>
+                    <label style={ui.labelSmall}>Export File Name</label>
+                    <input
+                      style={{ ...ui.input, ...ui.exportNameInput }}
+                      value={exportFileName}
+                      disabled={isLocked}
+                      onChange={(e) => setExportFileName(e.target.value)}
+                      placeholder="quiz-export"
+                    />
+                  </div>
+                  {isSuperAdmin && (
+                    <>
+                      <button style={ui.btnGhost} onClick={exportToCsv}>
+                        Export CSV
+                      </button>
+                      <button style={ui.btnGhost} onClick={exportToJson}>
+                        Export JSON
+                      </button>
+                    </>
+                  )}
+                </div>
+                <div style={ui.exportTemplateRow}>
+                  <button
+                    style={ui.btnGhost}
+                    type="button"
+                    onClick={() => {
+                      const csv =
+                        "id,difficulty,category,subcategory,topic,subtopic,source_type,source_name,exam,exam_tags,exam_stage,year,tags,type,prompt_en,prompt_hi,optionA_en,optionB_en,optionC_en,optionD_en,optionE_en,optionA_hi,optionB_hi,optionC_hi,optionD_hi,optionE_hi,answer,points,section,explanation_en,explanation_hi\n" +
+                        "q1,medium,History,Modern,Revolt 1857,Causes,pyq,,SSC CGL,SSC CGL 2023|CHSL 2023,Tier 1,2023,SSC|GK,single,Sample question?,,A,B,C,D,, , , , , ,C,1,Section 1,Short explanation,\n";
+                      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = "quiz-template.csv";
+                      a.click();
+                      URL.revokeObjectURL(url);
+                    }}
+                  >
+                    Download CSV Template
+                  </button>
+                  <button
+                    style={ui.btnGhost}
+                    type="button"
+                    onClick={() => {
+                      const json = JSON.stringify(
+                        [
+                          {
+                            type: "single",
+                            prompt: "Sample question?",
+                            options: ["A", "B", "C", "D"],
+                            answer: "C",
+                            points: 1,
+                            section: "Section 1",
+                            meta: {
+                              category: "History",
+                              topic: "Modern India",
+                              sourceType: "pyq",
+                              sourceName: "",
+                              exam: "SSC CGL",
+                              examTags: ["SSC CGL 2023", "CHSL 2023"],
+                              examStage: "Tier 1",
+                              year: "2023",
+                            },
+                            explanation: "Short explanation",
+                          },
+                        ],
+                        null,
+                        2
+                      );
+                      const blob = new Blob([json], { type: "application/json;charset=utf-8;" });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = "quiz-template.json";
+                      a.click();
+                      URL.revokeObjectURL(url);
+                    }}
+                  >
+                    Download JSON Template
+                  </button>
+                </div>
+              </div>
             </div>
-            <div style={ui.importRow}>
-          <div>
-            <label style={ui.labelSmall}>Format</label>
-            <select
-              style={ui.input}
-              value={importFormat}
-              disabled={isLocked}
-              onChange={(e) => setImportFormat(e.target.value)}
-            >
-              <option value="csv">CSV</option>
-              <option value="json">JSON</option>
-            </select>
-          </div>
-          <div>
-            <label style={ui.labelSmall}>Import Mode</label>
-            <select
-              style={ui.input}
-              value={importMode}
-              disabled={isLocked}
-              onChange={(e) => setImportMode(e.target.value)}
-            >
-              <option value="append">Append</option>
-              <option value="replace">Replace</option>
-            </select>
-          </div>
-          <div>
-            <label style={ui.labelSmall}>Export File Name</label>
-            <input
-              style={ui.input}
-              value={exportFileName}
-              disabled={isLocked}
-              onChange={(e) => setExportFileName(e.target.value)}
-              placeholder="quiz-export"
-            />
-          </div>
-          <div style={ui.importButtons}>
-            <button style={ui.btn} onClick={importFromText} disabled={isLocked}>
-              Import
-            </button>
-            <button
-              style={ui.btnGhost}
-              type="button"
-              onClick={() => {
-                const csv =
-                  "id,difficulty,tags,type,prompt_en,prompt_hi,optionA_en,optionB_en,optionC_en,optionD_en,optionE_en,optionA_hi,optionB_hi,optionC_hi,optionD_hi,optionE_hi,answer,points,section,explanation_en,explanation_hi\n" +
-                  "q1,medium,SSC|GK,single,Sample question?,,A,B,C,D,, , , , , ,C,1,Section 1,Short explanation,\n";
-                const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = "quiz-template.csv";
-                a.click();
-                URL.revokeObjectURL(url);
-              }}
-            >
-              Download CSV Template
-            </button>
-            <button
-              style={ui.btnGhost}
-              type="button"
-              onClick={() => {
-                const json = JSON.stringify(
-                  [
-                    {
-                      type: "single",
-                      prompt: "Sample question?",
-                      options: ["A", "B", "C", "D"],
-                      answer: "C",
-                      points: 1,
-                      section: "Section 1",
-                      explanation: "Short explanation",
-                    },
-                  ],
-                  null,
-                  2
-                );
-                const blob = new Blob([json], { type: "application/json;charset=utf-8;" });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = "quiz-template.json";
-                a.click();
-                URL.revokeObjectURL(url);
-              }}
-            >
-              Download JSON Template
-            </button>
-            {isSuperAdmin && (
-              <>
-                <button style={ui.btnGhost} onClick={exportToCsv}>
-                  Export CSV
-                </button>
-                <button style={ui.btnGhost} onClick={exportToJson}>
-                  Export JSON
-                </button>
-              </>
-            )}
-          </div>
-        </div>
-        <div style={ui.importRow}>
-          <div>
-            <label style={ui.labelSmall}>Upload File</label>
-            <input
-              style={ui.input}
-              type="file"
-              accept=".csv,.json,application/json,text/csv"
-              disabled={isLocked}
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (!file) return;
-                const reader = new FileReader();
-                reader.onload = () => {
-                  const text = String(reader.result || "");
-                  const isJson = file.name.toLowerCase().endsWith(".json");
-                  setImportFormat(isJson ? "json" : "csv");
-                  setImportText(text);
-                };
-                reader.readAsText(file);
-              }}
-            />
-          </div>
-          <div />
-          <div />
-        </div>
+
+            <div style={ui.dataHeaderRow}>
+              <div style={ui.importPaneTitle}>Data</div>
+              <div style={ui.importInlineInfo}>
+                Shuffle settings won't affect import/export. Paste CSV or JSON below, or upload a file. Export is available for super admin only.
+              </div>
+            </div>
             <textarea
               ref={importTextRef}
-              style={{ ...ui.textarea, minHeight: 140 }}
-          placeholder={
-            importFormat === "csv"
-              ? "id,difficulty,tags,type,prompt_en,prompt_hi,optionA_en,optionB_en,optionC_en,optionD_en,optionE_en,optionA_hi,optionB_hi,optionC_hi,optionD_hi,optionE_hi,answer,points,section,explanation_en,explanation_hi"
-              : '[{\"type\":\"single\",\"prompt\":\"...\",\"options\":[\"A\",\"B\",\"C\",\"D\",\"E\"],\"answer\":\"A\",\"points\":1,\"section\":\"Section 1\",\"explanation\":\"\"}]'
-          }
-          value={importText}
-          onChange={(e) => setImportText(e.target.value)}
-        />
-        {importError && <div style={ui.importError}>{importError}</div>}
-          </>
+              style={ui.importTextarea}
+              placeholder={
+                importFormat === "csv"
+                  ? "id,difficulty,category,subcategory,topic,subtopic,source_type,source_name,exam,exam_tags,exam_stage,year,tags,type,prompt_en,prompt_hi,optionA_en,optionB_en,optionC_en,optionD_en,optionE_en,optionA_hi,optionB_hi,optionC_hi,optionD_hi,optionE_hi,answer,points,section,explanation_en,explanation_hi"
+                  : '[{\"type\":\"single\",\"prompt\":\"...\",\"options\":[\"A\",\"B\",\"C\",\"D\",\"E\"],\"answer\":\"A\",\"points\":1,\"section\":\"Section 1\",\"meta\":{\"category\":\"History\",\"topic\":\"Modern India\",\"sourceType\":\"pyq\",\"sourceName\":\"\",\"exam\":\"SSC CGL\",\"examTags\":[\"SSC CGL 2023\",\"CHSL 2023\"],\"year\":\"2023\"},\"explanation\":\"\"}]'
+              }
+              value={importText}
+              onChange={(e) => setImportText(e.target.value)}
+            />
+            <div style={ui.importPrimaryRow}>
+              <button style={ui.btn} onClick={importFromText} disabled={isLocked}>
+                Import Into Quiz
+              </button>
+            </div>
+            {importError && <div style={ui.importError}>{importError}</div>}
+          </div>
         )}
       </div>
 
@@ -2163,7 +2603,11 @@ export default function QuizContentEditor({
       )}
 
       <div style={ui.block}>
-        <div style={ui.collapsibleHeader}>
+        <div
+          style={ui.collapsibleHeader}
+          onDoubleClick={() => setIsQualityOpen((s) => !s)}
+          title="Double-click to expand/collapse"
+        >
           <div style={ui.blockTitle}>Question Quality Check</div>
           <button
             style={ui.btnGhost}
@@ -2204,7 +2648,11 @@ export default function QuizContentEditor({
       </div>
 
       <div style={ui.block}>
-        <div style={ui.collapsibleHeader}>
+        <div
+          style={ui.collapsibleHeader}
+          onDoubleClick={() => setIsFilterOpen((s) => !s)}
+          title="Double-click to expand/collapse"
+        >
           <div style={ui.blockTitle}>Question Filter</div>
           <button
             style={ui.btnGhost}
@@ -2218,12 +2666,12 @@ export default function QuizContentEditor({
           <>
             <div style={ui.filterGrid}>
               <div>
-                <label style={ui.labelSmall}>Category</label>
+                <label style={ui.labelSmall}>Subject / Category</label>
                 <input
                   style={ui.input}
                   value={questionFilter.category}
                   disabled={isLocked}
-                  placeholder="Category"
+                  placeholder="Subject"
                   onChange={(e) =>
                     setQuestionFilter((s) => ({ ...s, category: e.target.value }))
                   }
@@ -2266,6 +2714,48 @@ export default function QuizContentEditor({
                 />
               </div>
               <div>
+                <label style={ui.labelSmall}>Source Type</label>
+                <select
+                  style={ui.input}
+                  value={questionFilter.sourceType}
+                  disabled={isLocked}
+                  onChange={(e) =>
+                    setQuestionFilter((s) => ({ ...s, sourceType: e.target.value }))
+                  }
+                >
+                  <option value="all">All Sources</option>
+                  <option value="practice">Practice</option>
+                  <option value="pyq">PYQ</option>
+                  <option value="mock">Mock</option>
+                  <option value="current_affairs">Current Affairs</option>
+                  <option value="custom">Custom</option>
+                </select>
+              </div>
+              <div>
+                <label style={ui.labelSmall}>Exam</label>
+                <input
+                  style={ui.input}
+                  value={questionFilter.exam}
+                  disabled={isLocked}
+                  placeholder="SSC CGL"
+                  onChange={(e) =>
+                    setQuestionFilter((s) => ({ ...s, exam: e.target.value }))
+                  }
+                />
+              </div>
+              <div>
+                <label style={ui.labelSmall}>Year</label>
+                <input
+                  style={ui.input}
+                  value={questionFilter.year}
+                  disabled={isLocked}
+                  placeholder="2023"
+                  onChange={(e) =>
+                    setQuestionFilter((s) => ({ ...s, year: e.target.value }))
+                  }
+                />
+              </div>
+              <div>
                 <label style={ui.labelSmall}>Section Filter</label>
                 <select
                   style={ui.input}
@@ -2293,7 +2783,7 @@ export default function QuizContentEditor({
               </div>
               <div>
                 <label style={ui.labelSmall}>Random Pick</label>
-                <div style={ui.filterRow}>
+                <div style={ui.filterRandomControls}>
                   <input
                     style={{ ...ui.input, ...ui.inputSmall }}
                     type="number"
@@ -2338,7 +2828,7 @@ export default function QuizContentEditor({
                     </button>
                   </div>
                 </div>
-                <div style={ui.filterRow}>
+                <div style={ui.filterRandomScope}>
                   <span style={ui.labelSmall}>Pick Scope</span>
                   <TogglePair
                     value={randomPickScope === "across" ? "right" : "left"}
@@ -2429,8 +2919,65 @@ export default function QuizContentEditor({
                 >
                   <option value="easy">Easy</option>
                   <option value="medium">Medium</option>
+                  <option value="hard">Hard</option>
                   <option value="advanced">Advanced</option>
                 </select>
+                <select
+                  style={ui.input}
+                  value={bulkSourceType}
+                  onChange={(e) => setBulkSourceType(e.target.value)}
+                >
+                  <option value="keep">Source: Keep Current</option>
+                  <option value="practice">Source: Practice</option>
+                  <option value="pyq">Source: PYQ</option>
+                  <option value="mock">Source: Mock</option>
+                  <option value="current_affairs">Source: Current Affairs</option>
+                  <option value="custom">Source: Custom</option>
+                </select>
+                {bulkSourceType === "custom" && (
+                  <input
+                    style={ui.input}
+                    placeholder="Custom source name"
+                    value={bulkSourceName}
+                    onChange={(e) => setBulkSourceName(e.target.value)}
+                  />
+                )}
+                <input
+                  style={ui.input}
+                  placeholder="Bulk subject/category"
+                  value={bulkCategory}
+                  onChange={(e) => setBulkCategory(e.target.value)}
+                />
+                <input
+                  style={ui.input}
+                  placeholder="Bulk topic"
+                  value={bulkTopic}
+                  onChange={(e) => setBulkTopic(e.target.value)}
+                />
+                <input
+                  style={ui.input}
+                  placeholder="Bulk exam (SSC CGL)"
+                  value={bulkExam}
+                  onChange={(e) => setBulkExam(e.target.value)}
+                />
+                <input
+                  style={ui.input}
+                  placeholder="Bulk exam tags (comma)"
+                  value={bulkExamTags}
+                  onChange={(e) => setBulkExamTags(e.target.value)}
+                />
+                <input
+                  style={ui.input}
+                  placeholder="Bulk stage (Tier 1)"
+                  value={bulkExamStage}
+                  onChange={(e) => setBulkExamStage(e.target.value)}
+                />
+                <input
+                  style={ui.input}
+                  placeholder="Bulk year (2024)"
+                  value={bulkYear}
+                  onChange={(e) => setBulkYear(e.target.value)}
+                />
                 <button style={ui.btn} type="button" onClick={applyBulkChanges}>
                   Apply Bulk
                 </button>
@@ -2442,7 +2989,11 @@ export default function QuizContentEditor({
 
           {canSeeBank && (
           <div style={ui.block}>
-            <div style={ui.collapsibleHeader}>
+            <div
+              style={ui.collapsibleHeader}
+              onDoubleClick={() => setIsBankOpen((s) => !s)}
+              title="Double-click to expand/collapse"
+            >
               <div style={ui.blockTitle}>Question Bank</div>
               <div style={{ display: "flex", gap: 8 }}>
                 <button style={ui.btnGhost} type="button" onClick={loadQuestionBank}>
@@ -2491,6 +3042,28 @@ export default function QuizContentEditor({
                   >
                     PYQ
                   </button>
+                  <button
+                    style={{
+                      ...ui.tabBtn,
+                      ...(bankSource === "practice" ? ui.tabBtnActive : {}),
+                      width: "auto",
+                    }}
+                    type="button"
+                    onClick={() => setBankSource("practice")}
+                  >
+                    Practice
+                  </button>
+                  <button
+                    style={{
+                      ...ui.tabBtn,
+                      ...(bankSource === "current_affairs" ? ui.tabBtnActive : {}),
+                      width: "auto",
+                    }}
+                    type="button"
+                    onClick={() => setBankSource("current_affairs")}
+                  >
+                    Current Affairs
+                  </button>
                 </div>
                 <div style={ui.bankFilters}>
                   <input
@@ -2498,6 +3071,24 @@ export default function QuizContentEditor({
                     placeholder="Search bank"
                     value={bankSearch}
                     onChange={(e) => setBankSearch(e.target.value)}
+                  />
+                  <input
+                    style={ui.input}
+                    placeholder="Subject/Category"
+                    value={bankSubject}
+                    onChange={(e) => setBankSubject(e.target.value)}
+                  />
+                  <input
+                    style={ui.input}
+                    placeholder="Exam"
+                    value={bankExam}
+                    onChange={(e) => setBankExam(e.target.value)}
+                  />
+                  <input
+                    style={ui.input}
+                    placeholder="Year"
+                    value={bankYear}
+                    onChange={(e) => setBankYear(e.target.value)}
                   />
                   <select
                     style={ui.input}
@@ -2507,6 +3098,7 @@ export default function QuizContentEditor({
                     <option value="all">All Difficulty</option>
                     <option value="easy">Easy</option>
                     <option value="medium">Medium</option>
+                    <option value="hard">Hard</option>
                     <option value="advanced">Advanced</option>
                   </select>
                   <input
@@ -2546,12 +3138,32 @@ export default function QuizContentEditor({
                         (q.difficulty || "medium") === bankDifficulty;
                       const tags = Array.isArray(q.tags) ? q.tags : [];
                       const normalizedTags = tags.map(normalizePromptText);
-                      const source = q.meta?.source || "";
+                      const meta = normalizeQuestionMeta(q.meta || {});
+                      const source = meta.sourceType || "";
+                      const matchSubject =
+                        !bankSubject ||
+                        String(meta.category || "")
+                          .toLowerCase()
+                          .includes(String(bankSubject || "").toLowerCase());
+                      const matchExam =
+                        !bankExam ||
+                        String(meta.exam || "")
+                          .toLowerCase()
+                          .includes(String(bankExam || "").toLowerCase()) ||
+                        (Array.isArray(meta.examTags) ? meta.examTags.join(" ") : "")
+                          .toLowerCase()
+                          .includes(String(bankExam || "").toLowerCase());
+                      const matchYear =
+                        !bankYear ||
+                        String(meta.year || "")
+                          .toLowerCase()
+                          .includes(String(bankYear || "").toLowerCase());
                       const matchSource =
                         bankSource === "all"
                           ? true
-                          : source === "pyq" ||
-                            normalizedTags.includes("pyq");
+                          : bankSource === "pyq"
+                          ? source === "pyq" || normalizedTags.includes("pyq")
+                          : source === bankSource;
                       const tagFilter = normalizeTags(bankTag);
                       const matchTag =
                         tagFilter.length === 0
@@ -2563,11 +3175,20 @@ export default function QuizContentEditor({
                           : tagFilter.some((t) =>
                               normalizedTags.includes(normalizePromptText(t))
                             );
-                      return matchSearch && matchDiff && matchTag && matchSource;
+                      return (
+                        matchSearch &&
+                        matchDiff &&
+                        matchTag &&
+                        matchSource &&
+                        matchSubject &&
+                        matchExam &&
+                        matchYear
+                      );
                     })
                   ).map((q) => {
                     const tags = Array.isArray(q.tags) ? q.tags : [];
                     const diff = q.difficulty || "medium";
+                    const meta = normalizeQuestionMeta(q.meta || {});
                     return (
                       <label key={`bank-${q.id}`} style={ui.bankRow}>
                         <input
@@ -2598,6 +3219,19 @@ export default function QuizContentEditor({
                             )}
                           </div>
                         )}
+                        <div style={{ fontSize: 11, color: "#64748b" }}>
+                          {(meta.category || "Uncategorized")}
+                          {meta.topic ? ` | ${meta.topic}` : ""}
+                          {meta.sourceType ? ` | ${meta.sourceType.toUpperCase()}` : ""}
+                          {meta.sourceType === "custom" && meta.sourceName
+                            ? ` (${meta.sourceName})`
+                            : ""}
+                          {meta.exam ? ` | ${meta.exam}` : ""}
+                          {Array.isArray(meta.examTags) && meta.examTags.length > 0
+                            ? ` | [${meta.examTags.join(", ")}]`
+                            : ""}
+                          {meta.year ? ` ${meta.year}` : ""}
+                        </div>
                         {canSeeBank && (
                           <div style={{ fontSize: 11, color: "#64748b" }}>
                             Used in: {q.usedInCount || 0}
@@ -2626,7 +3260,11 @@ export default function QuizContentEditor({
 
           {canSeeAnalytics && (
           <div style={ui.block}>
-            <div style={ui.collapsibleHeader}>
+            <div
+              style={ui.collapsibleHeader}
+              onDoubleClick={() => setIsAnalyticsOpen((s) => !s)}
+              title="Double-click to expand/collapse"
+            >
               <div style={ui.blockTitle}>Analytics</div>
               <div style={{ display: "flex", gap: 8 }}>
                 <button style={ui.btnGhost} type="button" onClick={loadAnalytics}>
@@ -2677,7 +3315,7 @@ export default function QuizContentEditor({
                           analyticsSection === "all" || q.sectionId === analyticsSection;
                         const categoryMatch =
                           !analyticsCategory ||
-                          String(q.meta?.category || "")
+                          String(normalizeQuestionMeta(q.meta || {}).category || "")
                             .toLowerCase()
                             .includes(String(analyticsCategory || "").toLowerCase());
                         return sectionMatch && categoryMatch;
@@ -2685,7 +3323,9 @@ export default function QuizContentEditor({
                       const topicMap = new Map();
                       filteredRows.forEach((row) => {
                         const q = questionById.get(row.id);
-                        const topic = (q?.meta?.topic || "Unknown").trim() || "Unknown";
+                        const topic =
+                          (normalizeQuestionMeta(q?.meta || {}).topic || "Unknown").trim() ||
+                          "Unknown";
                         const current = topicMap.get(topic) || { wrong: 0, total: 0 };
                         topicMap.set(topic, {
                           wrong: current.wrong + (row.wrongCount || 0),
@@ -2726,7 +3366,7 @@ export default function QuizContentEditor({
                           analyticsSection === "all" || q.sectionId === analyticsSection;
                         const categoryMatch =
                           !analyticsCategory ||
-                          String(q.meta?.category || "")
+                          String(normalizeQuestionMeta(q.meta || {}).category || "")
                             .toLowerCase()
                             .includes(String(analyticsCategory || "").toLowerCase());
                         return sectionMatch && categoryMatch;
@@ -2753,7 +3393,11 @@ export default function QuizContentEditor({
 
           {canSeeVersions && (
           <div style={ui.block}>
-            <div style={ui.collapsibleHeader}>
+            <div
+              style={ui.collapsibleHeader}
+              onDoubleClick={() => setIsVersionsOpen((s) => !s)}
+              title="Double-click to expand/collapse"
+            >
               <div style={ui.blockTitle}>Version History</div>
               <div style={{ display: "flex", gap: 8 }}>
                 <button style={ui.btnGhost} type="button" onClick={loadVersions}>
@@ -2799,6 +3443,28 @@ export default function QuizContentEditor({
             )}
           </div>
           )}
+
+      <div style={ui.previewToggleRow}>
+        <div style={ui.title}>Live Preview</div>
+        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          {showPreview && (
+            <button
+              style={ui.btnGhost}
+              type="button"
+              onClick={() => setPreviewResetKey((n) => n + 1)}
+            >
+              Reset Preview
+            </button>
+          )}
+          <button
+            style={ui.btnGhost}
+            type="button"
+            onClick={() => setShowPreview((s) => !s)}
+          >
+            {showPreview ? "Hide Live Preview" : "Show Live Preview"}
+          </button>
+        </div>
+      </div>
 
       <div style={contentGridStyle}>
         <div style={ui.contentCol}>
@@ -2866,10 +3532,16 @@ export default function QuizContentEditor({
                     style={ui.questionHeader}
                     draggable
                     onDragStart={() => setDragId(q.id)}
+                    onDoubleClick={(e) => {
+                      const el = e.target;
+                      const tag = String(el?.tagName || "").toUpperCase();
+                      if (["BUTTON", "INPUT", "TEXTAREA", "SELECT", "LABEL"].includes(tag)) return;
+                      toggleQuestionCollapse(q.id);
+                    }}
+                    title="Double-click to collapse/expand question"
                   >
                   <div style={ui.questionMeta}>
                     Q{displayNumber} - {String(q.type || "single").toUpperCase()}
-                    {q.id ? ` - ID: ${q.id}` : ""}
                   </div>
                 <div style={ui.questionActions}>
                   <label style={ui.selectLabel}>
@@ -2988,15 +3660,18 @@ export default function QuizContentEditor({
 
                 <div style={ui.metaGrid}>
                   <div>
-                    <label style={ui.labelSmall}>Category</label>
+                    <label style={ui.labelSmall}>Subject / Category</label>
                     <input
                       style={ui.input}
-                      value={q.meta?.category || ""}
+                      value={normalizeQuestionMeta(q.meta || {}).category}
                       disabled={isLocked}
-                      placeholder="Category"
+                      placeholder="Subject"
                       onChange={(e) =>
                         updateQuestion(globalIndex, {
-                          meta: { ...(q.meta || {}), category: e.target.value },
+                          meta: {
+                            ...normalizeQuestionMeta(q.meta || {}),
+                            category: e.target.value,
+                          },
                         })
                       }
                     />
@@ -3005,12 +3680,15 @@ export default function QuizContentEditor({
                     <label style={ui.labelSmall}>Subcategory</label>
                     <input
                       style={ui.input}
-                      value={q.meta?.subcategory || ""}
+                      value={normalizeQuestionMeta(q.meta || {}).subcategory}
                       disabled={isLocked}
                       placeholder="Subcategory"
                       onChange={(e) =>
                         updateQuestion(globalIndex, {
-                          meta: { ...(q.meta || {}), subcategory: e.target.value },
+                          meta: {
+                            ...normalizeQuestionMeta(q.meta || {}),
+                            subcategory: e.target.value,
+                          },
                         })
                       }
                     />
@@ -3019,12 +3697,15 @@ export default function QuizContentEditor({
                     <label style={ui.labelSmall}>Topic</label>
                     <input
                       style={ui.input}
-                      value={q.meta?.topic || ""}
+                      value={normalizeQuestionMeta(q.meta || {}).topic}
                       disabled={isLocked}
                       placeholder="Topic"
                       onChange={(e) =>
                         updateQuestion(globalIndex, {
-                          meta: { ...(q.meta || {}), topic: e.target.value },
+                          meta: {
+                            ...normalizeQuestionMeta(q.meta || {}),
+                            topic: e.target.value,
+                          },
                         })
                       }
                     />
@@ -3033,12 +3714,15 @@ export default function QuizContentEditor({
                     <label style={ui.labelSmall}>Subtopic</label>
                     <input
                       style={ui.input}
-                      value={q.meta?.subtopic || ""}
+                      value={normalizeQuestionMeta(q.meta || {}).subtopic}
                       disabled={isLocked}
                       placeholder="Subtopic"
                       onChange={(e) =>
                         updateQuestion(globalIndex, {
-                          meta: { ...(q.meta || {}), subtopic: e.target.value },
+                          meta: {
+                            ...normalizeQuestionMeta(q.meta || {}),
+                            subtopic: e.target.value,
+                          },
                         })
                       }
                     />
@@ -3046,24 +3730,6 @@ export default function QuizContentEditor({
                 </div>
 
                 <div style={ui.metaGrid2}>
-                  <div>
-                    <label style={ui.labelSmall}>Question ID</label>
-                    <input
-                      style={ui.input}
-                      value={q.id || ""}
-                      disabled={isLocked}
-                      placeholder="Unique ID"
-                      onChange={(e) => updateQuestion(globalIndex, { id: e.target.value })}
-                      onBlur={(e) => {
-                        const existing = new Set((value?.questions || []).map((x) => x.id).filter(Boolean));
-                        existing.delete(q.id);
-                        if (!e.target.value || existing.has(e.target.value)) {
-                          const nextId = getUniqueQuestionId(e.target.value || `q${globalIndex + 1}`, existing);
-                          updateQuestion(globalIndex, { id: nextId });
-                        }
-                      }}
-                    />
-                  </div>
                   <div>
                     <label style={ui.labelSmall}>Difficulty</label>
                     <select
@@ -3074,6 +3740,7 @@ export default function QuizContentEditor({
                     >
                       <option value="easy">Easy</option>
                       <option value="medium">Medium</option>
+                      <option value="hard">Hard</option>
                       <option value="advanced">Advanced</option>
                     </select>
                   </div>
@@ -3085,6 +3752,121 @@ export default function QuizContentEditor({
                       disabled={isLocked}
                       placeholder="tag1, tag2"
                       onChange={(e) => updateQuestion(globalIndex, { tags: normalizeTags(e.target.value) })}
+                    />
+                  </div>
+                  <div>
+                    <label style={ui.labelSmall}>Source Type</label>
+                    <select
+                      style={ui.input}
+                      value={normalizeQuestionMeta(q.meta || {}).sourceType || "practice"}
+                      disabled={isLocked}
+                      onChange={(e) =>
+                        updateQuestion(globalIndex, {
+                          meta: {
+                            ...normalizeQuestionMeta(q.meta || {}),
+                            sourceType: e.target.value,
+                            sourceName: e.target.value === "custom"
+                              ? normalizeQuestionMeta(q.meta || {}).sourceName
+                              : "",
+                          },
+                        })
+                      }
+                    >
+                      <option value="practice">Practice</option>
+                      <option value="pyq">PYQ</option>
+                      <option value="mock">Mock</option>
+                      <option value="current_affairs">Current Affairs</option>
+                      <option value="custom">Custom</option>
+                    </select>
+                  </div>
+                  {normalizeQuestionMeta(q.meta || {}).sourceType === "custom" && (
+                    <div>
+                      <label style={ui.labelSmall}>Custom Source Name</label>
+                      <input
+                        style={ui.input}
+                        value={normalizeQuestionMeta(q.meta || {}).sourceName}
+                        disabled={isLocked}
+                        placeholder="SSC CGL 2024 Shift 2"
+                        onChange={(e) =>
+                          updateQuestion(globalIndex, {
+                            meta: {
+                              ...normalizeQuestionMeta(q.meta || {}),
+                              sourceName: e.target.value,
+                            },
+                          })
+                        }
+                      />
+                    </div>
+                  )}
+                  <div>
+                    <label style={ui.labelSmall}>Exam</label>
+                    <input
+                      style={ui.input}
+                      value={normalizeQuestionMeta(q.meta || {}).exam}
+                      disabled={isLocked}
+                      placeholder="SSC CGL"
+                      onChange={(e) =>
+                        updateQuestion(globalIndex, {
+                          meta: {
+                            ...normalizeQuestionMeta(q.meta || {}),
+                            exam: e.target.value,
+                          },
+                        })
+                      }
+                    />
+                  </div>
+                  <div>
+                    <label style={ui.labelSmall}>Exam Tags</label>
+                    <input
+                      style={ui.input}
+                      value={(normalizeQuestionMeta(q.meta || {}).examTags || []).join(", ")}
+                      disabled={isLocked}
+                      placeholder="SSC CGL 2022, CHSL 2023"
+                      onChange={(e) =>
+                        updateQuestion(globalIndex, {
+                          meta: {
+                            ...normalizeQuestionMeta(q.meta || {}),
+                            examTags: normalizeTags(e.target.value),
+                          },
+                        })
+                      }
+                    />
+                  </div>
+                  <div>
+                    <label style={ui.labelSmall}>Exam Stage</label>
+                    <input
+                      style={ui.input}
+                      value={normalizeQuestionMeta(q.meta || {}).examStage}
+                      disabled={isLocked}
+                      placeholder="Tier 1 / Prelims"
+                      onChange={(e) =>
+                        updateQuestion(globalIndex, {
+                          meta: {
+                            ...normalizeQuestionMeta(q.meta || {}),
+                            examStage: e.target.value,
+                          },
+                        })
+                      }
+                    />
+                  </div>
+                  <div>
+                    <label style={ui.labelSmall}>Year</label>
+                    <input
+                      style={ui.input}
+                      type="number"
+                      min="1900"
+                      max="2100"
+                      value={normalizeQuestionMeta(q.meta || {}).year}
+                      disabled={isLocked}
+                      placeholder="2023"
+                      onChange={(e) =>
+                        updateQuestion(globalIndex, {
+                          meta: {
+                            ...normalizeQuestionMeta(q.meta || {}),
+                            year: e.target.value,
+                          },
+                        })
+                      }
                     />
                   </div>
                 </div>
@@ -3130,7 +3912,7 @@ export default function QuizContentEditor({
                     <div>
                       <label style={ui.labelSmall}>Question (EN)</label>
                       <textarea
-                        style={ui.textareaAuto}
+                        style={{ ...ui.textareaAuto, ...ui.questionPromptInput }}
                         rows={1}
                         value={getLangValue(q.prompt, "en")}
                         disabled={isLocked}
@@ -3147,7 +3929,7 @@ export default function QuizContentEditor({
                     <div>
                       <label style={ui.labelSmall}>Question (HI)</label>
                       <textarea
-                        style={ui.textareaAuto}
+                        style={{ ...ui.textareaAuto, ...ui.questionPromptInput }}
                         rows={1}
                         value={getLangValue(q.prompt, "hi")}
                         disabled={isLocked}
@@ -3164,7 +3946,7 @@ export default function QuizContentEditor({
                   </div>
                 ) : (
                   <textarea
-                    style={ui.textareaAuto}
+                    style={{ ...ui.textareaAuto, ...ui.questionPromptInput }}
                     rows={1}
                     value={getLangValue(q.prompt, "en") || ""}
                     disabled={isLocked}
@@ -3540,12 +4322,6 @@ export default function QuizContentEditor({
                       );
                       return dup ? <span style={ui.guardWarn}>Duplicate prompt</span> : null;
                     })()}
-                    {(() => {
-                      const currentId = String(q.id || "").trim();
-                      if (!currentId) return <span style={ui.guardWarn}>Missing question ID</span>;
-                      const dup = (value?.questions || []).some((x, i) => i !== globalIndex && x.id === currentId);
-                      return dup ? <span style={ui.guardWarn}>Duplicate question ID</span> : null;
-                    })()}
                     {q.type === "single" &&
                       (q.answer === null ||
                         !Number.isInteger(Number(q.answer)) ||
@@ -3583,26 +4359,12 @@ export default function QuizContentEditor({
             </div>
           </div>
         </div>
+        {showPreview && (
         <div style={ui.previewCol}>
           <div style={ui.block}>
             <div style={ui.previewHeader}>
               <div style={ui.title}>Live Preview</div>
-              <div style={{ display: "flex", gap: 8 }}>
-                {showPreview && (
-                  <button
-                    style={ui.btnGhost}
-                    onClick={() => setPreviewResetKey((n) => n + 1)}
-                  >
-                    Reset Preview
-                  </button>
-                )}
-                <button
-                  style={ui.btnGhost}
-                  onClick={() => setShowPreview((s) => !s)}
-                >
-                  {showPreview ? "Hide" : "Show"}
-                </button>
-              </div>
+              <div style={{ display: "flex", gap: 8 }} />
             </div>
             <div style={ui.addRow}>
               <button
@@ -3612,8 +4374,7 @@ export default function QuizContentEditor({
                 {showQuestionPreview ? "Hide" : "Show"} Question Preview
               </button>
             </div>
-            {showPreview && (
-              <div style={ui.previewCard}>
+            <div style={ui.previewCard}>
                 <div style={ui.previewSettings}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <span style={ui.labelSmall}>Section Lock Preview</span>
@@ -3669,9 +4430,9 @@ export default function QuizContentEditor({
                   previewSectionLocked={previewSectionLocked}
                 />
               </div>
-            )}
           </div>
         </div>
+        )}
       </div>
 
       {sectionDeleteState && (
@@ -3785,6 +4546,14 @@ const ui = {
   },
   contentCol: { display: "flex", flexDirection: "column", gap: 16 },
   previewCol: { display: "flex", flexDirection: "column", gap: 12 },
+  previewToggleRow: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+    marginBottom: 8,
+    flexWrap: "wrap",
+  },
   settingsGrid: {
     display: "grid",
     gridTemplateColumns: "repeat(6, minmax(0, 1fr))",
@@ -3855,6 +4624,103 @@ const ui = {
     gridTemplateColumns: "140px 200px",
     gap: 8,
     alignItems: "center",
+  },
+  importCard: {
+    marginTop: 8,
+    padding: 12,
+    borderRadius: 12,
+    border: "1px solid #e2e8f0",
+    background: "#f8fafc",
+    display: "grid",
+    gap: 10,
+  },
+  importGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))",
+    gap: 10,
+    alignItems: "end",
+  },
+  importTopGrid: {
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+    gap: 10,
+    alignItems: "stretch",
+  },
+  importPane: {
+    border: "1px solid #dbe3f0",
+    borderRadius: 10,
+    background: "#ffffff",
+    padding: 10,
+    display: "grid",
+    gap: 8,
+    minWidth: 0,
+  },
+  importPaneTitle: {
+    fontSize: 12,
+    fontWeight: 700,
+    color: "#0f172a",
+  },
+  dataHeaderRow: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+    flexWrap: "wrap",
+  },
+  importInlineInfo: {
+    marginLeft: "auto",
+    textAlign: "right",
+    fontSize: 11,
+    color: "#64748b",
+    maxWidth: 620,
+  },
+  importActions: {
+    display: "flex",
+    gap: 8,
+    flexWrap: "wrap",
+    alignItems: "center",
+  },
+  exportTopRow: {
+    display: "flex",
+    gap: 8,
+    alignItems: "flex-end",
+    flexWrap: "wrap",
+  },
+  exportTemplateRow: {
+    display: "flex",
+    gap: 8,
+    alignItems: "center",
+    flexWrap: "wrap",
+  },
+  exportNameWrap: {
+    display: "grid",
+    gap: 4,
+    minWidth: 160,
+  },
+  exportNameInput: {
+    width: 170,
+    maxWidth: "100%",
+  },
+  importPrimaryRow: {
+    display: "flex",
+    justifyContent: "flex-end",
+    marginTop: 2,
+  },
+  importUploadRow: {
+    display: "grid",
+    gridTemplateColumns: "minmax(140px, 170px) minmax(0, 1fr)",
+    gap: 8,
+    alignItems: "end",
+  },
+  importTextarea: {
+    padding: "10px",
+    border: "1px solid #dbe3f0",
+    borderRadius: 10,
+    fontSize: 13,
+    width: "100%",
+    minHeight: 180,
+    background: "#ffffff",
+    fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
   },
   importRow: {
     marginTop: 8,
@@ -4089,6 +4955,11 @@ const ui = {
     overflow: "hidden",
     minHeight: 36,
   },
+  questionPromptInput: {
+    borderColor: "#2563eb",
+    boxShadow: "inset 0 0 0 1px rgba(37,99,235,0.28)",
+    background: "#f8fbff",
+  },
   danger: {
     padding: "6px 8px",
     borderRadius: 10,
@@ -4188,29 +5059,63 @@ const ui = {
   },
   filterGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
-    gap: 6,
+    gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
+    gap: 5,
+    alignItems: "end",
   },
   filterRow: {
     display: "flex",
-    gap: 6,
+    gap: 4,
     alignItems: "center",
     flexWrap: "wrap",
   },
   filterActions: {
     display: "flex",
+    gap: 4,
+    flexWrap: "wrap",
+  },
+  filterRandomControls: {
+    display: "flex",
+    gap: 4,
+    alignItems: "center",
+    flexWrap: "wrap",
+  },
+  filterRandomScope: {
+    marginTop: 3,
+    display: "flex",
     gap: 6,
+    alignItems: "center",
+    justifyContent: "space-between",
     flexWrap: "wrap",
   },
   filterSummary: {
-    marginTop: 6,
+    marginTop: 4,
     fontSize: 12,
     color: "#64748b",
   },
-  filterList: {
+  filterPresetRow: {
     marginTop: 6,
-    display: "grid",
+    display: "flex",
+    gap: 8,
+    alignItems: "center",
+    justifyContent: "space-between",
+    flexWrap: "wrap",
+  },
+  filterPresetList: {
+    display: "flex",
+    gap: 6,
+    alignItems: "center",
+    flexWrap: "wrap",
+  },
+  filterPresetItem: {
+    display: "inline-flex",
     gap: 4,
+    alignItems: "center",
+  },
+  filterList: {
+    marginTop: 4,
+    display: "grid",
+    gap: 3,
   },
   bankFilters: {
     display: "grid",
@@ -4311,6 +5216,7 @@ const ui = {
   diffBadgeColors: {
     easy: { background: "#dcfce7", color: "#166534", borderColor: "#86efac" },
     medium: { background: "#e0f2fe", color: "#075985", borderColor: "#7dd3fc" },
+    hard: { background: "#ffedd5", color: "#9a3412", borderColor: "#fdba74" },
     advanced: { background: "#fee2e2", color: "#b91c1c", borderColor: "#fecaca" },
   },
   inlineLabel: {

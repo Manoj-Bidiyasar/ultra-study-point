@@ -22,6 +22,7 @@ export default function EditorLayout({
   onSave,          // ✅ NEW
   workflow,        // ✅ NEW
   lockedBy,        // ✅ NEW
+  onDirtyChange,   // ✅ NEW
 
   documentValue,
   onDocumentChange,  
@@ -29,8 +30,6 @@ export default function EditorLayout({
 }) {
   const [tab, setTab] = useState("editor");
   const [dirty, setDirty] = useState(false);
-  const [lastSavedAt, setLastSavedAt] = useState(null);
-const [secondsAgo, setSecondsAgo] = useState(0);
 
 
 
@@ -74,6 +73,10 @@ const [secondsAgo, setSecondsAgo] = useState(0);
 useEffect(() => {
   setDirty(true);
 }, [value]);
+
+useEffect(() => {
+  onDirtyChange?.(dirty);
+}, [dirty, onDirtyChange]);
 
 
 /* ================= DESKTOP DETECT ================= */
@@ -153,25 +156,8 @@ useEffect(() => {
       });
     }
   }, [activeBlockId]);
-
-
-
-  useEffect(() => {
-  if (!lastSavedAt) return;
-
-  const t = setInterval(() => {
-    const diff = Math.floor(
-      (Date.now() - lastSavedAt) / 1000
-    );
-    setSecondsAgo(diff);
-  }, 1000);
-
-  return () => clearInterval(t);
-}, [lastSavedAt]);
-
 useEffect(() => {
   if (!isSaving && !saveError) {
-    setLastSavedAt(Date.now());
     setDirty(false);
   }
 }, [isSaving, saveError, saveStatus]);
@@ -222,39 +208,8 @@ useEffect(() => {
   </div>
 )}
 
-<div className="flex items-center gap-3 px-1">
-  <span
-  className={`
-    text-xs px-2 py-1 rounded font-semibold
-    ${
-      workflow === "draft"
-        ? "bg-yellow-100 text-yellow-900 dark:bg-yellow-900/30 dark:text-yellow-300"
-        : workflow === "published"
-        ? "bg-green-100 text-green-900 dark:bg-green-900/30 dark:text-green-300"
-        : workflow === "scheduled"
-        ? "bg-blue-100 text-blue-900 dark:bg-blue-900/30 dark:text-blue-300"
-        : "bg-gray-200 text-gray-800 dark:bg-gray-800 dark:text-gray-200"
-    }
-  `}
->
-  Status: {workflow}
-</span>
-
-
-  {dirty && (
-    <span className="text-xs text-orange-600">
-      ● Unsaved changes
-    </span>
-  )}
-</div>
-
-
-
-
-
-
       {/* ================= TAB BAR ================= */}
-      <div className="flex flex-wrap gap-2 border-b pb-2">
+      <div className="flex flex-wrap items-center gap-2 border-b pb-2">
 
         <TabButton
           active={tab === "editor"}
@@ -443,69 +398,6 @@ useEffect(() => {
           </div>
         )}
       </div>
-
-      {/* ================= SAVE STATUS ================= */}
-<div className="fixed bottom-5 right-6 z-50 flex items-center gap-3">
-
-  {/* ⏳ SPINNER */}
-  {isSaving && (
-    <div className="
-      animate-spin h-4 w-4 rounded-full
-      border-2
-      border-blue-600 dark:border-blue-400
-      border-t-transparent
-    " />
-  )}
-
-  {/* STATUS BADGE */}
-  <div
-    className={`
-      px-4 py-1.5 rounded-full shadow text-sm font-medium
-      ring-1 ring-black/5 dark:ring-white/10
-      ${
-        saveError
-          ? "bg-red-600 text-white"
-          : isSaving
-          ? "bg-yellow-400 text-black"
-          : "bg-green-600 text-white"
-      }
-    `}
-  >
-    {saveError
-      ? "Save failed ❌"
-      : isSaving
-      ? "Saving…"
-      : saveStatus || "Saved ✓"}
-  </div>
-
-  {/* 🕒 LAST SAVED */}
-  {lastSavedAt && !isSaving && !saveError && (
-    <span className="
-      text-xs font-medium
-      text-gray-800 dark:text-gray-200
-    ">
-      🕒 Last saved {secondsAgo}s ago
-    </span>
-  )}
-
-  {/* 🔁 RETRY BUTTON */}
-  {saveError && (
-    <button
-      onClick={onSave}
-      className="
-        text-xs px-3 py-1 rounded
-        border border-red-400
-        text-red-700 dark:text-red-300
-        bg-white dark:bg-gray-900
-        hover:bg-red-50 dark:hover:bg-red-900/30
-      "
-    >
-      🔁 Retry
-    </button>
-  )}
-</div>
-
-
 
     </div>
   );

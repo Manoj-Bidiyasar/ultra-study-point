@@ -29,6 +29,7 @@ export default function EditQuiz() {
 
   const isNew = searchParams.get("new") === "true";
   const slugFromCreate = searchParams.get("slug") || "";
+  const titleFromCreate = searchParams.get("title") || "";
 
   const [data, setData] = useState(null);
   const [role, setRole] = useState(null);
@@ -66,10 +67,17 @@ export default function EditQuiz() {
         }
 
         if (isNew) {
+          const fallbackTitle = String(docId || "")
+            .replace(/[-_]+/g, " ")
+            .split(" ")
+            .filter(Boolean)
+            .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+            .join(" ");
+
           setData({
             id: docId,
             slug: slugFromCreate,
-            title: "",
+            title: titleFromCreate || fallbackTitle,
             summary: "",
             tags: [],
             status: "draft",
@@ -105,7 +113,7 @@ export default function EditQuiz() {
     });
 
     return () => unsub();
-  }, [docId, isNew, slugFromCreate]);
+  }, [docId, isNew, slugFromCreate, titleFromCreate]);
 
   if (loading) return <p>Loading…</p>;
   if (!data || !role) return <p>Document not found</p>;

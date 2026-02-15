@@ -7,13 +7,15 @@ import { verifyPreviewToken } from "@/lib/preview/verifyPreviewToken";
 export const dynamic = "force-dynamic";
 
 export default async function QuizPage({ params, searchParams }) {
-  const { quizId } = params;
+  const resolvedParams = await params;
+  const resolvedSearchParams = await searchParams;
+  const { quizId } = resolvedParams || {};
   const adminDb = getAdminDb();
   if (!adminDb || !quizId) notFound();
 
-  const isPreview = searchParams?.preview === "true";
+  const isPreview = resolvedSearchParams?.preview === "true";
   if (isPreview) {
-    const token = searchParams?.token;
+    const token = resolvedSearchParams?.token;
     const valid = await verifyPreviewToken({
       token,
       expectedType: "quiz",

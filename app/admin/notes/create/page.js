@@ -29,6 +29,17 @@ function toCapitalCase(text = "") {
     .join(" ");
 }
 
+function normalizeDocId(text = "") {
+  return text
+    .trim()
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-");
+}
+
+function titleFromDocId(docId = "") {
+  return toCapitalCase(docId.replace(/[-_]+/g, " "));
+}
+
 
 /* ================= PAGE ================= */
 
@@ -45,8 +56,9 @@ export default function CreateNote() {
 
   async function openEditor() {
     setError("");
+    const normalizedDocId = normalizeDocId(docId);
 
-    if (!docId.trim()) {
+    if (!normalizedDocId) {
       setError("Document ID is required");
       return;
     }
@@ -59,7 +71,7 @@ export default function CreateNote() {
    
     setChecking(true);
 
-    const ref = doc(db, ...NOTES_COLLECTION_PATH, docId);
+    const ref = doc(db, ...NOTES_COLLECTION_PATH, normalizedDocId);
     const snap = await getDoc(ref);
 
     if (snap.exists()) {
@@ -69,10 +81,11 @@ export default function CreateNote() {
     }
 
     router.push(
-  `/admin/notes/${encodeURIComponent(docId)}?slug=${encodeURIComponent(
-    generateSlug(slug)
-  )}&new=true`
-);
+      `/admin/notes/${encodeURIComponent(normalizedDocId)}` +
+        `?slug=${encodeURIComponent(generateSlug(slug))}` +
+        `&title=${encodeURIComponent(title)}` +
+        `&new=true`
+    );
 
   }
 
@@ -81,7 +94,7 @@ export default function CreateNote() {
       <h1>Create Note</h1>
 
       {/* DOC ID */}
-      <label>Document ID (spaces allowed)</label>
+      <label>Document ID (spaces allowed; converted on open)</label>
       <input
         value={docId}
         onChange={(e) => {
@@ -89,10 +102,10 @@ export default function CreateNote() {
           setDocId(v);
 
           if (!slugTouched) {
-  setSlug(generateSlug(v));
-}
+            setSlug(generateSlug(v));
+          }
 
-          setTitle(toCapitalCase(v));
+          setTitle(titleFromDocId(v));
         }}
         placeholder="Indian Polity Fundamental Rights"
         style={styles.input}

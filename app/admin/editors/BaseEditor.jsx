@@ -161,6 +161,7 @@ quizMeta: {
     error: null,
     success: null,
   });
+  const [contentDirty, setContentDirty] = useState(false);
 
   useEffect(() => {
     async function loadUser() {
@@ -780,8 +781,19 @@ const docRef = doc(
 
     try {
       const reviewFeedback = String(state.review?.feedback || "").trim();
+      const creatorRole = String(state?.createdBy?.role || "").toLowerCase();
+      const creatorUid = state?.createdBy?.uid || "";
+      const isCreatorEditor = creatorRole === "editor";
+      const isOwnDoc = Boolean(
+        creatorUid && currentUserProfile?.uid && creatorUid === currentUserProfile.uid
+      );
+      const isReturnToEditor = nextStatus === "draft" && state?.status === "rejected";
+      const requiresReturnFeedback =
+        isReturnToEditor &&
+        isCreatorEditor &&
+        !isOwnDoc;
 
-      if (nextStatus === "draft" && !reviewFeedback) {
+      if (requiresReturnFeedback && !reviewFeedback) {
         setSubmitState({
           loading: false,
           error: "Please add feedback before returning to editor.",
@@ -850,7 +862,7 @@ const docRef = doc(
           reviewedAt: serverTimestamp(),
         };
       }
-      if (nextStatus === "draft") {
+      if (isReturnToEditor) {
         update.review = {
           status: "rejected",
           feedback: reviewFeedback,
@@ -893,7 +905,7 @@ const docRef = doc(
           if (!isPermissionDenied(err)) throw err;
         }
       }
-      if (nextStatus === "draft") {
+      if (isReturnToEditor) {
         try {
           await upsertReviewQueue({
             action: "reject",
@@ -913,8 +925,10 @@ const docRef = doc(
         loading: false,
         error: null,
         success:
-          nextStatus === "draft"
+          isReturnToEditor
             ? "Returned to editor with feedback."
+            : nextStatus === "draft"
+            ? "Draft saved."
             : nextStatus === "published"
             ? "Published successfully."
             : "Status updated.",
@@ -999,6 +1013,28 @@ useEffect(() => {
     return `${h}h ago`;
   }
 
+  async function saveDraftForLater() {
+    if (isLocked) return;
+    const saved = await saveToFirestore({ mode: "manual" });
+    setSubmitState({
+      loading: false,
+      error: saved ? null : "Failed to save draft.",
+      success: saved ? "Draft saved." : null,
+    });
+  }
+
+  async function openPreview() {
+    const saved = await saveToFirestore({ mode: "manual" });
+    if (!saved) return;
+    const previewSlug = type === "notes" ? state.id : normalizedSlug;
+    const url = await createPreviewToken({
+      docId: state.id,
+      slug: previewSlug,
+      type,
+    });
+    window.open(url, "_blank");
+  }
+
 
   /* ======================================================
      UI
@@ -1009,58 +1045,19 @@ useEffect(() => {
 
       {/* ================= HEADER ================= */}
       <div style={ui.header}>
-        <div>
+        <div style={ui.headerMain}>
           <h1 style={ui.title}>{state.title || "Untitled"}</h1>
           <div style={ui.meta}>
             <span><b>ID:</b> {state.id}</span>
             <StatusBadge status={state.status} />
-            <span>{autoSaveStatus}</span>
-            <span>Last saved {formatSince(lastSavedAt)}</span>
           </div>
+        </div>
           {state.status === "published" && (
             <div style={ui.warn}>
               This document is published. Changes wonâ€™t autoâ€‘publish until you
               manually update the status.
             </div>
           )}
-          {type === "quiz" && saveErrors.length > 0 && (
-            <div style={ui.warn}>
-              <div style={{ fontWeight: 600, marginBottom: 6 }}>
-                Quiz validation errors:
-              </div>
-              <ul style={{ margin: 0, paddingLeft: 18 }}>
-                {saveErrors.map((e, i) => (
-                  <li key={`${e}-${i}`}>{e}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
-
-        <div style={ui.headerActions}>
-          <button
-            style={ui.btnPrimary}
-            onClick={async () => {
-              const saved = await saveToFirestore({ mode: "manual" });
-              if (!saved) return;
-              const previewSlug = type === "notes" ? state.id : normalizedSlug;
-              const url = await createPreviewToken({
-                docId: state.id,
-                slug: previewSlug,
-                type,
-              });
-              window.open(url, "_blank");
-            }}
-          >
-            Preview
-          </button>
-          <button
-            style={ui.btnSecondary}
-            onClick={() => saveToFirestore({ mode: "manual" })}
-          >
-            Save
-          </button>
-        </div>
       </div>
 
       {/* ================= LAYOUT ================= */}
@@ -1079,7 +1076,7 @@ useEffect(() => {
   </CollapsibleCard>
 
   {/* ================= SEO ================= */}
-  <CollapsibleCard title="SEO & Meta">
+  <CollapsibleCard title="SEO & Meta" defaultOpen>
     <SeoSection
       seo={state.seo}
       tagsInput={tagsInput}
@@ -1122,8 +1119,14 @@ useEffect(() => {
     type,
     isLocked,
     meta: {
-      daily: state.dailyMeta,
-      monthly: state.monthlyMeta,
+      daily: {
+        ...(state.dailyMeta || {}),
+        caDate: state.dailyMeta?.caDate || state.caDate || "",
+      },
+      monthly: {
+        ...(state.monthlyMeta || {}),
+        caDate: state.monthlyMeta?.caDate || state.caDate || "",
+      },
       notes: state.notesMeta,
       quiz: state.quizMeta,
     },
@@ -1134,6 +1137,12 @@ useEffect(() => {
         monthlyMeta: meta.monthly ?? s.monthlyMeta,
         notesMeta: meta.notes ?? s.notesMeta,
         quizMeta: meta.quiz ?? s.quizMeta,
+        caDate:
+          type === "daily"
+            ? (meta.daily?.caDate ?? s.caDate)
+            : type === "monthly"
+            ? (meta.monthly?.caDate ?? s.caDate)
+            : s.caDate,
       })),
   })}
 
@@ -1170,6 +1179,7 @@ useEffect(() => {
         }))
       }
       onSubmitForReview={submitForReview}
+      onSaveDraft={saveDraftForLater}
       onAdminAction={applyAdminAction}
     />
   </CollapsibleCard>
@@ -1181,22 +1191,46 @@ useEffect(() => {
         {/* FULL WIDTH CONTENT */}
         <div style={{ gridColumn: "1 / -1" }}>
           <div style={ui.card}>
-            <h3 style={ui.sectionTitle}>
-              {type === "quiz" ? "Quiz Content" : "Content"}
-            </h3>
+            <div style={ui.sectionHeader}>
+              <h3 style={ui.sectionTitle}>
+                {type === "quiz" ? "Quiz Content" : "Content"}
+              </h3>
+              <div style={ui.sectionMeta}>
+                <span style={ui.contentStatusText}>
+                  Status: {state.status}
+                </span>
+                {contentDirty && (
+                  <span style={ui.unsavedText}>• Unsaved changes</span>
+                )}
+              </div>
+            </div>
 
             {type === "quiz" ? (
-              <QuizContentEditor
-                title={state.title}
-                description={state.summary}
-                value={state.quizMeta}
-                isLocked={isLocked}
-                role={role}
-                docId={state.id}
-                onChange={(quizMeta) =>
-                  setState((s) => ({ ...s, quizMeta }))
-                }
-              />
+              <>
+                {saveErrors.length > 0 && (
+                  <div style={ui.warn}>
+                    <div style={{ fontWeight: 600, marginBottom: 6 }}>
+                      Quiz validation errors:
+                    </div>
+                    <ul style={{ margin: 0, paddingLeft: 18 }}>
+                      {saveErrors.map((e, i) => (
+                        <li key={`${e}-${i}`}>{e}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                <QuizContentEditor
+                  title={state.title}
+                  description={state.summary}
+                  value={state.quizMeta}
+                  isLocked={isLocked}
+                  role={role}
+                  docId={state.id}
+                  onChange={(quizMeta) =>
+                    setState((s) => ({ ...s, quizMeta }))
+                  }
+                />
+              </>
             ) : (
               <EditorLayout
                 value={state.content}
@@ -1206,6 +1240,9 @@ useEffect(() => {
                 documentValue={state}
                 onDocumentChange={setState}
                 role={role}
+                saveStatus={autoSaveStatus}
+                isSaving={isSaving}
+                saveError={saveError}
                 /* âœ… REAL SAVE FUNCTION */
                 onSave={saveToFirestore}
                 /* âœ… WORKFLOW STATE */
@@ -1216,11 +1253,59 @@ useEffect(() => {
                     ? state.updatedBy?.displayName || "Another editor"
                     : null
                 }
+                onDirtyChange={setContentDirty}
               />
             )}
           </div>
         </div>
 
+      </div>
+
+      <div
+        style={{
+          ...ui.floatingSavePanel,
+          ...(saveError
+            ? ui.floatingSaveError
+            : isSaving
+            ? ui.floatingSaveSaving
+            : ui.floatingSaveIdle),
+        }}
+      >
+        <button
+          type="button"
+          onClick={() => saveToFirestore({ mode: "manual" })}
+          disabled={isSaving || isLocked}
+          style={{
+            ...ui.floatingSaveRow,
+            ...(isSaving || isLocked ? ui.floatingSaveDisabled : {}),
+          }}
+        >
+          <span style={ui.floatingSaveInlineTitle}>
+            {isLocked
+              ? "Locked"
+              : saveError
+              ? "Save failed - Retry"
+              : isSaving
+              ? "Saving..."
+              : "Save"}
+          </span>
+          <span style={ui.floatingSaveInlineTime}>
+            {saveError
+              ? String(saveError).slice(0, 80)
+              : `Saved ${formatSince(lastSavedAt)}`}
+          </span>
+        </button>
+        <button
+          type="button"
+          onClick={openPreview}
+          disabled={isSaving || isLocked}
+          style={{
+            ...ui.floatingPreviewBtn,
+            ...(isSaving || isLocked ? ui.floatingSaveDisabled : {}),
+          }}
+        >
+          Preview
+        </button>
       </div>
     </div>
   );
@@ -1229,18 +1314,40 @@ useEffect(() => {
 /* ================= UI STYLES ================= */
 
 const ui = {
-  page: { padding: 24, background: "#f3f4f6" },
+  page: { padding: 16, background: "#f3f4f6" },
   header: {
     display: "flex",
-    justifyContent: "space-between",
-    gap: 16,
-    alignItems: "flex-start",
-    marginBottom: 24,
+    flexDirection: "column",
+    gap: 8,
+    alignItems: "stretch",
+    marginBottom: 12,
     borderBottom: "1px solid #e5e7eb",
-    paddingBottom: 16,
+    paddingBottom: 8,
   },
-  title: { margin: 0, fontSize: 22 },
-  meta: { display: "flex", gap: 16, fontSize: 12, color: "#6b7280", flexWrap: "wrap" },
+  headerMain: {
+    display: "flex",
+    alignItems: "center",
+    gap: 14,
+    minWidth: 0,
+  },
+  title: {
+    margin: 0,
+    fontSize: 16,
+    lineHeight: 1.2,
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    maxWidth: "60vw",
+  },
+  meta: {
+    display: "flex",
+    gap: 14,
+    fontSize: 11,
+    color: "#6b7280",
+    flexWrap: "nowrap",
+    alignItems: "center",
+    minWidth: 0,
+  },
   grid: {
   display: "grid",
   gridTemplateColumns: "3fr 1fr",
@@ -1258,21 +1365,28 @@ const ui = {
   sectionTitle: {
     fontSize: 16,
     fontWeight: 700,
+    marginBottom: 0,
+  },
+  sectionHeader: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: 14,
   },
-  headerActions: {
+  sectionMeta: {
     display: "flex",
-    gap: 10,
     alignItems: "center",
+    gap: 10,
   },
-  btnPrimary: {
-    padding: "8px 14px",
-    borderRadius: 8,
-    border: "1px solid #1d4ed8",
-    background: "#2563eb",
-    color: "#fff",
+  contentStatusText: {
+    fontSize: 13,
+    fontWeight: 700,
+    color: "#111827",
+  },
+  unsavedText: {
+    fontSize: 12,
     fontWeight: 600,
-    cursor: "pointer",
+    color: "#b45309",
   },
   btnSecondary: {
     padding: "8px 14px",
@@ -1290,6 +1404,74 @@ const ui = {
     background: "#fffbeb",
     color: "#92400e",
     fontSize: 12,
+  },
+  floatingSavePanel: {
+    position: "fixed",
+    right: 20,
+    bottom: 20,
+    zIndex: 60,
+    minWidth: 190,
+    borderRadius: 12,
+    border: "1px solid #111827",
+    boxShadow: "0 6px 14px rgba(0,0,0,0.14)",
+    padding: 6,
+    display: "flex",
+    flexDirection: "column",
+    gap: 6,
+  },
+  floatingSaveRow: {
+    width: "100%",
+    padding: "6px 8px",
+    borderRadius: 8,
+    border: "1px solid transparent",
+    background: "transparent",
+    color: "inherit",
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  floatingPreviewBtn: {
+    width: "100%",
+    padding: "6px 8px",
+    borderRadius: 8,
+    border: "1px solid rgba(255,255,255,0.35)",
+    background: "rgba(255,255,255,0.15)",
+    color: "inherit",
+    fontWeight: 600,
+    fontSize: 12,
+    cursor: "pointer",
+  },
+  floatingSaveIdle: {
+    background: "#111827",
+    color: "#f9fafb",
+    borderColor: "#111827",
+  },
+  floatingSaveSaving: {
+    background: "#f59e0b",
+    color: "#111827",
+    borderColor: "#d97706",
+  },
+  floatingSaveError: {
+    background: "#b91c1c",
+    color: "#fef2f2",
+    borderColor: "#991b1b",
+  },
+  floatingSaveDisabled: {
+    opacity: 0.65,
+    cursor: "not-allowed",
+  },
+  floatingSaveInlineTitle: {
+    fontSize: 12,
+    fontWeight: 700,
+    lineHeight: 1,
+  },
+  floatingSaveInlineTime: {
+    fontSize: 11,
+    opacity: 0.9,
+    lineHeight: 1,
+    whiteSpace: "nowrap",
   },
 };
 

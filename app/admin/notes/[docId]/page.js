@@ -24,12 +24,22 @@ const USERS_PATH = [
   "users",
 ];
 
+function toTitleFromDocId(value = "") {
+  return String(value)
+    .replace(/[-_]+/g, " ")
+    .split(" ")
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(" ");
+}
+
 export default function EditNote() {
   const { docId } = useParams();
   const searchParams = useSearchParams();
 
   const isNew = searchParams.get("new") === "true";
   const slugFromCreate = searchParams.get("slug") || "";
+  const titleFromCreate = searchParams.get("title") || "";
 
   const [data, setData] = useState(null);
   const [role, setRole] = useState(null);
@@ -69,10 +79,12 @@ export default function EditNote() {
 
       /* ========== NEW NOTE ========== */
       if (isNew) {
+        const nextTitle = titleFromCreate || toTitleFromDocId(docId);
+
         setData({
           id: docId,
           slug: slugFromCreate,
-          title: "",
+          title: nextTitle,
           summary: "",
           tags: [],
           status: "draft",
@@ -99,7 +111,7 @@ export default function EditNote() {
     }
 
     load();
-  }, [docId, isNew, slugFromCreate]);
+  }, [docId, isNew, slugFromCreate, titleFromCreate]);
 
   if (loading) return <p>Loading…</p>;
   if (!data || !role) return <p>Document not found</p>;

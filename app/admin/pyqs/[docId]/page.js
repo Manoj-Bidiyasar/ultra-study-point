@@ -1,11 +1,10 @@
-"use client";
-
-import { useParams } from "next/navigation";
 import PyqEditorClient from "../PyqEditorClient";
 
-export default function EditPyq() {
-  const params = useParams();
-  const docId = params?.docId;
+export const dynamic = "force-dynamic";
+
+export default async function EditPyq({ params }) {
+  const resolvedParams = await params;
+  const docId = resolvedParams?.docId;
 
   if (!docId) {
     return <div style={{ padding: 24 }}>Missing PYQ ID.</div>;
