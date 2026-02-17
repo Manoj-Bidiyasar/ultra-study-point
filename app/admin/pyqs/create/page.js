@@ -24,10 +24,36 @@ export default function CreatePyq() {
   const [error, setError] = useState("");
   const [checking, setChecking] = useState(false);
 
+  function normalizeDocId(text = "") {
+    return text
+      .trim()
+      .replace(/\s+/g, "-")
+      .replace(/-+/g, "-");
+  }
+
+  function toTitleFromDocId(value = "") {
+    return String(value)
+      .replace(/[-_]+/g, " ")
+      .split(" ")
+      .filter(Boolean)
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+      .join(" ");
+  }
+
+  function toTitleCase(value = "") {
+    return String(value)
+      .split(" ")
+      .filter(Boolean)
+      .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+      .join(" ");
+  }
+
   async function openEditor() {
     setError("");
+    const normalizedDocId = normalizeDocId(docId);
+    const nextTitle = String(title || "").trim() || toTitleFromDocId(normalizedDocId);
 
-    if (!docId.trim()) {
+    if (!normalizedDocId) {
       setError("Document ID is required");
       return;
     }
@@ -40,7 +66,7 @@ export default function CreatePyq() {
     setChecking(true);
 
     try {
-      const ref = doc(db, ...COLLECTION_PATH, docId);
+      const ref = doc(db, ...COLLECTION_PATH, normalizedDocId);
       const snap = await getDoc(ref);
 
       if (snap.exists()) {
@@ -49,9 +75,9 @@ export default function CreatePyq() {
       }
 
       router.push(
-        `/admin/pyqs/${encodeURIComponent(docId)}?slug=${encodeURIComponent(
+        `/admin/pyqs/${encodeURIComponent(normalizedDocId)}?slug=${encodeURIComponent(
           generateSlug(slug)
-        )}&new=true`
+        )}&title=${encodeURIComponent(nextTitle)}&new=true`
       );
     } catch (err) {
       console.error(err);
@@ -65,14 +91,14 @@ export default function CreatePyq() {
     <div style={{ maxWidth: 520, padding: 24 }}>
       <h1>Create PYQ</h1>
 
-      <label>Document ID (spaces allowed)</label>
+      <label>Document ID (spaces allowed; converted to - on open)</label>
       <input
         value={docId}
         onChange={(e) => {
           const v = e.target.value;
           setDocId(v);
           if (!slugTouched) setSlug(generateSlug(v));
-          setTitle(v);
+          setTitle(toTitleFromDocId(v));
         }}
         placeholder="SSC CGL 2023 Tier 1"
         style={styles.input}
@@ -81,7 +107,7 @@ export default function CreatePyq() {
       <label>Title</label>
       <input
         value={title}
-        onChange={(e) => setTitle(e.target.value)}
+        onChange={(e) => setTitle(toTitleCase(e.target.value))}
         style={styles.input}
       />
 

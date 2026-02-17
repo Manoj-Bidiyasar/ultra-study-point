@@ -1,6 +1,7 @@
 import DailySection from "./DailySection";
 import MonthlySection from "./MonthlySection";
 import NotesSection from "./NotesSection";
+import PyqSection from "./PyqSection";
 import QuizSection from "./QuizSection";
 
 export default function TypeSectionRenderer({
@@ -52,6 +53,18 @@ export default function TypeSectionRenderer({
         isLocked={isLocked}
         onChange={(v) =>
           onChange({ quiz: v })
+        }
+      />
+    );
+  }
+
+  if (type === "pyq") {
+    return (
+      <PyqSection
+        value={meta?.pyq || {}}
+        isLocked={isLocked}
+        onChange={(v) =>
+          onChange({ pyq: v })
         }
       />
     );

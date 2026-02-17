@@ -53,6 +53,7 @@ const MODULE_BY_TYPE = {
   monthly: "current-affairs",
   notes: "notes",
   quiz: "quiz",
+  pyq: "quiz",
 };
 /* ======================================================
    BASE CURRENT AFFAIRS EDITOR
@@ -104,6 +105,12 @@ notesMeta: rawData.notesMeta || {
   subCategoryId: "",
   subCategoryName: "",
   topic: "",
+},
+pyqMeta: rawData.pyqMeta || {
+  exam: rawData.exam || "",
+  year: rawData.year || "",
+  subject: rawData.subject || "",
+  hideAnswersDefault: rawData.hideAnswersDefault ?? true,
 },
 quizMeta: {
   durationMinutes: rawData.durationMinutes ?? rawData.quizMeta?.durationMinutes ?? 60,
@@ -345,6 +352,15 @@ function getCollectionByType(type) {
     return err?.code === "permission-denied" || msg.includes("insufficient") || msg.includes("permission");
   }
 
+  function toRuntimeError(err) {
+    if (err instanceof Error) return err;
+    const message =
+      typeof err === "string"
+        ? err
+        : String(err?.message || err?.type || "Unknown runtime error");
+    return new Error(message);
+  }
+
   const normalizedSlug = state.slug.trim().toLowerCase();
 
   const isLocked =
@@ -530,7 +546,7 @@ const docRef = doc(
     setLastSavedAt(Date.now());
 
     try {
-      if (type === "quiz") {
+      if (type === "quiz" || type === "pyq") {
         const quizErrors = validateQuizMeta(state.quizMeta);
         if (quizErrors.length > 0) {
           setAutoSaveStatus("Save blocked");
@@ -572,8 +588,9 @@ const docRef = doc(
         dailyMeta: isCA ? state.dailyMeta : {},
         monthlyMeta: isCA ? state.monthlyMeta : {},
         notesMeta: type === "notes" ? state.notesMeta : {},
-        quizMeta: type === "quiz" ? state.quizMeta : {},
-        ...(type === "quiz"
+        pyqMeta: type === "pyq" ? state.pyqMeta : {},
+        quizMeta: type === "quiz" || type === "pyq" ? state.quizMeta : {},
+        ...(type === "quiz" || type === "pyq"
           ? {
               description: state.summary,
               durationMinutes: state.quizMeta?.durationMinutes ?? 0,
@@ -581,6 +598,14 @@ const docRef = doc(
               scoring: state.quizMeta?.scoring || {},
               sections: state.quizMeta?.sections || [],
               questions: state.quizMeta?.questions || [],
+              ...(type === "pyq"
+                ? {
+                    exam: state.pyqMeta?.exam || "",
+                    year: state.pyqMeta?.year || "",
+                    subject: state.pyqMeta?.subject || "",
+                    hideAnswersDefault: state.pyqMeta?.hideAnswersDefault ?? true,
+                  }
+                : {}),
             }
           : {}),
         relatedContent: state.relatedContent,
@@ -634,7 +659,7 @@ const docRef = doc(
             }
           );
         } catch (err) {
-          if (!isPermissionDenied(err)) throw err;
+          if (!isPermissionDenied(err)) throw toRuntimeError(err);
         }
       }
 
@@ -704,7 +729,7 @@ const docRef = doc(
         });
       } catch (err) {
         // Retry with the smallest possible payload if field-level rules are strict.
-        if (!isPermissionDenied(err)) throw err;
+        if (!isPermissionDenied(err)) throw toRuntimeError(err);
         await updateDoc(docRef, {
           status: "review",
           submittedAt: serverTimestamp(),
@@ -730,7 +755,7 @@ const docRef = doc(
         if (isPermissionDenied(err)) {
           // Optional queue entry; status=review is the primary signal for admins.
         } else {
-          throw err;
+          throw toRuntimeError(err);
         }
       }
 
@@ -754,7 +779,7 @@ const docRef = doc(
           }
         );
       } catch (err) {
-        if (!isPermissionDenied(err)) throw err;
+        if (!isPermissionDenied(err)) throw toRuntimeError(err);
       }
 
       setSubmitState({
@@ -802,7 +827,7 @@ const docRef = doc(
         return;
       }
 
-      if (nextStatus === "published" && type === "quiz") {
+      if (nextStatus === "published" && (type === "quiz" || type === "pyq")) {
         const snapshot = {
           ...state,
           snapshotAt: serverTimestamp(),
@@ -902,7 +927,7 @@ const docRef = doc(
         try {
           await upsertReviewQueue({ action: "approve" });
         } catch (err) {
-          if (!isPermissionDenied(err)) throw err;
+          if (!isPermissionDenied(err)) throw toRuntimeError(err);
         }
       }
       if (isReturnToEditor) {
@@ -912,7 +937,7 @@ const docRef = doc(
             feedback: reviewFeedback,
           });
         } catch (err) {
-          if (!isPermissionDenied(err)) throw err;
+          if (!isPermissionDenied(err)) throw toRuntimeError(err);
         }
       }
 
@@ -1128,6 +1153,7 @@ useEffect(() => {
         caDate: state.monthlyMeta?.caDate || state.caDate || "",
       },
       notes: state.notesMeta,
+      pyq: state.pyqMeta,
       quiz: state.quizMeta,
     },
     onChange: (meta) =>
@@ -1136,6 +1162,7 @@ useEffect(() => {
         dailyMeta: meta.daily ?? s.dailyMeta,
         monthlyMeta: meta.monthly ?? s.monthlyMeta,
         notesMeta: meta.notes ?? s.notesMeta,
+        pyqMeta: meta.pyq ?? s.pyqMeta,
         quizMeta: meta.quiz ?? s.quizMeta,
         caDate:
           type === "daily"
@@ -1193,7 +1220,7 @@ useEffect(() => {
           <div style={ui.card}>
             <div style={ui.sectionHeader}>
               <h3 style={ui.sectionTitle}>
-                {type === "quiz" ? "Quiz Content" : "Content"}
+                {type === "quiz" || type === "pyq" ? "Quiz Content" : "Content"}
               </h3>
               <div style={ui.sectionMeta}>
                 <span style={ui.contentStatusText}>
@@ -1205,7 +1232,7 @@ useEffect(() => {
               </div>
             </div>
 
-            {type === "quiz" ? (
+            {type === "quiz" || type === "pyq" ? (
               <>
                 {saveErrors.length > 0 && (
                   <div style={ui.warn}>

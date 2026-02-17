@@ -37,7 +37,10 @@ function isBlankAnswer(q, value) {
 }
 
 function scoreQuestion(q, value, config) {
-  const points = q.points ?? config.defaultPoints ?? 1;
+  const points =
+    typeof config.getPoints === "function"
+      ? Number(config.getPoints(q) || 0)
+      : q.points ?? config.defaultPoints ?? 1;
   if (isBlankAnswer(q, value)) return { score: 0, correct: false, blank: true };
 
   const optionEIndex = 4;
@@ -57,6 +60,11 @@ function scoreQuestion(q, value, config) {
   }
 
   if (q.type === "multiple") {
+    const correctAnswers = Array.isArray(q.answer)
+      ? q.answer.map(Number).sort()
+      : Number.isInteger(Number(q.answer))
+      ? [Number(q.answer)]
+      : [];
     const user = Array.isArray(value) ? value.map(Number) : [];
     const same =
       correctAnswers.length === user.length &&
@@ -105,6 +113,9 @@ export default function QuizClient({
   const [confirmState, setConfirmState] = useState(null);
   const [acceptedRules, setAcceptedRules] = useState(embedded && !previewFull);
   const [language, setLanguage] = useState("en");
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [flaggedQuestions, setFlaggedQuestions] = useState({});
+  const [mobilePaletteOpen, setMobilePaletteOpen] = useState(false);
 
   const resetPreviewState = () => {
     setAnswers({});
@@ -115,6 +126,9 @@ export default function QuizClient({
     setOverallEndTime(null);
     setSectionEndTime(null);
     setCurrentSectionIndex(0);
+    setCurrentQuestionIndex(0);
+    setFlaggedQuestions({});
+    setMobilePaletteOpen(false);
     setSectionLocked(false);
     setError("");
   };
@@ -128,21 +142,90 @@ export default function QuizClient({
   const shuffleOptions = quiz?.rules?.shuffleOptions === true;
   const shuffleSections = quiz?.rules?.shuffleSections === true;
   const numberingMode = quiz?.rules?.numberingMode || "global";
+  const marksMode = quiz?.rules?.marksMode || "per_question";
   const languageMode = quiz?.rules?.languageMode || "single";
   const languageVisibility = quiz?.rules?.languageVisibility || "student_choice";
   const dualDisplayMode = quiz?.rules?.dualDisplayMode || "toggle";
 
+  const pointsByQuestionId = useMemo(() => {
+    const defaultPoints = Number(quiz?.scoring?.defaultPoints ?? 1);
+    const safeDefault = Number.isFinite(defaultPoints) ? defaultPoints : 1;
+    const map = new Map();
+
+    if (marksMode === "overall") {
+      const total = Number(quiz?.scoring?.overallMarks ?? 0);
+      const per =
+        questions.length > 0 && Number.isFinite(total) && total > 0
+          ? total / questions.length
+          : safeDefault;
+      questions.forEach((q) => map.set(q.id, per));
+      return map;
+    }
+
+    if (marksMode === "section") {
+      const countBySection = new Map();
+      questions.forEach((q) => {
+        if (!q.sectionId) return;
+        countBySection.set(q.sectionId, (countBySection.get(q.sectionId) || 0) + 1);
+      });
+      const sectionMarksById = new Map(
+        (quiz?.sections || []).map((s) => [s.id, Number(s?.totalMarks)])
+      );
+      questions.forEach((q) => {
+        if (!q.sectionId) {
+          const pts = Number(q.points);
+          map.set(q.id, Number.isFinite(pts) ? pts : safeDefault);
+          return;
+        }
+        const sectionTotal = sectionMarksById.get(q.sectionId);
+        const count = countBySection.get(q.sectionId) || 0;
+        if (Number.isFinite(sectionTotal) && sectionTotal > 0 && count > 0) {
+          map.set(q.id, sectionTotal / count);
+          return;
+        }
+        const pts = Number(q.points);
+        map.set(q.id, Number.isFinite(pts) ? pts : safeDefault);
+      });
+      return map;
+    }
+
+    questions.forEach((q) => {
+      const pts = Number(q.points);
+      map.set(q.id, Number.isFinite(pts) ? pts : safeDefault);
+    });
+    return map;
+  }, [questions, quiz?.sections, quiz?.scoring?.defaultPoints, quiz?.scoring?.overallMarks, marksMode]);
+
   const scoringConfig = useMemo(() => {
     const negative = quiz?.scoring?.negativeMarking || { type: "none", value: 0 };
     let negativeValue = 0;
-    if (negative.type === "fraction") negativeValue = Number(negative.value || 0);
+    let negativeLabel = "None";
+    if (negative.type === "fraction") {
+      const num = Number(negative?.numerator);
+      const den = Number(negative?.denominator);
+      if (Number.isFinite(num) && Number.isFinite(den) && den !== 0) {
+        negativeValue = num / den;
+        negativeLabel = `-${num}/${den}`;
+      } else {
+        negativeValue = Number(negative.value || 0);
+        negativeLabel = negativeValue > 0 ? `-${negativeValue}` : "None";
+      }
+    }
     if (negative.type === "custom") negativeValue = Number(negative.value || 0);
+    if (negative.type === "custom") {
+      negativeLabel = negativeValue > 0 ? `-${negativeValue}` : "None";
+    }
+    if (negative.type === "none") {
+      negativeLabel = "None";
+    }
     return {
       defaultPoints: quiz?.scoring?.defaultPoints ?? 1,
       negativeValue: isNaN(negativeValue) ? 0 : negativeValue,
+      negativeLabel,
       noNegativeForOptionE: quiz?.rules?.optionEEnabled === true,
+      getPoints: (q) => pointsByQuestionId.get(q.id) ?? (quiz?.scoring?.defaultPoints ?? 1),
     };
-  }, [quiz]);
+  }, [quiz, pointsByQuestionId]);
 
   const timingMode = quiz?.rules?.timingMode || "overall";
 
@@ -152,6 +235,14 @@ export default function QuizClient({
   const customRules = Array.isArray(quiz?.rules?.rulesList)
     ? quiz.rules.rulesList
     : [];
+  const totalMarks = useMemo(
+    () =>
+      questions.reduce(
+        (sum, q) => sum + Number(pointsByQuestionId.get(q.id) || 0),
+        0
+      ),
+    [questions, pointsByQuestionId]
+  );
 
   function getRuleText(rule, lang) {
     if (!rule) return "";
@@ -163,12 +254,12 @@ export default function QuizClient({
   }
 
   const effectiveLanguage =
-    languageMode === "dual"
-      ? languageVisibility === "force_hi"
-        ? "hi"
-        : languageVisibility === "force_en"
-        ? "en"
-        : language
+    languageVisibility === "force_hi"
+      ? "hi"
+      : languageVisibility === "force_en"
+      ? "en"
+      : languageMode === "dual"
+      ? language
       : "en";
   const resolvedLanguage =
     embedded && previewLanguage ? previewLanguage : effectiveLanguage;
@@ -178,6 +269,23 @@ export default function QuizClient({
     (embedded && previewMode === "dual" && languageMode === "dual") ||
     (!embedded && languageMode === "dual" && dualDisplayMode === "inline");
   const showDualInline = languageMode === "dual" && dualDisplayMode === "inline";
+  const useSingleQuestionPerPage = !embedded;
+  const customRulesEn = customRules
+    .map((rule) => String(getRuleText(rule, "en") || "").trim())
+    .filter(Boolean);
+  const customRulesHi = customRules
+    .map((rule) => {
+      const hi = String(getRuleText(rule, "hi") || "").trim();
+      if (hi) return hi;
+      const en = String(getRuleText(rule, "en") || "").trim();
+      return en ? autoTranslateBasic(en) : "";
+    })
+    .filter(Boolean);
+  const formatMarks = (val) => {
+    const n = Number(val || 0);
+    if (!Number.isFinite(n)) return "0";
+    return Number.isInteger(n) ? String(n) : n.toFixed(2).replace(/\.?0+$/, "");
+  };
   const scorePercent = submitted
     ? Math.max(0, Math.min(100, (submitted.score / (submitted.maxScore || 1)) * 100))
     : 0;
@@ -192,7 +300,8 @@ export default function QuizClient({
 
   useEffect(() => {
     if (languageMode !== "dual") {
-      setLanguage("en");
+      if (languageVisibility === "force_hi") setLanguage("hi");
+      else setLanguage("en");
       return;
     }
     if (languageVisibility === "force_hi") setLanguage("hi");
@@ -232,6 +341,19 @@ export default function QuizClient({
     if (Array.isArray(field)) return field;
     if (field && typeof field === "object") return field?.[lang] || field?.en || [];
     return [];
+  }
+  function getDisplayText(field) {
+    if (languageMode !== "single") return getLangTextFallback(field, resolvedLanguage);
+    const en = getLangText(field, "en");
+    const hi = getLangText(field, "hi");
+    return en || hi || "";
+  }
+  function getDisplayOptions(field) {
+    if (languageMode !== "single") return getLangOptions(field, resolvedLanguage);
+    const en = getLangOptions(field, "en");
+    const hi = getLangOptions(field, "hi");
+    const hasEn = Array.isArray(en) && en.some((v) => String(v || "").trim());
+    return hasEn ? en : hi;
   }
 
   function renderDualText(field, compact = false) {
@@ -304,7 +426,7 @@ export default function QuizClient({
       const hi = getLangOptions(q.options, "hi")?.[idx] || "";
       return [en, hi].filter(Boolean).join(" / ") || "-";
     }
-    return getLangOptions(q.options, resolvedLanguage)?.[idx] ?? "-";
+    return getDisplayOptions(q.options)?.[idx] ?? "-";
   }
   function autoTranslateBasic(text) {
     if (!text) return "";
@@ -390,6 +512,19 @@ export default function QuizClient({
     timingMode !== "section" &&
     Number.isFinite(quiz?.durationMinutes) &&
     quiz.durationMinutes > 0;
+  const totalTimeMinutes = useMemo(() => {
+    if (hasSectionTiming) {
+      const sum = (sections || []).reduce((acc, s) => {
+        const m = Number(s?.durationMinutes || 0);
+        return acc + (Number.isFinite(m) && m > 0 ? m : 0);
+      }, 0);
+      return sum > 0 ? sum : null;
+    }
+    if (useOverallTiming && Number.isFinite(Number(quiz?.durationMinutes || 0))) {
+      return Number(quiz.durationMinutes || 0);
+    }
+    return null;
+  }, [hasSectionTiming, sections, useOverallTiming, quiz?.durationMinutes]);
   const showSectionSelection =
     !embedded && quiz?.rules?.useSections !== false && !sectionLocked;
 
@@ -434,6 +569,19 @@ export default function QuizClient({
     if (!shuffleQuestions) return currentQuestions;
     return shuffleArray(currentQuestions, questionSeed);
   }, [currentQuestions, shuffleQuestions, questionSeed]);
+  const currentQuestion = useMemo(
+    () =>
+      orderedQuestions[
+        Math.max(0, Math.min(currentQuestionIndex, Math.max(0, orderedQuestions.length - 1)))
+      ] || null,
+    [orderedQuestions, currentQuestionIndex]
+  );
+  const visibleQuestions = useMemo(() => {
+    if (!useSingleQuestionPerPage) return orderedQuestions;
+    if (!orderedQuestions.length) return [];
+    const safeIndex = Math.max(0, Math.min(currentQuestionIndex, orderedQuestions.length - 1));
+    return [orderedQuestions[safeIndex]];
+  }, [orderedQuestions, useSingleQuestionPerPage, currentQuestionIndex]);
 
   const orderedQuestionsForReview = useMemo(() => {
     if (!shuffleQuestions) return questions;
@@ -519,6 +667,20 @@ export default function QuizClient({
     if (!el) return;
     el.scrollIntoView({ behavior: "smooth", block: "center" });
   }, [embedded, focusQuestionId, orderedQuestions]);
+  useEffect(() => {
+    setCurrentQuestionIndex(0);
+    setMobilePaletteOpen(false);
+  }, [currentSectionIndex]);
+  useEffect(() => {
+    if (!useSingleQuestionPerPage) return;
+    if (!orderedQuestions.length) {
+      setCurrentQuestionIndex(0);
+      return;
+    }
+    setCurrentQuestionIndex((idx) =>
+      Math.max(0, Math.min(idx, orderedQuestions.length - 1))
+    );
+  }, [orderedQuestions, useSingleQuestionPerPage]);
 
   useEffect(() => {
     if (!startedAt || submitted) return;
@@ -571,6 +733,7 @@ export default function QuizClient({
 
   const startSection = (index) => {
     setCurrentSectionIndex(index);
+    setCurrentQuestionIndex(0);
     setSectionLocked(true);
     const now = Date.now();
     if (!startedAt) {
@@ -629,6 +792,22 @@ export default function QuizClient({
       }
   };
 
+  const getPaletteStatusClass = (q, index) => {
+    const attempted = !isBlankAnswer(q, answers[q.id]);
+    const flagged = !!flaggedQuestions[q.id];
+    const selected = useSingleQuestionPerPage && index === currentQuestionIndex;
+    if (attempted && flagged) {
+      return `bg-red-500 border-red-600 text-white ${selected ? "ring-2 ring-red-300" : ""}`;
+    }
+    if (attempted) {
+      return `bg-emerald-500 border-emerald-600 text-white ${selected ? "ring-2 ring-emerald-300" : ""}`;
+    }
+    if (flagged) {
+      return `bg-amber-100 border-amber-300 text-amber-900 ${selected ? "ring-2 ring-amber-200" : ""}`;
+    }
+    return `bg-white border-slate-300 text-slate-700 ${selected ? "ring-2 ring-blue-300" : ""}`;
+  };
+
   const handleSubmit = async (auto = false) => {
     setError("");
 
@@ -659,7 +838,7 @@ export default function QuizClient({
     });
 
     const maxScore = questions.reduce(
-      (sum, q) => sum + (q.points ?? scoringConfig.defaultPoints ?? 1),
+      (sum, q) => sum + Number(scoringConfig.getPoints(q) || 0),
       0
     );
 
@@ -670,6 +849,7 @@ export default function QuizClient({
       wrongCount,
       blankCount,
       answers,
+      flaggedQuestions,
       durationSeconds: startedAt
         ? Math.floor((Date.now() - startedAt) / 1000)
         : null,
@@ -754,7 +934,7 @@ export default function QuizClient({
       if (result.blank) blankCount += 1;
       else if (result.correct) correctCount += 1;
       else wrongCount += 1;
-      maxScore += q.points ?? scoringConfig.defaultPoints ?? 1;
+      maxScore += Number(scoringConfig.getPoints(q) || 0);
     });
     return { score, maxScore, correctCount, wrongCount, blankCount };
   }
@@ -805,35 +985,6 @@ export default function QuizClient({
                 Section Timing: <b>Enabled</b>
               </div>
             )}
-          {minAttemptPercent && (
-            <div>
-              Min attempt: <b>{minAttemptPercent}%</b>
-            </div>
-          )}
-          {languageMode === "dual" &&
-            languageVisibility === "student_choice" &&
-            dualDisplayMode !== "inline" &&
-            !embedded && (
-            <div className="flex items-center gap-2">
-              <span>Language:</span>
-              <button
-                className={`px-2 py-0.5 rounded border ${
-                  resolvedLanguage === "en" ? "bg-blue-600 text-white border-blue-600" : ""
-                }`}
-                onClick={() => setLanguage("en")}
-              >
-                EN
-              </button>
-              <button
-                className={`px-2 py-0.5 rounded border ${
-                  resolvedLanguage === "hi" ? "bg-blue-600 text-white border-blue-600" : ""
-                }`}
-                onClick={() => setLanguage("hi")}
-              >
-                HI
-              </button>
-            </div>
-          )}
         </div>
 
           {timeLeft !== null && (
@@ -883,119 +1034,108 @@ export default function QuizClient({
         {!submitted && (
           <div className="mt-6 space-y-4">
             {!startedAt && (!embedded || previewFull) && (
-              <div className="bg-white rounded-xl border p-5">
-                <div className="flex items-center justify-between gap-3 flex-wrap">
-                  <div className="font-semibold">
-                    {t("Before You Start", "\u0936\u0941\u0930\u0942 \u0915\u0930\u0928\u0947 \u0938\u0947 \u092a\u0939\u0932\u0947")}
+              <div className="bg-white rounded-xl border overflow-hidden">
+                <div className="px-5 py-3 bg-slate-800 text-white flex items-center justify-between gap-3 flex-wrap">
+                  <div className="font-semibold text-base">
+                    {quiz?.title || t("Mock Test", "\u092e\u0949\u0915 \u091f\u0947\u0938\u094d\u091f")}
                   </div>
-                  {languageMode === "dual" &&
-                    languageVisibility === "student_choice" &&
-                    dualDisplayMode !== "inline" && (
-                    <div className="flex items-center gap-2 text-xs">
-                      <span className="text-slate-500">
-                          {t("Language", "\u092d\u093e\u0937\u093e")}
-                        </span>
-                        <button
-                          className={`px-2 py-0.5 rounded border ${
-                            resolvedLanguage === "en"
-                              ? "bg-blue-600 text-white border-blue-600"
-                              : ""
-                          }`}
-                          onClick={() => setLanguage("en")}
+                  <div className="text-xs text-slate-200">
+                    {t("Read instructions carefully before starting.", "\u0936\u0941\u0930\u0942 \u0915\u0930\u0928\u0947 \u0938\u0947 \u092a\u0939\u0932\u0947 \u0928\u093f\u0930\u094d\u0926\u0947\u0936 \u0927\u094d\u092f\u093e\u0928 \u0938\u0947 \u092a\u0922\u093c\u0947\u0902\u0964")}
+                  </div>
+                </div>
+
+                <div className="p-5 grid gap-4 md:grid-cols-[minmax(0,1fr)_320px]">
+                  <div className="space-y-3">
+                    <div className="text-sm font-semibold text-slate-800">
+                      {t("Important Instructions", "\u092e\u0939\u0924\u094d\u0935\u092a\u0942\u0930\u094d\u0923 \u0928\u093f\u0930\u094d\u0926\u0947\u0936")}
+                    </div>
+                    {customRulesEn.length > 0 && (
+                      <ul className="text-sm text-slate-700 list-decimal pl-5 space-y-1">
+                        {customRulesEn.map((text, idx) => (
+                          <li key={`rule-en-${idx}`}>{text}</li>
+                        ))}
+                      </ul>
+                    )}
+                    {customRulesHi.length > 0 && (
+                      <ul className="text-sm text-slate-700 list-decimal pl-5 space-y-1">
+                        {customRulesHi.map((text, idx) => (
+                          <li key={`rule-hi-${idx}`}>{text}</li>
+                        ))}
+                      </ul>
+                    )}
+                    {(customRulesEn.length === 0 && customRulesHi.length === 0) && (
+                      <div className="text-xs text-slate-500">
+                        {t("No custom instructions added yet.", "\u0905\u092d\u0940 \u0915\u094b\u0908 \u0915\u0938\u094d\u091f\u092e \u0928\u093f\u0930\u094d\u0926\u0947\u0936 \u091c\u094b\u0921\u093c\u0947 \u0928\u0939\u0940\u0902 \u0917\u090f \u0939\u0948\u0902\u0964")}
+                      </div>
+                    )}
+                    {languageMode === "dual" &&
+                      languageVisibility === "student_choice" &&
+                      dualDisplayMode !== "inline" && (
+                      <div className="pt-1 flex items-center gap-2 text-sm">
+                        <label className="text-slate-600">
+                          {t("Language", "\u092d\u093e\u0937\u093e")}:
+                        </label>
+                        <select
+                          className="px-2 py-1 rounded border bg-white"
+                          value={resolvedLanguage}
+                          onChange={(e) => setLanguage(e.target.value)}
                         >
-                          EN
-                        </button>
+                          <option value="en">English</option>
+                          <option value="hi">Hindi</option>
+                        </select>
+                      </div>
+                    )}
+                    <label className="pt-1 flex items-center gap-2 text-sm text-slate-700">
+                      <input
+                        type="checkbox"
+                        checked={acceptedRules}
+                        onChange={(e) => setAcceptedRules(e.target.checked)}
+                      />
+                      {isHi
+                        ? "\u092e\u0948\u0902 \u0928\u093f\u092f\u092e \u0938\u092e\u091d\u0924\u093e/\u0938\u092e\u091d\u0924\u0940 \u0939\u0942\u0902 \u0914\u0930 \u092a\u0930\u0940\u0915\u094d\u0937\u093e \u0936\u0941\u0930\u0942 \u0915\u0930\u0928\u0947 \u0915\u0947 \u0932\u093f\u090f \u0938\u0939\u092e\u0924 \u0939\u0942\u0902\u0964"
+                        : "I understand the rules and agree to start the test."}
+                    </label>
+                    {!showSectionSelection && (
+                      <div className="pt-1">
                         <button
-                          className={`px-2 py-0.5 rounded border ${
-                            resolvedLanguage === "hi"
-                              ? "bg-blue-600 text-white border-blue-600"
-                              : ""
-                          }`}
-                          onClick={() => setLanguage("hi")}
+                          className="px-6 py-2.5 rounded bg-blue-700 text-white disabled:opacity-50 font-medium"
+                          disabled={!acceptedRules}
+                          onClick={handleStart}
                         >
-                          HI
+                          {t("Start Test", "\u092a\u0930\u0940\u0915\u094d\u0937\u093e \u0936\u0941\u0930\u0942 \u0915\u0930\u0947\u0902")}
                         </button>
                       </div>
                     )}
-                </div>
-                <div className="mt-2 text-sm text-slate-600 space-y-1">
-                  <div>
-                    {t("Total Questions", "\u0915\u0941\u0932 \u092a\u094d\u0930\u0936\u094d\u0928")}: <b>{questions.length}</b>
                   </div>
-                  <div>
-                    {t("Default Points", "\u0921\u093f\u095e\u0949\u0932\u094d\u091f \u0905\u0902\u0915")}: <b>{scoringConfig.defaultPoints}</b>
-                  </div>
-                  <div>
-                    {t("Negative Marking", "\u0928\u0915\u093e\u0930\u093e\u0924\u094d\u092e\u0915 \u0905\u0902\u0915\u0928")}: <b>{
-                      scoringConfig.negativeValue > 0
-                        ? `-${scoringConfig.negativeValue}`
-                        : t("None", "\u0928\u0939\u0940\u0902")
-                    }</b>
-                  </div>
-                  {useOverallTiming && (
-                    <div>
-                      {t("Overall Time", "\u0915\u0941\u0932 \u0938\u092e\u092f")}: <b>{quiz.durationMinutes} min</b>
+
+                  <div className="rounded-lg border bg-slate-50 p-4 h-fit">
+                    <div className="text-xs font-semibold uppercase tracking-wide text-slate-700">
+                      {t("Exam Summary", "\u092a\u0930\u0940\u0915\u094d\u0937\u093e \u0938\u093e\u0930\u093e\u0902\u0936")}
                     </div>
-                  )}
-                  {hasSectionTiming && (
-                    <div>
-                      {t("Section Timing", "\u0938\u0947\u0915\u094d\u0936\u0928 \u091f\u093e\u0907\u092e\u093f\u0902\u0917")}: <b>{t("Enabled", "\u0938\u0915\u094d\u0930\u093f\u092f")}</b>
+                    <div className="mt-3 grid grid-cols-2 gap-2 text-sm text-slate-700">
+                      <div className="rounded border bg-white px-3 py-2">
+                        <div className="text-[11px] text-slate-500">{t("Questions", "\u092a\u094d\u0930\u0936\u094d\u0928")}</div>
+                        <div className="font-semibold">{questions.length}</div>
+                      </div>
+                      <div className="rounded border bg-white px-3 py-2">
+                        <div className="text-[11px] text-slate-500">{t("Marks", "\u0905\u0902\u0915")}</div>
+                        <div className="font-semibold">{formatMarks(totalMarks)}</div>
+                      </div>
+                      <div className="rounded border bg-white px-3 py-2">
+                        <div className="text-[11px] text-slate-500">{t("Time", "\u0938\u092e\u092f")}</div>
+                        <div className="font-semibold">
+                          {totalTimeMinutes !== null ? `${totalTimeMinutes} min` : t("No limit", "\u0915\u094b\u0908 \u0938\u0940\u092e\u093e \u0928\u0939\u0940\u0902")}
+                        </div>
+                      </div>
+                      <div className="rounded border bg-white px-3 py-2">
+                        <div className="text-[11px] text-slate-500">{t("Negative", "\u0928\u0947\u0917\u0947\u091f\u093f\u0935")}</div>
+                        <div className="font-semibold">
+                          {scoringConfig.negativeValue > 0 ? scoringConfig.negativeLabel : t("None", "\u0928\u0939\u0940\u0902")}
+                        </div>
+                      </div>
                     </div>
-                  )}
-                </div>
-                <div className="mt-3">
-                  <div className="text-xs uppercase tracking-wide text-slate-500">
-                    {t("Rules", "\u0928\u093f\u092f\u092e")}
                   </div>
-                  <ul className="mt-2 text-sm text-slate-600 list-disc pl-5 space-y-1">
-                    {optionEEnabled && (
-                      <li>
-                        {isHi
-                          ? autoTranslateBasic("No negative marking for Option E.")
-                          : "No negative marking for Option E."}
-                      </li>
-                    )}
-                    {minAttemptPercent && (
-                      <li>
-                        {isHi
-                          ? `\u0928\u094d\u092f\u0942\u0928\u0924\u092e \u092a\u094d\u0930\u092f\u093e\u0938: ${minAttemptPercent}%.`
-                          : `Minimum attempt: ${minAttemptPercent}%.`}
-                      </li>
-                    )}
-                    {customRules
-                      .map((rule, idx) => ({
-                        key: `custom-rule-${idx}`,
-                        text: getRuleText(rule, resolvedLanguage),
-                      }))
-                      .filter((item) => String(item.text || "").trim())
-                      .map((item) => (
-                        <li key={item.key}>
-                          {isHi ? autoTranslateBasic(item.text) : item.text}
-                        </li>
-                      ))}
-                  </ul>
                 </div>
-                <label className="mt-3 flex items-center gap-2 text-sm text-slate-600">
-                  <input
-                    type="checkbox"
-                    checked={acceptedRules}
-                    onChange={(e) => setAcceptedRules(e.target.checked)}
-                  />
-                  {isHi
-                    ? "\u092e\u0948\u0902 \u0928\u093f\u092f\u092e \u0938\u092e\u091d\u0924\u093e/\u0938\u092e\u091d\u0924\u0940 \u0939\u0942\u0902 \u0914\u0930 \u092a\u0930\u0940\u0915\u094d\u0937\u093e \u0936\u0941\u0930\u0942 \u0915\u0930\u0928\u0947 \u0915\u0947 \u0932\u093f\u090f \u0938\u0939\u092e\u0924 \u0939\u0942\u0902\u0964"
-                    : "I understand the rules and agree to start the test."}
-                </label>
-                {!showSectionSelection && (
-                  <div className="mt-3">
-                    <button
-                      className="px-5 py-2 rounded bg-blue-600 text-white disabled:opacity-50"
-                      disabled={!acceptedRules}
-                      onClick={handleStart}
-                    >
-                      {t("Start Test", "\u092a\u0930\u0940\u0915\u094d\u0937\u093e \u0936\u0941\u0930\u0942 \u0915\u0930\u0947\u0902")}
-                    </button>
-                  </div>
-                )}
               </div>
             )}
             {showSectionSelection && (
@@ -1022,147 +1162,259 @@ export default function QuizClient({
                 </div>
               </div>
             )}
-
-            <div className="bg-white rounded-xl border p-4">
-              <div className="flex items-center gap-2">
-                <div className="font-semibold">
-                  {currentSection?.title || "Section"}
+            {startedAt && (
+              <div className="bg-white rounded-xl border p-4">
+                <div className="flex items-center gap-2">
+                  <div className="font-semibold">
+                    {currentSection?.title || "Section"}
+                  </div>
+                  {sectionLocked && (
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border">
+                      Section Locked
+                    </span>
+                  )}
                 </div>
-                {sectionLocked && (
-                  <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border">
-                    Section Locked
-                  </span>
-                )}
+                <div className="text-sm text-slate-600">
+                  Section {currentSectionIndex + 1} of {sections.length}
+                </div>
               </div>
-              <div className="text-sm text-slate-600">
-                Section {currentSectionIndex + 1} of {sections.length}
-              </div>
-            </div>
-
-            {showSectionSelection ? (
-              <div className="bg-white rounded-xl border p-5 text-sm text-slate-600">
-                Please select a section to start the test.
-              </div>
-            ) : !startedAt && (!embedded || previewFull) ? (
-              <div className="bg-white rounded-xl border p-5 text-sm text-slate-600">
-                {isHi
-                  ? "\u092a\u0930\u0940\u0915\u094d\u0937\u093e \u0936\u0941\u0930\u0942 \u0915\u0930\u0928\u0947 \u0915\u0947 \u0932\u093f\u090f Start Test \u0926\u092c\u093e\u090f\u0902\u0964"
-                  : "Please click Start Test to begin."}
-              </div>
-            ) : (
-              orderedQuestions.map((q, idx) => (
-                <div
-                  key={q.id}
-                  id={`quiz-q-${q.id}`}
-                  className={`bg-white rounded-xl border p-5 ${
-                    embedded && focusQuestionId === q.id
-                      ? "ring-2 ring-blue-400 shadow-sm quiz-focus-glow"
-                      : ""
-                  }`}
-                >
-                  {(!embedded || previewFull) ? (
-                    <div className="flex items-baseline gap-2 text-sm">
-                      <span className="text-slate-500 shrink-0">
-                        Q{numberingMode === "section" ? idx + 1 : overallOrderMap.get(q.id) || idx + 1}.
-                      </span>
-                      <span className="text-slate-900">
-                        {showDualPreview ? (
-                          renderDualText(q.prompt, true)
-                        ) : (
-                          <MarkdownRenderer inline className="prose-p:my-0 prose-p:leading-6">
-                            {getLangText(q.prompt, resolvedLanguage)}
-                          </MarkdownRenderer>
-                        )}
-                      </span>
+            )}
+            {startedAt && !showSectionSelection && (
+              <div className="space-y-3 lg:grid lg:gap-4 lg:grid-cols-[250px_minmax(0,1fr)] lg:space-y-0">
+                <div className="lg:hidden">
+                  <button
+                    type="button"
+                    className="w-full px-3 py-2 rounded border bg-white text-sm font-medium text-slate-700"
+                    onClick={() => setMobilePaletteOpen((v) => !v)}
+                  >
+                    {mobilePaletteOpen
+                      ? t("Hide Question Numbers", "\u092a\u094d\u0930\u0936\u094d\u0928 \u0938\u0902\u0916\u094d\u092f\u093e \u091b\u093f\u092a\u093e\u090f\u0902")
+                      : t("Show Question Numbers", "\u092a\u094d\u0930\u0936\u094d\u0928 \u0938\u0902\u0916\u094d\u092f\u093e \u0926\u093f\u0916\u093e\u090f\u0902")}
+                  </button>
+                </div>
+                <aside className={`${mobilePaletteOpen ? "block" : "hidden"} lg:block bg-white rounded-xl border p-3 lg:sticky lg:top-4 h-fit`}>
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm font-semibold text-slate-800">
+                      {t("Question Palette", "\u092a\u094d\u0930\u0936\u094d\u0928 \u092a\u0948\u0932\u0947\u091f")}
                     </div>
-                  ) : (
-                    <div className="mt-2">
-                      {showDualPreview ? (
-                        renderDualText(q.prompt)
+                    {hasSectionTiming && (
+                      <div className="text-[11px] text-slate-500">
+                        {currentSection?.title}
+                      </div>
+                    )}
+                  </div>
+                  <div className="mt-2 grid grid-cols-6 sm:grid-cols-8 lg:grid-cols-5 gap-2">
+                    {orderedQuestions.map((q, idx) => (
+                      <button
+                        key={`palette-${q.id}`}
+                        type="button"
+                        className={`h-8 w-8 rounded-full border text-xs font-semibold transition ${getPaletteStatusClass(q, idx)}`}
+                        onClick={() => {
+                          setCurrentQuestionIndex(idx);
+                          setMobilePaletteOpen(false);
+                        }}
+                        title={`Q${numberingMode === "section" ? idx + 1 : overallOrderMap.get(q.id) || idx + 1}`}
+                      >
+                        {numberingMode === "section" ? idx + 1 : overallOrderMap.get(q.id) || idx + 1}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="mt-3 space-y-1 text-[11px] text-slate-600">
+                    <div className="flex items-center gap-2"><span className="h-3 w-3 rounded border bg-emerald-500 border-emerald-600 inline-block" />Attempted</div>
+                    <div className="flex items-center gap-2"><span className="h-3 w-3 rounded border bg-red-500 border-red-600 inline-block" />Attempted + Flagged</div>
+                    <div className="flex items-center gap-2"><span className="h-3 w-3 rounded border bg-amber-100 border-amber-300 inline-block" />Not Attempted + Flagged</div>
+                    <div className="flex items-center gap-2"><span className="h-3 w-3 rounded border bg-white border-slate-300 inline-block" />Not Attempted</div>
+                  </div>
+                </aside>
+                <div className="space-y-4">
+                  {visibleQuestions.map((q, idx) => (
+                    <div
+                      key={q.id}
+                      id={`quiz-q-${q.id}`}
+                      className={`bg-white rounded-xl border p-5 ${
+                        embedded && focusQuestionId === q.id
+                          ? "ring-2 ring-blue-400 shadow-sm quiz-focus-glow"
+                          : ""
+                      }`}
+                    >
+                      {useSingleQuestionPerPage && (
+                        <div className="mb-3 flex items-center justify-between gap-2 flex-wrap">
+                          <div className="text-xs text-slate-500">
+                            {t("Question", "\u092a\u094d\u0930\u0936\u094d\u0928")} {currentQuestionIndex + 1} /{" "}
+                            {orderedQuestions.length}
+                          </div>
+                          {languageMode === "dual" &&
+                            languageVisibility === "student_choice" &&
+                            dualDisplayMode !== "inline" && (
+                            <div className="flex items-center gap-2 text-xs">
+                              <span className="text-slate-500">
+                                {t("Language", "\u092d\u093e\u0937\u093e")}
+                              </span>
+                              <select
+                                className="px-2 py-1 rounded border bg-white text-sm"
+                                value={resolvedLanguage}
+                                onChange={(e) => setLanguage(e.target.value)}
+                              >
+                                <option value="en">English</option>
+                                <option value="hi">Hindi</option>
+                              </select>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      {(!embedded || previewFull) ? (
+                        <div className="flex items-baseline gap-2 text-sm">
+                          <span className="text-slate-500 shrink-0">
+                            Q
+                            {numberingMode === "section"
+                              ? useSingleQuestionPerPage
+                                ? currentQuestionIndex + 1
+                                : idx + 1
+                              : overallOrderMap.get(q.id) || idx + 1}
+                            .
+                          </span>
+                          <span className="text-slate-900">
+                            {showDualPreview ? (
+                              renderDualText(q.prompt, true)
+                            ) : (
+                              <MarkdownRenderer inline className="prose-p:my-0 prose-p:leading-6">
+                                {getDisplayText(q.prompt)}
+                              </MarkdownRenderer>
+                            )}
+                          </span>
+                        </div>
                       ) : (
-                        <MarkdownRenderer>{getLangText(q.prompt, resolvedLanguage)}</MarkdownRenderer>
+                        <div className="mt-2">
+                          {showDualPreview ? (
+                            renderDualText(q.prompt)
+                          ) : (
+                            <MarkdownRenderer>{getDisplayText(q.prompt)}</MarkdownRenderer>
+                          )}
+                        </div>
+                      )}
+
+                      {q.type === "single" && (
+                        <div className="mt-3 space-y-2">
+                          {(optionOrders[q.id] || [])
+                            .slice(0, optionEEnabled ? 5 : 4)
+                            .map((origIdx, i) => {
+                              const opt = getDisplayOptions(q.options)?.[origIdx] ?? "";
+                              const optEn = getLangOptions(q.options, "en")?.[origIdx] ?? "";
+                              const optHi = getLangOptions(q.options, "hi")?.[origIdx] ?? "";
+                              return (
+                                <label key={i} className="flex items-center gap-2 text-sm">
+                                  <input
+                                    type="radio"
+                                    name={q.id}
+                                    checked={answers[q.id] === origIdx}
+                                    onChange={() =>
+                                      setAnswers((s) => ({ ...s, [q.id]: origIdx }))
+                                    }
+                                  />
+                                  {showDualPreview ? renderDualOption(optEn, optHi) : <MarkdownRenderer>{opt}</MarkdownRenderer>}
+                                </label>
+                              );
+                            })}
+                        </div>
+                      )}
+
+                      {q.type === "multiple" && (
+                        <div className="mt-3 space-y-2">
+                          {(optionOrders[q.id] || [])
+                            .slice(0, optionEEnabled ? 5 : 4)
+                            .map((origIdx, i) => {
+                              const opt = getDisplayOptions(q.options)?.[origIdx] ?? "";
+                              const optEn = getLangOptions(q.options, "en")?.[origIdx] ?? "";
+                              const optHi = getLangOptions(q.options, "hi")?.[origIdx] ?? "";
+                              const current = Array.isArray(answers[q.id])
+                                ? answers[q.id]
+                                : [];
+                              const checked = current.includes(origIdx);
+                              return (
+                                <label key={i} className="flex items-center gap-2 text-sm">
+                                  <input
+                                    type="checkbox"
+                                    checked={checked}
+                                    onChange={() => {
+                                      const next = checked
+                                        ? current.filter((v) => v !== origIdx)
+                                        : [...current, origIdx];
+                                      setAnswers((s) => ({ ...s, [q.id]: next }));
+                                    }}
+                                  />
+                                  {showDualPreview ? renderDualOption(optEn, optHi) : <MarkdownRenderer>{opt}</MarkdownRenderer>}
+                                </label>
+                              );
+                            })}
+                        </div>
+                      )}
+
+                      {q.type === "fill" && (
+                        <div className="mt-3">
+                          <input
+                            type="text"
+                            className="w-full border rounded p-2 text-sm"
+                            placeholder="Type your answer"
+                            value={answers[q.id] || ""}
+                            onChange={(e) =>
+                              setAnswers((s) => ({ ...s, [q.id]: e.target.value }))
+                            }
+                          />
+                        </div>
                       )}
                     </div>
-                  )}
-
-                  {q.type === "single" && (
-                    <div className="mt-3 space-y-2">
-                      {(optionOrders[q.id] || [])
-                        .slice(0, optionEEnabled ? 5 : 4)
-                        .map((origIdx, i) => {
-                          const opt = getLangOptions(q.options, resolvedLanguage)?.[origIdx] ?? "";
-                          const optEn = getLangOptions(q.options, "en")?.[origIdx] ?? "";
-                          const optHi = getLangOptions(q.options, "hi")?.[origIdx] ?? "";
-                          return (
-                            <label key={i} className="flex items-center gap-2 text-sm">
-                              <input
-                                type="radio"
-                                name={q.id}
-                                checked={answers[q.id] === origIdx}
-                                onChange={() =>
-                                  setAnswers((s) => ({ ...s, [q.id]: origIdx }))
-                                }
-                              />
-                              {showDualPreview ? renderDualOption(optEn, optHi) : <MarkdownRenderer>{opt}</MarkdownRenderer>}
-                            </label>
-                          );
-                        })}
-                    </div>
-                  )}
-
-                  {q.type === "multiple" && (
-                    <div className="mt-3 space-y-2">
-                      {(optionOrders[q.id] || [])
-                        .slice(0, optionEEnabled ? 5 : 4)
-                        .map((origIdx, i) => {
-                          const opt = getLangOptions(q.options, resolvedLanguage)?.[origIdx] ?? "";
-                          const optEn = getLangOptions(q.options, "en")?.[origIdx] ?? "";
-                          const optHi = getLangOptions(q.options, "hi")?.[origIdx] ?? "";
-                          const current = Array.isArray(answers[q.id])
-                            ? answers[q.id]
-                            : [];
-                          const checked = current.includes(origIdx);
-                          return (
-                            <label key={i} className="flex items-center gap-2 text-sm">
-                              <input
-                                type="checkbox"
-                                checked={checked}
-                                onChange={() => {
-                                  const next = checked
-                                    ? current.filter((v) => v !== origIdx)
-                                    : [...current, origIdx];
-                                  setAnswers((s) => ({ ...s, [q.id]: next }));
-                                }}
-                              />
-                              {showDualPreview ? renderDualOption(optEn, optHi) : <MarkdownRenderer>{opt}</MarkdownRenderer>}
-                            </label>
-                          );
-                        })}
-                    </div>
-                  )}
-
-                  {q.type === "fill" && (
-                    <div className="mt-3">
-                      <input
-                        type="text"
-                        className="w-full border rounded p-2 text-sm"
-                        placeholder="Type your answer"
-                        value={answers[q.id] || ""}
-                        onChange={(e) =>
-                          setAnswers((s) => ({ ...s, [q.id]: e.target.value }))
-                        }
-                      />
-                    </div>
-                  )}
+                  ))}
                 </div>
-              ))
+              </div>
             )}
 
             {error && (
               <div className="text-sm text-red-600">{error}</div>
             )}
 
+            {startedAt && !showSectionSelection && (
             <div className="flex gap-3">
+              {useSingleQuestionPerPage && !submitted && orderedQuestions.length > 1 && (
+                <>
+                  <button
+                    className="px-5 py-2 rounded border disabled:opacity-50"
+                    disabled={currentQuestionIndex === 0}
+                    onClick={() => setCurrentQuestionIndex((i) => Math.max(0, i - 1))}
+                  >
+                    {t("Previous", "\u092a\u093f\u091b\u0932\u093e")}
+                  </button>
+                  <button
+                    className="px-5 py-2 rounded border disabled:opacity-50"
+                    disabled={currentQuestionIndex >= orderedQuestions.length - 1}
+                    onClick={() =>
+                      setCurrentQuestionIndex((i) =>
+                        Math.min(orderedQuestions.length - 1, i + 1)
+                      )
+                    }
+                  >
+                    {t("Next", "\u0905\u0917\u0932\u093e")}
+                  </button>
+                </>
+              )}
+              {!submitted && currentQuestion && (
+                <button
+                  className={`px-5 py-2 rounded border ${
+                    flaggedQuestions[currentQuestion.id]
+                      ? "bg-red-500 text-white border-red-600"
+                      : "bg-amber-50 text-amber-800 border-amber-300"
+                  }`}
+                  onClick={() =>
+                    setFlaggedQuestions((prev) => ({
+                      ...prev,
+                      [currentQuestion.id]: !prev[currentQuestion.id],
+                    }))
+                  }
+                >
+                  {flaggedQuestions[currentQuestion.id]
+                    ? t("Unflag", "\u0905\u0928\u092b\u094d\u0932\u0948\u0917")
+                    : t("Flag", "\u092b\u094d\u0932\u0948\u0917")}
+                </button>
+              )}
               {sectionLocked && currentSectionIndex < sections.length - 1 && (
                 <button
                   className="px-5 py-2 rounded border"
@@ -1184,6 +1436,7 @@ export default function QuizClient({
                 onClick={() => handleSubmit(false)}
               >{t("Submit Test", "\u091f\u0947\u0938\u094d\u091f \u091c\u092e\u093e \u0915\u0930\u0947\u0902")}</button>
             </div>
+            )}
           </div>
         )}
 
@@ -1222,7 +1475,7 @@ export default function QuizClient({
                   const userAnswer = answers[q.id];
                   const displayOrder =
                     q.type === "single" || q.type === "multiple"
-                      ? (optionOrders[q.id] || getLangOptions(q.options, resolvedLanguage).map((_, idx) => idx)).slice(
+                      ? (optionOrders[q.id] || getDisplayOptions(q.options).map((_, idx) => idx)).slice(
                           0,
                           optionEEnabled ? 5 : 4
                         )
@@ -1256,7 +1509,7 @@ export default function QuizClient({
                             renderDualText(q.prompt, true)
                           ) : (
                             <MarkdownRenderer inline className="prose-p:my-0 prose-p:leading-6">
-                              {getLangText(q.prompt, resolvedLanguage)}
+                              {getDisplayText(q.prompt)}
                             </MarkdownRenderer>
                           )}
                         </span>
@@ -1288,14 +1541,14 @@ export default function QuizClient({
                       )}
                       {((showDualPreview
                         ? getLangText(q.explanation, "en") || getLangText(q.explanation, "hi")
-                        : getLangTextFallback(q.explanation, resolvedLanguage)) || "") &&
+                        : getDisplayText(q.explanation)) || "") &&
                         quiz?.rules?.showExplanation !== false && (
                           <div className="text-sm text-slate-600 mt-2">
                             Explanation:{" "}
                             {showDualPreview ? (
                               renderDualText(q.explanation)
                             ) : (
-                              <MarkdownRenderer>{getLangTextFallback(q.explanation, resolvedLanguage)}</MarkdownRenderer>
+                              <MarkdownRenderer>{getDisplayText(q.explanation)}</MarkdownRenderer>
                             )}
                           </div>
                         )}
