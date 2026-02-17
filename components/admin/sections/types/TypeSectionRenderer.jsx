@@ -62,6 +62,7 @@ export default function TypeSectionRenderer({
     return (
       <PyqSection
         value={meta?.pyq || {}}
+        questions={meta?.quiz?.questions || []}
         isLocked={isLocked}
         onChange={(v) =>
           onChange({ pyq: v })

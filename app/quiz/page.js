@@ -217,7 +217,6 @@ export default async function QuizListPage(props) {
                 : isMonthlyCa
                 ? "border-sky-300 bg-sky-50 text-sky-700"
                 : "border-gray-300 bg-white text-gray-500";
-
               const cardClass = index >= 6 ? "hidden lg:block" : "";
 
               return (

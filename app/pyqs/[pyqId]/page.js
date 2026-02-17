@@ -7,14 +7,16 @@ import { verifyPreviewToken } from "@/lib/preview/verifyPreviewToken";
 export const dynamic = "force-dynamic";
 
 export default async function PyqDetailPage({ params, searchParams }) {
-  const { pyqId } = params || {};
+  const resolvedParams = await params;
+  const resolvedSearchParams = await searchParams;
+  const { pyqId } = resolvedParams || {};
   const adminDb = getAdminDb();
 
   if (!adminDb || !pyqId) notFound();
 
-  const isPreview = searchParams?.preview === "true";
+  const isPreview = resolvedSearchParams?.preview === "true";
   if (isPreview) {
-    const token = searchParams?.token;
+    const token = resolvedSearchParams?.token;
     const valid = await verifyPreviewToken({
       token,
       expectedType: "pyq",

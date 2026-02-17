@@ -13,22 +13,23 @@ import {
   orderBy,
   limit,
 } from "firebase/firestore";
-import QuizClient from "@/app/quiz/[quizId]/QuizClient";
 import { auth, db } from "@/lib/firebase/client";
 
 const SETTINGS_LAYOUT_BASE = Object.freeze({
   optionE: { row: 1, col: 1 },
-  minAttempt: { row: 1, col: 2 },
+  totalQuestions: { row: 1, col: 2 },
   showExplanation: { row: 1, col: 3 },
-  shuffleSections: { row: 1, col: 4 },
-  shuffleQuestions: { row: 1, col: 5 },
-  shuffleOptions: { row: 1, col: 6 },
-  totalQuestions: { row: 2, col: 1 },
-  numberingMode: { row: 2, col: 2 },
-  overallTime: { row: 2, col: 3 },
-  autoSync: { row: 2, col: 4 },
-  timingMode: { row: 2, col: 5 },
+  numberingMode: { row: 1, col: 4 },
+  examYearDisplay: { row: 1, col: 5 },
+  publicAnswers: { row: 1, col: 6 },
 });
+
+const EXAM_YEAR_DISPLAY_OPTIONS = Object.freeze([
+  { id: "auto", name: "Auto (exam list hide, subject list show)" },
+  { id: "always_show", name: "Always show" },
+  { id: "hide_in_list_show_details", name: "Hide in list, show in details" },
+  { id: "always_hide", name: "Always hide" },
+]);
 
 const SETTINGS_LAYOUT_BY_MODE = Object.freeze({
   per_question: Object.freeze({
@@ -95,18 +96,21 @@ const DEFAULT_RULE_SUGGESTIONS = [
   },
 ];
 
-export default function QuizContentEditor({
+export default function PyqContentEditor({
   title,
   description,
   value,
+  examYearDisplayMode = "auto",
+  hideAnswersDefault = true,
   isLocked,
   onChange,
+  onExamYearDisplayModeChange,
+  onHideAnswersDefaultChange,
   role,
   docId: docIdProp,
 }) {
   const [showPreview, setShowPreview] = useState(false);
   const [isNarrow, setIsNarrow] = useState(false);
-  const [showQuestionPreview, setShowQuestionPreview] = useState(null);
   const [activeQuestionId, setActiveQuestionId] = useState(null);
   const [activeSectionTab, setActiveSectionTab] = useState("all");
   const [dragId, setDragId] = useState(null);
@@ -124,7 +128,7 @@ export default function QuizContentEditor({
   const [importText, setImportText] = useState("");
   const [importError, setImportError] = useState("");
   const [importReport, setImportReport] = useState([]);
-  const [exportFileName, setExportFileName] = useState("quiz-export");
+  const [exportFileName, setExportFileName] = useState("pyq-export");
   const [exportScope, setExportScope] = useState("all_questions");
   const [exportSectionId, setExportSectionId] = useState("all");
   const [exportQuestionNumbers, setExportQuestionNumbers] = useState("");
@@ -140,7 +144,7 @@ export default function QuizContentEditor({
     tags: "",
     level: "all",
     contentType: "all",
-    pyqMode: "all",
+    pyqMode: "only_pyq",
     caDate: null,
     exam: "",
     year: "",
@@ -150,8 +154,6 @@ export default function QuizContentEditor({
   const [collapsedQuestions, setCollapsedQuestions] = useState({});
   const [previewLanguage, setPreviewLanguage] = useState("en");
   const [previewMode, setPreviewMode] = useState("single");
-  const [previewResetKey, setPreviewResetKey] = useState(0);
-  const [previewSectionLocked, setPreviewSectionLocked] = useState(false);
 
   const [filterPresets, setFilterPresets] = useState(value?.filterPresets || []);
   const [templatePresets, setTemplatePresets] = useState(value?.templatePresets || []);
@@ -173,7 +175,6 @@ export default function QuizContentEditor({
   const [bulkSubtopic, setBulkSubtopic] = useState("");
   const [bulkContentType, setBulkContentType] = useState("keep");
   const [bulkCaDate, setBulkCaDate] = useState("");
-  const [bulkIsPYQ, setBulkIsPYQ] = useState("keep");
   const [bankSearch, setBankSearch] = useState("");
   const [bankDifficulty, setBankDifficulty] = useState("all");
   const [bankTag, setBankTag] = useState("");
@@ -184,7 +185,6 @@ export default function QuizContentEditor({
   const [bankYear, setBankYear] = useState("");
   const [bankCaDate, setBankCaDate] = useState(null);
   const [bankContentType, setBankContentType] = useState("all");
-  const [bankPyqMode, setBankPyqMode] = useState("all");
   const [bankTagMode, setBankTagMode] = useState("any");
   const [bankSort, setBankSort] = useState("newest");
   const [versions, setVersions] = useState([]);
@@ -256,18 +256,9 @@ export default function QuizContentEditor({
   const [isSectionsOpen, setIsSectionsOpen] = useState(true);
   const [showRuleSuggestions, setShowRuleSuggestions] = useState(false);
   const importTextRef = useRef(null);
-
-  const quizData = useMemo(() => {
-    return {
-      title: title || "Untitled Quiz",
-      description: description || "",
-      durationMinutes: value?.durationMinutes ?? 0,
-      rules: value?.rules || {},
-      scoring: value?.scoring || {},
-      sections: value?.sections || [],
-      questions: value?.questions || [],
-    };
-  }, [title, description, value]);
+  const questionCardRefs = useRef({});
+  const previewCardRefs = useRef({});
+  const [questionCardHeights, setQuestionCardHeights] = useState({});
 
   function updateMeta(patch) {
     onChange({ ...value, ...patch });
@@ -412,7 +403,7 @@ export default function QuizContentEditor({
 
   function applyFilterPreset(preset) {
     if (!preset) return;
-    setQuestionFilter({ ...questionFilter, ...(preset.filter || {}) });
+    setQuestionFilter({ ...questionFilter, ...(preset.filter || {}), pyqMode: "only_pyq" });
   }
 
   function deleteFilterPreset(id) {
@@ -1080,29 +1071,11 @@ export default function QuizContentEditor({
       };
     }
     const contentTargets = getContentTargets(totalCount);
-    if (bankRuleGlobalValueMode === "count") {
-      return {
-        static_pyq: Math.max(0, Number(bankRuleStaticPyq || 0)),
-        static_non_pyq: Math.max(0, Number(bankRuleStaticNonPyq || 0)),
-        current_affairs_pyq: Math.max(0, Number(bankRuleCurrentPyq || 0)),
-        current_affairs_non_pyq: Math.max(0, Number(bankRuleCurrentNonPyq || 0)),
-      };
-    }
-    const staticSplit = splitCountByPercent(
-      contentTargets.static,
-      bankRuleStaticPyq,
-      bankRuleStaticNonPyq
-    );
-    const currentSplit = splitCountByPercent(
-      contentTargets.current_affairs,
-      bankRuleCurrentPyq,
-      bankRuleCurrentNonPyq
-    );
     return {
-      static_pyq: staticSplit.first,
-      static_non_pyq: staticSplit.second,
-      current_affairs_pyq: currentSplit.first,
-      current_affairs_non_pyq: currentSplit.second,
+      static_pyq: Math.max(0, Number(contentTargets.static || 0)),
+      static_non_pyq: 0,
+      current_affairs_pyq: Math.max(0, Number(contentTargets.current_affairs || 0)),
+      current_affairs_non_pyq: 0,
     };
   }
 
@@ -1152,14 +1125,8 @@ export default function QuizContentEditor({
     const valueNum = Math.max(0, Number(next || 0));
     const nextCurrent = Math.max(0, total - valueNum);
     setBankRuleContentCurrent(String(nextCurrent));
-    if (valueNum <= 0) {
-      setBankRuleStaticPyq("0");
-      setBankRuleStaticNonPyq("0");
-    }
-    if (nextCurrent <= 0) {
-      setBankRuleCurrentPyq("0");
-      setBankRuleCurrentNonPyq("0");
-    }
+    setBankRuleStaticPyq(String(valueNum));
+    setBankRuleCurrentPyq(String(nextCurrent));
   }
 
   function handleContentCurrentChange(nextRaw) {
@@ -1169,14 +1136,8 @@ export default function QuizContentEditor({
     const valueNum = Math.max(0, Number(next || 0));
     const nextStatic = Math.max(0, total - valueNum);
     setBankRuleContentStatic(String(nextStatic));
-    if (valueNum <= 0) {
-      setBankRuleCurrentPyq("0");
-      setBankRuleCurrentNonPyq("0");
-    }
-    if (nextStatic <= 0) {
-      setBankRuleStaticPyq("0");
-      setBankRuleStaticNonPyq("0");
-    }
+    setBankRuleCurrentPyq(String(valueNum));
+    setBankRuleStaticPyq(String(nextStatic));
   }
 
   function handleStaticPyqChange(nextRaw) {
@@ -1424,18 +1385,10 @@ export default function QuizContentEditor({
         : null;
     const pyqTarget = splitTargetsForQuota
       ? Number(splitTargetsForQuota.static_pyq || 0) + Number(splitTargetsForQuota.current_affairs_pyq || 0)
-      : Math.max(0, Math.min(perQuiz, Number(bankRulePyqCount || 0)));
-    const nonPyqTargetRaw = splitTargetsForQuota
-      ? Number(splitTargetsForQuota.static_non_pyq || 0) +
-        Number(splitTargetsForQuota.current_affairs_non_pyq || 0)
-      : Math.max(0, Math.min(perQuiz, Number(bankRuleNonPyqCount || 0)));
-    const nonPyqTarget = splitTargetsForQuota
-      ? nonPyqTargetRaw
-      : bankRuleNonPyqCount === ""
-      ? perQuiz - pyqTarget
-      : nonPyqTargetRaw;
-    if (pyqTarget + nonPyqTarget !== perQuiz) {
-      setBankError("PYQ + Non-PYQ count must equal Questions / Quiz.");
+      : Math.max(0, perQuiz);
+    const nonPyqTarget = 0;
+    if (pyqTarget !== perQuiz) {
+      setBankError("PYQ count must equal Questions / Quiz.");
       setBankRuleGenerating(false);
       return;
     }
@@ -1443,24 +1396,12 @@ export default function QuizContentEditor({
     const activePyqRows = useSimpleRules
       ? (bankRulePyqRows || []).filter((row) => Number(row?.count) > 0)
       : [];
-    const activeNonPyqRows = useSimpleRules
-      ? (bankRuleNonPyqRows || []).filter((row) => Number(row?.count) > 0)
-      : [];
     const pyqRowsTotal = activePyqRows.reduce(
       (sum, row) => sum + resolveRuleAmount(row.count, pyqTarget),
       0
     );
-    const nonPyqRowsTotal = activeNonPyqRows.reduce(
-      (sum, row) => sum + resolveRuleAmount(row.count, nonPyqTarget),
-      0
-    );
     if (pyqRowsTotal > pyqTarget) {
       setBankError("PYQ row total cannot exceed PYQ count.");
-      setBankRuleGenerating(false);
-      return;
-    }
-    if (nonPyqRowsTotal > nonPyqTarget) {
-      setBankError("Non-PYQ subject row total cannot exceed Non-PYQ count.");
       setBankRuleGenerating(false);
       return;
     }
@@ -1499,26 +1440,7 @@ export default function QuizContentEditor({
       const pickedIds = new Set();
       const existingSetIdSets = generated.map((setObj) => setObj.idSet);
       const baseCandidates = shuffleList(sourceList, rng);
-      const useScopedDifficultyMix =
-        bankRuleEnableDifficultyMix &&
-        (!bankRulePyqDifficultyUseGlobal || !bankRuleNonPyqDifficultyUseGlobal);
-      const difficultyNeedMap = useScopedDifficultyMix ? null : getDifficultyTargets(perQuiz);
-      const pyqDifficultyNeedMap = useScopedDifficultyMix
-        ? getScopedDifficultyTargets(pyqTarget, bankRulePyqDifficultyUseGlobal, {
-            easy: bankRulePyqDifficultyEasy,
-            medium: bankRulePyqDifficultyMedium,
-            hard: bankRulePyqDifficultyHard,
-            advanced: bankRulePyqDifficultyAdvanced,
-          })
-        : null;
-      const nonPyqDifficultyNeedMap = useScopedDifficultyMix
-        ? getScopedDifficultyTargets(nonPyqTarget, bankRuleNonPyqDifficultyUseGlobal, {
-            easy: bankRuleNonPyqDifficultyEasy,
-            medium: bankRuleNonPyqDifficultyMedium,
-            hard: bankRuleNonPyqDifficultyHard,
-            advanced: bankRuleNonPyqDifficultyAdvanced,
-          })
-        : null;
+      const difficultyNeedMap = getDifficultyTargets(perQuiz);
       const contentNeedMap = getContentTargets(perQuiz);
       const contentPyqNeedMap = getContentPyqSplitTargets(perQuiz);
 
@@ -1619,7 +1541,7 @@ export default function QuizContentEditor({
           },
           "",
           bankRuleSectionMode === "use_sections" ? String(row.sectionId || "") : "",
-          useScopedDifficultyMix ? pyqDifficultyNeedMap : null
+          null
         );
         if (!ok) {
           setBankError(`PYQ rule unmet for Quiz ${quizIndex + 1}.`);
@@ -1637,7 +1559,7 @@ export default function QuizContentEditor({
           (q) => isPyqQuestion(q),
           "",
           "",
-          useScopedDifficultyMix ? pyqDifficultyNeedMap : null
+          null
         );
       }
       if (!ok) {
@@ -1645,68 +1567,11 @@ export default function QuizContentEditor({
         break;
       }
 
-      // 3) Non-PYQ subject rows (Simple mode)
-      for (const row of activeNonPyqRows) {
-        const subjectText = String(row.subject || "").trim().toLowerCase();
-        const topicText = String(row.topic || "").trim().toLowerCase();
-        const subtopicText = String(row.subtopic || "").trim().toLowerCase();
-        const tagsFilter = normalizeTags(row.tags || "").map((t) => String(t || "").toLowerCase());
-        const contentValue =
-          String(row.contentType || "static").toLowerCase() === "current_affairs"
-            ? "current_affairs"
-            : "static";
-        const caRangeMonths = String(row.caRangeMonths || "").trim();
-        ok = takeN(
-          resolveRuleAmount(row.count, nonPyqTarget),
-          (q) => {
-            if (isPyqQuestion(q)) return false;
-            const meta = normalizeQuestionMeta(q.meta || {});
-            const qTags = normalizeTags(q.tags || []).map((t) => String(t || "").toLowerCase());
-            const subjectOk = !subjectText || String(meta.subject || "").toLowerCase().includes(subjectText);
-            const topicOk = !topicText || String(meta.topic || "").toLowerCase().includes(topicText);
-            const subtopicOk = !subtopicText || String(meta.subtopic || "").toLowerCase().includes(subtopicText);
-            const tagsOk =
-              tagsFilter.length === 0 ? true : tagsFilter.every((tag) => qTags.includes(tag));
-            const contentOk = String(meta.contentType || "static").toLowerCase() === contentValue;
-            const caRangeOk =
-              contentValue !== "current_affairs"
-                ? true
-                : isWithinCurrentAffairsRange(meta.caDate, caRangeMonths);
-            return subjectOk && topicOk && subtopicOk && tagsOk && contentOk && caRangeOk;
-          },
-          "",
-          bankRuleSectionMode === "use_sections" ? String(row.sectionId || "") : "",
-          useScopedDifficultyMix ? nonPyqDifficultyNeedMap : null
-        );
-        if (!ok) {
-          setBankError(`Non-PYQ subject rule unmet for Quiz ${quizIndex + 1}.`);
-          break;
-        }
-      }
-      if (!ok) break;
-
-      // 4) Fill remaining Non-PYQ target
-      const currentNonPyq = picked.filter((q) => !isPyqQuestion(q)).length;
-      const nonPyqRemaining = Math.max(0, nonPyqTarget - currentNonPyq);
-      if (nonPyqRemaining > 0) {
-        ok = takeN(
-          nonPyqRemaining,
-          (q) => !isPyqQuestion(q),
-          "",
-          "",
-          useScopedDifficultyMix ? nonPyqDifficultyNeedMap : null
-        );
-      }
-      if (!ok) {
-        setBankError(`Could not satisfy Non-PYQ target for Quiz ${quizIndex + 1}.`);
-        break;
-      }
-
-      // 5) Existing blueprint rows (Advanced mode)
+      // 3) Existing blueprint rows (Advanced mode)
       for (const row of (useAdvancedBlueprint ? activeBlueprint : [])) {
         ok = takeN(
           Number(row.count || 0),
-          (q) => rowMatchesQuestion(row, q),
+          (q) => isPyqQuestion(q) && rowMatchesQuestion(row, q),
           row.sectionId || ""
         );
         if (!ok) {
@@ -1718,7 +1583,7 @@ export default function QuizContentEditor({
 
       const remaining = perQuiz - picked.length;
       if (remaining > 0) {
-        ok = takeN(remaining, () => true, "");
+        ok = takeN(remaining, (q) => isPyqQuestion(q), "");
       }
       if (!ok || picked.length < perQuiz) {
         setBankError(`Could not build all quizzes with requested rule. Built ${generated.length} complete quiz sets.`);
@@ -1726,28 +1591,13 @@ export default function QuizContentEditor({
       }
 
       if (bankRuleEnableDifficultyMix) {
-        if (useScopedDifficultyMix) {
-          const unmetPyq = ["easy", "medium", "hard", "advanced"].reduce(
-            (sum, k) => sum + Math.max(0, Number(pyqDifficultyNeedMap?.[k] || 0)),
-            0
-          );
-          const unmetNonPyq = ["easy", "medium", "hard", "advanced"].reduce(
-            (sum, k) => sum + Math.max(0, Number(nonPyqDifficultyNeedMap?.[k] || 0)),
-            0
-          );
-          if (unmetPyq > 0 || unmetNonPyq > 0) {
-            setBankError(`Scoped difficulty mix unmet for Quiz ${quizIndex + 1}. Loosen mix or rules.`);
-            ok = false;
-          }
-        } else {
-          const unmet = ["easy", "medium", "hard", "advanced"].reduce(
-            (sum, k) => sum + Math.max(0, Number(difficultyNeedMap?.[k] || 0)),
-            0
-          );
-          if (unmet > 0) {
-            setBankError(`Difficulty mix unmet for Quiz ${quizIndex + 1}. Loosen mix or rules.`);
-            ok = false;
-          }
+        const unmet = ["easy", "medium", "hard", "advanced"].reduce(
+          (sum, k) => sum + Math.max(0, Number(difficultyNeedMap?.[k] || 0)),
+          0
+        );
+        if (unmet > 0) {
+          setBankError(`Difficulty mix unmet for Quiz ${quizIndex + 1}. Loosen mix or rules.`);
+          ok = false;
         }
       }
       if (bankRuleEnableContentMix) {
@@ -1759,12 +1609,10 @@ export default function QuizContentEditor({
           setBankError(`Content mix unmet for Quiz ${quizIndex + 1}. Loosen mix or rules.`);
           ok = false;
         }
-        const unmetContentPyq = [
-          "static_pyq",
-          "static_non_pyq",
-          "current_affairs_pyq",
-          "current_affairs_non_pyq",
-        ].reduce((sum, k) => sum + Math.max(0, Number(contentPyqNeedMap[k] || 0)), 0);
+        const unmetContentPyq = ["static_pyq", "current_affairs_pyq"].reduce(
+          (sum, k) => sum + Math.max(0, Number(contentPyqNeedMap[k] || 0)),
+          0
+        );
         if (unmetContentPyq > 0) {
           setBankError(`Content PYQ split unmet for Quiz ${quizIndex + 1}. Loosen split or rules.`);
           ok = false;
@@ -2011,6 +1859,7 @@ export default function QuizContentEditor({
   }
 
   function applyBulkChanges() {
+    const effectiveBulkIsPYQ = "on";
     const allQuestions = value?.questions || [];
     const scopedQuestions = getBulkScopeQuestions(allQuestions);
     if (!scopedQuestions.length) {
@@ -2047,7 +1896,7 @@ export default function QuizContentEditor({
       window.alert("Enter CA Date for current affairs.");
       return;
     }
-    if (bulkIsPYQ === "on") {
+    if (effectiveBulkIsPYQ === "on") {
       const hasInvalidYear = (bulkPyqRows || []).some((row) => {
         const rawYear = String(row?.year || "");
         return rawYear && !/^\d{4}$/.test(rawYear);
@@ -2058,7 +1907,7 @@ export default function QuizContentEditor({
       }
     }
     const parsedPyqRows =
-      bulkIsPYQ === "on"
+      effectiveBulkIsPYQ === "on"
         ? (bulkPyqRows || [])
             .map((row) => {
               const exam = String(row?.exam || "").trim();
@@ -2072,7 +1921,7 @@ export default function QuizContentEditor({
         : null;
     const shouldApplyText = (raw) => bulkApplyEmpty || String(raw || "").trim() !== "";
     const explicitPyqExams =
-      bulkIsPYQ === "on" && shouldApplyText(bulkPyqExamsText)
+      effectiveBulkIsPYQ === "on" && shouldApplyText(bulkPyqExamsText)
         ? normalizeTags(bulkPyqExamsText)
         : null;
     const next = allQuestions.map((q) => {
@@ -2082,14 +1931,13 @@ export default function QuizContentEditor({
         bulkContentType === "keep"
           ? currentMeta.contentType
           : (bulkContentType === "none" ? "" : bulkContentType);
-      const nextIsPYQ =
-        bulkIsPYQ === "keep" ? !!currentMeta.isPYQ : bulkIsPYQ === "on";
+      const nextIsPYQ = true;
       const nextPyqData =
-        bulkIsPYQ === "off"
+        effectiveBulkIsPYQ === "off"
           ? []
           : (parsedPyqRows ? parsedPyqRows : currentMeta.pyqData || []);
       const nextPyqExams =
-        bulkIsPYQ === "off"
+        effectiveBulkIsPYQ === "off"
           ? []
           : (explicitPyqExams || normalizeTags((nextPyqData || []).map((r) => r.exam).filter(Boolean)));
       const firstPyqRow = Array.isArray(nextPyqData) && nextPyqData.length > 0 ? nextPyqData[0] : null;
@@ -2111,8 +1959,8 @@ export default function QuizContentEditor({
             bulkContentType === "current_affairs"
               ? toCaTimestamp(bulkCaDate)
               : ((bulkContentType === "static" || bulkContentType === "none") ? null : currentMeta.caDate),
-          exam: bulkIsPYQ === "on" ? String(firstPyqRow?.exam || currentMeta.exam || "") : currentMeta.exam,
-          year: bulkIsPYQ === "on" ? String(firstPyqRow?.year || currentMeta.year || "") : currentMeta.year,
+          exam: effectiveBulkIsPYQ === "on" ? String(firstPyqRow?.exam || currentMeta.exam || "") : currentMeta.exam,
+          year: effectiveBulkIsPYQ === "on" ? String(firstPyqRow?.year || currentMeta.year || "") : currentMeta.year,
           category: shouldApplyText(bulkCategory) ? bulkCategory : currentMeta.category,
           topic: shouldApplyText(bulkTopic) ? bulkTopic : currentMeta.topic,
           subtopic: shouldApplyText(bulkSubtopic) ? bulkSubtopic : currentMeta.subtopic,
@@ -2132,6 +1980,18 @@ export default function QuizContentEditor({
 
   function clearSelection() {
     setSelectedQuestions({});
+  }
+
+  function selectAllBankFiltered() {
+    const next = { ...(bankSelected || {}) };
+    filteredSortedBankItems.forEach((q) => {
+      if (q?.id) next[q.id] = true;
+    });
+    setBankSelected(next);
+  }
+
+  function clearBankSelection() {
+    setBankSelected({});
   }
 
   function jumpToQuestion(id) {
@@ -2165,7 +2025,7 @@ export default function QuizContentEditor({
 
   function restoreVersion(snapshot) {
     if (!snapshot) return;
-    if (!window.confirm("Restore this version? This will overwrite current quiz content.")) {
+    if (!window.confirm("Restore this version? This will overwrite current PYQ content.")) {
       return;
     }
     const meta = snapshot.quizMeta || {
@@ -2193,15 +2053,20 @@ export default function QuizContentEditor({
     const targetSectionId = useSections
       ? activeSectionTab === "all"
         ? value?.sections?.[0]?.id || null
+        : activeSectionTab === "none"
+        ? null
         : activeSectionTab
       : null;
+    const nextId = getUniqueQuestionId(
+      `q${(value?.questions?.length || 0) + 1}`,
+      new Set((value?.questions || []).map((q) => q.id).filter(Boolean))
+    );
+    const nextContentType =
+      questionFilter?.contentType === "current_affairs" ? "current_affairs" : "static";
     const next = [
       ...(value?.questions || []),
       {
-        id: getUniqueQuestionId(
-          `q${(value?.questions?.length || 0) + 1}`,
-          new Set((value?.questions || []).map((q) => q.id).filter(Boolean))
-        ),
+        id: nextId,
         type: "single",
         prompt: "",
         options: ["", "", "", ""],
@@ -2216,16 +2081,22 @@ export default function QuizContentEditor({
           subcategory: "",
           topic: "",
           subtopic: "",
-          sourceType: "",
+          sourceType: "pyq",
           sourceName: "",
           exam: "",
           examTags: [],
           examStage: "",
           year: "",
+          isPYQ: true,
+          contentType: nextContentType,
+          pyqData: [{ exam: "", year: "" }],
+          pyqExams: [],
+          caDate: nextContentType === "current_affairs" ? Date.now() : null,
         },
       },
     ];
     updateMeta({ questions: next });
+    setActiveQuestionId(nextId);
   }
 
   function removeQuestion(index) {
@@ -2300,6 +2171,10 @@ export default function QuizContentEditor({
     return String(val || "").toLowerCase().replace(/\s+/g, " ").trim();
   }
 
+  function isValidYear4(value) {
+    return /^\d{4}$/.test(String(value || "").trim());
+  }
+
   function normalizeQuestionMeta(meta = {}) {
     const base = meta && typeof meta === "object" ? meta : {};
     const yearValue =
@@ -2340,6 +2215,45 @@ export default function QuizContentEditor({
       examStage: String(base.examStage || "").trim(),
       year: String(yearValue || "").trim(),
     };
+  }
+
+  function getPreviewExamYearBadges(question) {
+    const meta = normalizeQuestionMeta(question?.meta || {});
+    const dedupe = new Map();
+
+    (Array.isArray(meta.pyqData) ? meta.pyqData : []).forEach((row) => {
+      const exam = String(row?.exam || "").trim();
+      const year = String(row?.year || "").trim();
+      if (!exam && !year) return;
+      const key = `${exam.toLowerCase()}|${year}`;
+      if (!dedupe.has(key)) dedupe.set(key, { exam, year });
+    });
+
+    (Array.isArray(meta.pyqExams) ? meta.pyqExams : []).forEach((examName) => {
+      const exam = String(examName || "").trim();
+      if (!exam) return;
+      const key = `${exam.toLowerCase()}|`;
+      if (!dedupe.has(key)) dedupe.set(key, { exam, year: "" });
+    });
+
+    if (dedupe.size === 0 && (meta.exam || meta.year)) {
+      const exam = String(meta.exam || "").trim();
+      const year = String(meta.year || "").trim();
+      const key = `${exam.toLowerCase()}|${year}`;
+      dedupe.set(key, { exam, year });
+    }
+
+    return Array.from(dedupe.values())
+      .sort((a, b) => {
+        const ay = Number.parseInt(String(a.year || "").trim(), 10);
+        const by = Number.parseInt(String(b.year || "").trim(), 10);
+        const aVal = Number.isFinite(ay) ? ay : -1;
+        const bVal = Number.isFinite(by) ? by : -1;
+        if (aVal !== bVal) return bVal - aVal;
+        return String(a.exam || "").localeCompare(String(b.exam || ""));
+      })
+      .map((row) => [row.exam, row.year].filter(Boolean).join(" ").trim())
+      .filter(Boolean);
   }
 
   function hashStringDjb2(input) {
@@ -2817,7 +2731,7 @@ export default function QuizContentEditor({
           if (!Number.isInteger(idx)) {
             report.push({
               row: importFormat === "csv" ? i + 2 : i + 1,
-              message: "Missing/invalid single answer.",
+              message: "Missing/invalid single answer. Use A/B/C/D/E.",
             });
           }
         } else if (type === "multiple") {
@@ -2828,7 +2742,7 @@ export default function QuizContentEditor({
           if (!list.length) {
             report.push({
               row: importFormat === "csv" ? i + 2 : i + 1,
-              message: "Missing multiple answers.",
+              message: "Missing multiple answers. Use comma-separated letters like A,C.",
             });
           }
         }
@@ -2844,6 +2758,39 @@ export default function QuizContentEditor({
             message: "One or more options missing.",
           });
         }
+        const rawSubject = String(raw.category ?? raw.subject ?? raw.meta?.category ?? "").trim();
+        const rawTopic = String(raw.topic ?? raw.meta?.topic ?? "").trim();
+        if (!rawSubject) {
+          report.push({
+            row: importFormat === "csv" ? i + 2 : i + 1,
+            message: "Subject is required (category/subject).",
+          });
+        }
+        if (!rawTopic) {
+          report.push({
+            row: importFormat === "csv" ? i + 2 : i + 1,
+            message: "Topic is required.",
+          });
+        }
+        const rawYear = String(
+          raw.year ?? raw.examYear ?? raw.meta?.year ?? raw.meta?.examYear ?? ""
+        ).trim();
+        if (rawYear && !isValidYear4(rawYear)) {
+          report.push({
+            row: importFormat === "csv" ? i + 2 : i + 1,
+            message: `Year must be exactly 4 digits. Found "${rawYear}".`,
+          });
+        }
+        const rawPyqRows = Array.isArray(raw?.meta?.pyqData) ? raw.meta.pyqData : [];
+        rawPyqRows.forEach((r, rIdx) => {
+          const y = String(r?.year || "").trim();
+          if (y && !isValidYear4(y)) {
+            report.push({
+              row: importFormat === "csv" ? i + 2 : i + 1,
+              message: `PYQ Data row ${rIdx + 1}: year must be 4 digits. Found "${y}".`,
+            });
+          }
+        });
         if (languageMode === "dual") {
           const promptEn = getLangValue(raw.prompt, "en");
           const promptHi = getLangValue(raw.prompt, "hi");
@@ -3101,7 +3048,7 @@ export default function QuizContentEditor({
     );
     setImportFormat("json");
     setImportText(payload);
-    const safeName = exportFileName.trim() || "quiz-export";
+    const safeName = exportFileName.trim() || "pyq-export";
     downloadFile(`${safeName}.json`, payload, "application/json");
   }
 
@@ -3207,7 +3154,7 @@ export default function QuizContentEditor({
         .join("\n");
     setImportFormat("csv");
     setImportText(csv);
-    const safeName = exportFileName.trim() || "quiz-export";
+    const safeName = exportFileName.trim() || "pyq-export";
     downloadFile(`${safeName}.csv`, csv, "text/csv");
   }
 
@@ -3243,8 +3190,7 @@ export default function QuizContentEditor({
   const canSeeVersions = isAdminView;
   const canSeeBank = isAdminView;
   const workspaceTabs = [
-    { id: "settings", label: "Quiz Settings & Sections" },
-    { id: "rules", label: "Rules" },
+    { id: "settings", label: "PYQ Settings & Sections" },
     { id: "import", label: "Import/Export CSV & JSON" },
     { id: "quality", label: "Question Quality Check" },
     { id: "filter", label: "Question Filter" },
@@ -3448,7 +3394,6 @@ export default function QuizContentEditor({
     bankYear,
     bankCaDate,
     bankContentType,
-    bankPyqMode,
     bankTagMode,
     bankSort,
   ]);
@@ -3472,6 +3417,49 @@ export default function QuizContentEditor({
     if (current === sectionDurationTotal) return;
     updateMeta({ durationMinutes: sectionDurationTotal });
   }, [autoSyncOverallTime, useSections, sectionDurationTotal, value?.durationMinutes]);
+
+  useEffect(() => {
+    const current = Array.isArray(value?.questions) ? value.questions : [];
+    if (current.length === 0) return;
+    const needsFix = current.some((q) => normalizeQuestionMeta(q?.meta || {}).isPYQ !== true);
+    if (!needsFix) return;
+    const nextQuestions = current.map((q) => {
+      const meta = normalizeQuestionMeta(q?.meta || {});
+      const pyqData =
+        Array.isArray(meta.pyqData) && meta.pyqData.length > 0
+          ? meta.pyqData
+          : [{ exam: "", year: "" }];
+      return {
+        ...q,
+        meta: {
+          ...meta,
+          isPYQ: true,
+          pyqData,
+          pyqExams: Array.isArray(meta.pyqExams) ? meta.pyqExams : [],
+        },
+      };
+    });
+    updateMeta({ questions: nextQuestions });
+  }, [value?.questions]);
+
+  useEffect(() => {
+    if (!showPreview || !activeQuestionId) return;
+    const node = previewCardRefs.current?.[activeQuestionId];
+    if (node && typeof node.scrollIntoView === "function") {
+      node.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, [showPreview, activeQuestionId]);
+
+  useEffect(() => {
+    if (!showPreview) return;
+    const next = {};
+    Object.entries(questionCardRefs.current || {}).forEach(([id, el]) => {
+      if (!el) return;
+      const h = Math.ceil(el.getBoundingClientRect().height || 0);
+      if (h > 0) next[id] = h;
+    });
+    setQuestionCardHeights(next);
+  }, [showPreview, value?.questions, collapsedQuestions, languageMode, previewMode]);
 
   const contentGridStyle = {
     ...ui.contentGrid,
@@ -3658,12 +3646,7 @@ export default function QuizContentEditor({
       (Array.isArray(meta.pyqExams) && meta.pyqExams.length > 0) ||
       !!meta.pyqId ||
       normalizedTags.includes("pyq");
-    const pyqMatch =
-      questionFilter.pyqMode === "all"
-        ? true
-        : questionFilter.pyqMode === "only_pyq"
-        ? isPyq
-        : !isPyq;
+    const pyqMatch = isPyq;
     return (
       subjectMatch &&
       topicMatch &&
@@ -3721,7 +3704,6 @@ export default function QuizContentEditor({
             .toLowerCase()
             .includes(String(bankSubtopic || "").toLowerCase());
         const matchExam =
-          bankPyqMode === "only_non_pyq" ||
           !bankExam ||
           String(meta.exam || "")
             .toLowerCase()
@@ -3730,7 +3712,6 @@ export default function QuizContentEditor({
             .toLowerCase()
             .includes(String(bankExam || "").toLowerCase());
         const matchYear =
-          bankPyqMode === "only_non_pyq" ||
           !bankYear ||
           String(meta.year || "")
             .toLowerCase()
@@ -3740,12 +3721,7 @@ export default function QuizContentEditor({
           formatCaDateInput(meta.caDate) === formatCaDateInput(bankCaDate);
         const matchContentType =
           bankContentType === "all" ? true : contentType === bankContentType;
-        const matchPyq =
-          bankPyqMode === "all"
-            ? true
-            : bankPyqMode === "only_pyq"
-            ? isPyq
-            : !isPyq;
+        const matchPyq = isPyq;
         const tagFilter = normalizeTags(bankTag);
         const matchTag =
           tagFilter.length === 0
@@ -3784,7 +3760,6 @@ export default function QuizContentEditor({
     bankYear,
     bankCaDate,
     bankContentType,
-    bankPyqMode,
     bankTagMode,
     bankSort,
   ]);
@@ -3856,23 +3831,13 @@ export default function QuizContentEditor({
         : null;
     const pyqTarget = splitTargetsForQuota
       ? Number(splitTargetsForQuota.static_pyq || 0) + Number(splitTargetsForQuota.current_affairs_pyq || 0)
-      : Math.max(0, Math.min(Number.isInteger(perQuiz) ? perQuiz : 0, Number(bankRulePyqCount || 0)));
-    const nonPyqTargetRaw = splitTargetsForQuota
-      ? Number(splitTargetsForQuota.static_non_pyq || 0) +
-        Number(splitTargetsForQuota.current_affairs_non_pyq || 0)
-      : Math.max(0, Math.min(Number.isInteger(perQuiz) ? perQuiz : 0, Number(bankRuleNonPyqCount || 0)));
-    const nonPyqTarget = splitTargetsForQuota
-      ? nonPyqTargetRaw
-      : bankRuleNonPyqCount === ""
-      ? Number.isInteger(perQuiz)
-        ? Math.max(0, perQuiz - pyqTarget)
-        : 0
-      : nonPyqTargetRaw;
+      : Math.max(0, Number.isInteger(perQuiz) ? perQuiz : 0);
+    const nonPyqTarget = 0;
     if (Number.isInteger(perQuiz) && perQuiz > 0) {
       addCheck(
-        "PYQ + Non-PYQ equals Questions / Quiz",
-        pyqTarget + nonPyqTarget === perQuiz,
-        `PYQ ${pyqTarget} + Non-PYQ ${nonPyqTarget} vs ${perQuiz}`,
+        "PYQ target equals Questions / Quiz",
+        pyqTarget === perQuiz,
+        `PYQ ${pyqTarget} vs ${perQuiz}`,
         true
       );
     }
@@ -3950,53 +3915,12 @@ export default function QuizContentEditor({
           );
         });
 
-        if (bankRuleGlobalValueMode === "percent") {
-          const staticSplitTotal = Number(bankRuleStaticPyq || 0) + Number(bankRuleStaticNonPyq || 0);
-          const currentSplitTotal = Number(bankRuleCurrentPyq || 0) + Number(bankRuleCurrentNonPyq || 0);
-          addCheck(
-            "Static PYQ split totals 100% (if Static > 0)",
-            Number(contentTargets.static || 0) === 0 || Math.abs(staticSplitTotal - 100) < 0.0001,
-            `Static split ${staticSplitTotal}%`,
-            true
-          );
-          addCheck(
-            "Current PYQ split totals 100% (if Current > 0)",
-            Number(contentTargets.current_affairs || 0) === 0 || Math.abs(currentSplitTotal - 100) < 0.0001,
-            `Current split ${currentSplitTotal}%`,
-            true
-          );
-        } else {
-          const staticSplitCountTotal = Number(bankRuleStaticPyq || 0) + Number(bankRuleStaticNonPyq || 0);
-          const currentSplitCountTotal = Number(bankRuleCurrentPyq || 0) + Number(bankRuleCurrentNonPyq || 0);
-          addCheck(
-            "Static PYQ split count equals Static count (if Static > 0)",
-            Number(contentTargets.static || 0) === 0 || staticSplitCountTotal === Number(contentTargets.static || 0),
-            `Split ${staticSplitCountTotal}, Static ${Number(contentTargets.static || 0)}`,
-            true
-          );
-          addCheck(
-            "Current PYQ split count equals Current count (if Current > 0)",
-            Number(contentTargets.current_affairs || 0) === 0 ||
-              currentSplitCountTotal === Number(contentTargets.current_affairs || 0),
-            `Split ${currentSplitCountTotal}, Current ${Number(contentTargets.current_affairs || 0)}`,
-            true
-          );
-        }
-
         const splitPyqTotal =
           Number(splitTargets.static_pyq || 0) + Number(splitTargets.current_affairs_pyq || 0);
-        const splitNonPyqTotal =
-          Number(splitTargets.static_non_pyq || 0) + Number(splitTargets.current_affairs_non_pyq || 0);
         addCheck(
           "Content PYQ split matches PYQ target",
           splitPyqTotal === pyqTarget,
           `Split ${splitPyqTotal}, PYQ target ${pyqTarget}`,
-          true
-        );
-        addCheck(
-          "Content Non-PYQ split matches Non-PYQ target",
-          splitNonPyqTotal === nonPyqTarget,
-          `Split ${splitNonPyqTotal}, Non-PYQ target ${nonPyqTarget}`,
           true
         );
 
@@ -4004,14 +3928,8 @@ export default function QuizContentEditor({
           static_pyq: sourceList.filter(
             (q) => getQuestionContentType(q) === "static" && isPyqQuestion(q)
           ).length,
-          static_non_pyq: sourceList.filter(
-            (q) => getQuestionContentType(q) === "static" && !isPyqQuestion(q)
-          ).length,
           current_affairs_pyq: sourceList.filter(
             (q) => getQuestionContentType(q) === "current_affairs" && isPyqQuestion(q)
-          ).length,
-          current_affairs_non_pyq: sourceList.filter(
-            (q) => getQuestionContentType(q) === "current_affairs" && !isPyqQuestion(q)
           ).length,
         };
         Object.keys(availableBySplit).forEach((k) => {
@@ -4033,95 +3951,19 @@ export default function QuizContentEditor({
       `Need ${pyqTarget}, Available ${pyqPool.length}`,
       true
     );
-    addCheck(
-      "Non-PYQ pool can satisfy Non-PYQ target",
-      nonPyqPool.length >= nonPyqTarget,
-      `Need ${nonPyqTarget}, Available ${nonPyqPool.length}`,
-      true
-    );
     if (bankRuleEnableDifficultyMix) {
-      const pyqScopedTargets = getScopedDifficultyTargets(
-        pyqTarget,
-        bankRulePyqDifficultyUseGlobal,
-        {
-          easy: bankRulePyqDifficultyEasy,
-          medium: bankRulePyqDifficultyMedium,
-          hard: bankRulePyqDifficultyHard,
-          advanced: bankRulePyqDifficultyAdvanced,
-        }
-      );
-      const nonPyqScopedTargets = getScopedDifficultyTargets(
-        nonPyqTarget,
-        bankRuleNonPyqDifficultyUseGlobal,
-        {
-          easy: bankRuleNonPyqDifficultyEasy,
-          medium: bankRuleNonPyqDifficultyMedium,
-          hard: bankRuleNonPyqDifficultyHard,
-          advanced: bankRuleNonPyqDifficultyAdvanced,
-        }
-      );
-      if (!bankRulePyqDifficultyUseGlobal) {
-        const total =
-          Number(bankRulePyqDifficultyEasy || 0) +
-          Number(bankRulePyqDifficultyMedium || 0) +
-          Number(bankRulePyqDifficultyHard || 0) +
-          Number(bankRulePyqDifficultyAdvanced || 0);
-        if (bankRuleGlobalValueMode === "percent") {
-          addCheck("PYQ difficulty mix totals 100%", Math.abs(total - 100) < 0.0001, `Total ${total}%`, true);
-        } else {
-          addCheck(
-            "PYQ difficulty count equals PYQ target",
-            total === pyqTarget,
-            `Total ${total}, PYQ ${pyqTarget}`,
-            true
-          );
-        }
-      }
-      if (!bankRuleNonPyqDifficultyUseGlobal) {
-        const total =
-          Number(bankRuleNonPyqDifficultyEasy || 0) +
-          Number(bankRuleNonPyqDifficultyMedium || 0) +
-          Number(bankRuleNonPyqDifficultyHard || 0) +
-          Number(bankRuleNonPyqDifficultyAdvanced || 0);
-        if (bankRuleGlobalValueMode === "percent") {
-          addCheck(
-            "Non-PYQ difficulty mix totals 100%",
-            Math.abs(total - 100) < 0.0001,
-            `Total ${total}%`,
-            true
-          );
-        } else {
-          addCheck(
-            "Non-PYQ difficulty count equals Non-PYQ target",
-            total === nonPyqTarget,
-            `Total ${total}, Non-PYQ ${nonPyqTarget}`,
-            true
-          );
-        }
-      }
+      const pyqScopedTargets = getDifficultyTargets(pyqTarget);
       const pyqByLevel = {
         easy: pyqPool.filter((q) => getQuestionDifficultyLevel(q) === "easy").length,
         medium: pyqPool.filter((q) => getQuestionDifficultyLevel(q) === "medium").length,
         hard: pyqPool.filter((q) => getQuestionDifficultyLevel(q) === "hard").length,
         advanced: pyqPool.filter((q) => getQuestionDifficultyLevel(q) === "advanced").length,
       };
-      const nonPyqByLevel = {
-        easy: nonPyqPool.filter((q) => getQuestionDifficultyLevel(q) === "easy").length,
-        medium: nonPyqPool.filter((q) => getQuestionDifficultyLevel(q) === "medium").length,
-        hard: nonPyqPool.filter((q) => getQuestionDifficultyLevel(q) === "hard").length,
-        advanced: nonPyqPool.filter((q) => getQuestionDifficultyLevel(q) === "advanced").length,
-      };
       ["easy", "medium", "hard", "advanced"].forEach((k) => {
         addCheck(
           `PYQ difficulty ${k} availability`,
           pyqByLevel[k] >= Number(pyqScopedTargets[k] || 0),
           `Need ${Number(pyqScopedTargets[k] || 0)}, Available ${pyqByLevel[k]}`,
-          true
-        );
-        addCheck(
-          `Non-PYQ difficulty ${k} availability`,
-          nonPyqByLevel[k] >= Number(nonPyqScopedTargets[k] || 0),
-          `Need ${Number(nonPyqScopedTargets[k] || 0)}, Available ${nonPyqByLevel[k]}`,
           true
         );
       });
@@ -4132,18 +3974,11 @@ export default function QuizContentEditor({
     const activePyqRows = useSimpleRules
       ? (bankRulePyqRows || []).filter((row) => Number(row?.count) > 0)
       : [];
-    const activeNonPyqRows = useSimpleRules
-      ? (bankRuleNonPyqRows || []).filter((row) => Number(row?.count) > 0)
-      : [];
     const activeBlueprint = useAdvancedBlueprint
       ? (bankRuleBlueprintRows || []).filter((row) => Number(row?.count) > 0)
       : [];
     const pyqRowsTotal = activePyqRows.reduce(
       (sum, row) => sum + resolveRuleAmount(row.count, pyqTarget),
-      0
-    );
-    const nonPyqRowsTotal = activeNonPyqRows.reduce(
-      (sum, row) => sum + resolveRuleAmount(row.count, nonPyqTarget),
       0
     );
     const blueprintRowsTotal = activeBlueprint.reduce((sum, row) => sum + Number(row.count || 0), 0);
@@ -4152,12 +3987,6 @@ export default function QuizContentEditor({
       "PYQ rule rows total <= PYQ target",
       pyqRowsTotal <= pyqTarget,
       `Rows ${pyqRowsTotal}, Target ${pyqTarget}`,
-      true
-    );
-    addCheck(
-      "Non-PYQ rule rows total <= Non-PYQ target",
-      nonPyqRowsTotal <= nonPyqTarget,
-      `Rows ${nonPyqRowsTotal}, Target ${nonPyqTarget}`,
       true
     );
     if (Number.isInteger(perQuiz) && perQuiz > 0) {
@@ -4220,40 +4049,8 @@ export default function QuizContentEditor({
       );
     });
 
-    activeNonPyqRows.forEach((row, idx) => {
-      const subjectText = String(row.subject || "").trim().toLowerCase();
-      const topicText = String(row.topic || "").trim().toLowerCase();
-      const subtopicText = String(row.subtopic || "").trim().toLowerCase();
-      const tagsFilter = normalizeTags(row.tags || "").map((t) => String(t || "").toLowerCase());
-        const contentValue =
-          String(row.contentType || "static").toLowerCase() === "current_affairs"
-            ? "current_affairs"
-            : "static";
-      const caRangeMonths = String(row.caRangeMonths || "").trim();
-      const available = nonPyqPool.filter((q) => {
-        const meta = normalizeQuestionMeta(q.meta || {});
-        const qTags = normalizeTags(q.tags || []).map((t) => String(t || "").toLowerCase());
-        const subjectOk = !subjectText || String(meta.subject || "").toLowerCase().includes(subjectText);
-        const topicOk = !topicText || String(meta.topic || "").toLowerCase().includes(topicText);
-        const subtopicOk = !subtopicText || String(meta.subtopic || "").toLowerCase().includes(subtopicText);
-        const tagsOk =
-          tagsFilter.length === 0 ? true : tagsFilter.every((tag) => qTags.includes(tag));
-            const contentOk = String(meta.contentType || "static").toLowerCase() === contentValue;
-        const caRangeOk =
-          contentValue !== "current_affairs"
-            ? true
-            : isWithinCurrentAffairsRange(meta.caDate, caRangeMonths);
-        return subjectOk && topicOk && subtopicOk && tagsOk && contentOk && caRangeOk;
-      }).length;
-      addCheck(
-        `Non-PYQ row #${idx + 1} availability`,
-        available >= resolveRuleAmount(row.count, nonPyqTarget),
-        `Need ${resolveRuleAmount(row.count, nonPyqTarget)}, Available ${available}`,
-        true
-      );
-    });
     activeBlueprint.forEach((row, idx) => {
-      const available = sourceList.filter((q) => rowMatchesQuestion(row, q)).length;
+      const available = sourceList.filter((q) => isPyqQuestion(q) && rowMatchesQuestion(row, q)).length;
       addCheck(
         `Blueprint row #${idx + 1} availability`,
         available >= Number(row.count || 0),
@@ -4355,28 +4152,14 @@ export default function QuizContentEditor({
     const splitTargetsForQuota = bankRuleEnableContentMix ? getContentPyqSplitTargets(perQuiz) : null;
     const pyqTarget = splitTargetsForQuota
       ? Number(splitTargetsForQuota.static_pyq || 0) + Number(splitTargetsForQuota.current_affairs_pyq || 0)
-      : Math.max(0, Math.min(perQuiz, Number(bankRulePyqCount || 0)));
-    const nonPyqTargetRaw = splitTargetsForQuota
-      ? Number(splitTargetsForQuota.static_non_pyq || 0) +
-        Number(splitTargetsForQuota.current_affairs_non_pyq || 0)
-      : Math.max(0, Math.min(perQuiz, Number(bankRuleNonPyqCount || 0)));
-    const nonPyqTarget = splitTargetsForQuota
-      ? nonPyqTargetRaw
-      : bankRuleNonPyqCount === ""
-      ? Math.max(0, perQuiz - pyqTarget)
-      : nonPyqTargetRaw;
+      : Math.max(0, Math.min(perQuiz, perQuiz));
+    const nonPyqTarget = 0;
     return { perQuiz, pyqTarget, nonPyqTarget };
   }, [
     bankRuleQuestionsPerQuiz,
     bankRuleEnableContentMix,
-    bankRulePyqCount,
-    bankRuleNonPyqCount,
     bankRuleContentStatic,
     bankRuleContentCurrent,
-    bankRuleStaticPyq,
-    bankRuleStaticNonPyq,
-    bankRuleCurrentPyq,
-    bankRuleCurrentNonPyq,
     bankRuleGlobalValueMode,
   ]);
   const selectedQuestionNumbersText = useMemo(() => {
@@ -4385,8 +4168,7 @@ export default function QuizContentEditor({
       .filter((n) => Number.isInteger(n));
     return nums.join(", ");
   }, [value?.questions, selectedQuestions]);
-  const activePreviewQuestion = questionById.get(activeQuestionId) || null;
-
+  const previewQuestion = questionById.get(activeQuestionId) || null;
   const qualityIssues = useMemo(() => {
     const issues = [];
     const promptMap = new Map();
@@ -4464,18 +4246,62 @@ export default function QuizContentEditor({
     });
     return issues;
   }, [value?.questions, value?.rules?.showExplanation, languageMode, optionCount, useSections]);
+  const qualitySummary = useMemo(() => {
+    const questions = Array.isArray(value?.questions) ? value.questions : [];
+    const total = questions.length;
+    if (!total) {
+      return {
+        total: 0,
+        metadataCoveragePct: 0,
+        examYearCoveragePct: 0,
+        completenessScore: 0,
+      };
+    }
+    let metadataComplete = 0;
+    let examYearComplete = 0;
+    questions.forEach((q) => {
+      const meta = normalizeQuestionMeta(q?.meta || {});
+      const subjectOk = Boolean(String(meta.category || meta.subject || "").trim());
+      const topicOk = Boolean(String(meta.topic || "").trim());
+      const difficultyOk = Boolean(String(q?.difficulty || "").trim());
+      const contentTypeOk = Boolean(String(meta.contentType || "").trim());
+      if (subjectOk && topicOk && difficultyOk && contentTypeOk) {
+        metadataComplete += 1;
+      }
+
+      const rows = Array.isArray(meta.pyqData) ? meta.pyqData : [];
+      const hasExam =
+        rows.some((r) => String(r?.exam || "").trim()) ||
+        Boolean(String(meta.exam || "").trim()) ||
+        (Array.isArray(meta.pyqExams) && meta.pyqExams.some((x) => String(x || "").trim()));
+      const hasYear =
+        rows.some((r) => isValidYear4(r?.year)) ||
+        isValidYear4(meta.year);
+      if (hasExam && hasYear) {
+        examYearComplete += 1;
+      }
+    });
+    const metadataCoveragePct = Number(((metadataComplete / total) * 100).toFixed(1));
+    const examYearCoveragePct = Number(((examYearComplete / total) * 100).toFixed(1));
+    const completenessScore = Number(
+      (metadataCoveragePct * 0.6 + examYearCoveragePct * 0.4).toFixed(1)
+    );
+    return {
+      total,
+      metadataCoveragePct,
+      examYearCoveragePct,
+      completenessScore,
+    };
+  }, [value?.questions]);
   return (
     <div style={ui.wrap}>
       <div style={ui.header}>
         <div>
           <div style={ui.headerTitleRow}>
-            <div style={ui.title}>Quiz Questions</div>
+            <div style={ui.title}>PYQ Questions</div>
             <div style={ui.counterRow}>
               <span>Total Questions: {value?.questions?.length || 0}</span>
               <span>Sections: {value?.sections?.length || 0}</span>
-              <span>
-                Total Marks: {Math.max(0, Math.round(derivedOverallMarks))}
-              </span>
             </div>
           </div>
           <div style={ui.sub}>
@@ -4497,7 +4323,7 @@ export default function QuizContentEditor({
           onDoubleClick={() => setIsWorkspaceOpen((s) => !s)}
           title="Double-click to expand/collapse"
         >
-          <div style={ui.blockTitle}>Quiz Workspace</div>
+          <div style={ui.blockTitle}>PYQ Workspace</div>
           <div style={ui.workspaceTopControls}>
             <div style={ui.workspaceControl}>
               <label style={ui.labelTiny}>Language Mode</label>
@@ -4605,7 +4431,7 @@ export default function QuizContentEditor({
       <div style={{ display: isWorkspaceOpen ? "block" : "none" }}>
       <div style={{ ...ui.workspacePanel, ...ui.settingsBlock, ...(workspaceTab !== "settings" ? { display: "none" } : {}) }}>
         <div style={ui.collapsibleHeader}>
-          <div style={ui.blockTitle}>Quiz Settings</div>
+          <div style={ui.blockTitle}>PYQ Settings</div>
           <button
             style={ui.btnGhost}
             type="button"
@@ -4625,7 +4451,6 @@ export default function QuizContentEditor({
                 rightLabel="Yes"
                 onChange={(val) => {
                   const nextEnabled = val === "right";
-                  const nextMin = nextEnabled ? 90 : 0;
                   const nextQuestions = nextEnabled
                     ? (value?.questions || []).map((q) => {
                         if (languageMode === "dual" && q.options && typeof q.options === "object" && !Array.isArray(q.options)) {
@@ -4649,7 +4474,6 @@ export default function QuizContentEditor({
                     rules: {
                       ...(value?.rules || {}),
                       optionEEnabled: nextEnabled,
-                      minAttemptPercent: nextMin,
                     },
                     questions: nextQuestions,
                   });
@@ -4666,264 +4490,8 @@ export default function QuizContentEditor({
                 readOnly
               />
             </div>
-            <div style={getSettingsCellStyle("overallTime")}>
-              <label style={ui.labelSmall}>Overall Time (minutes)</label>
-              <input
-                style={{ ...ui.input, ...ui.inputTimeCompact }}
-                type="number"
-                min="0"
-                disabled={isLocked}
-                value={value?.durationMinutes ?? ""}
-                onChange={(e) =>
-                  updateMeta({
-                    durationMinutes: Number(e.target.value),
-                  })
-                }
-              />
-            </div>
-            <div style={getSettingsCellStyle("autoSync")}>
-              <label style={ui.labelSmall}>Auto Sync Time From Sections</label>
-              <TogglePair
-                value={autoSyncOverallTime ? "right" : "left"}
-                leftLabel="Off"
-                rightLabel="On"
-                onChange={(val) =>
-                  updateMeta({
-                    rules: {
-                      ...(value?.rules || {}),
-                      autoSyncOverallTime: val === "right",
-                    },
-                  })
-                }
-              />
-            </div>
-            <div style={getSettingsCellStyle("totalMarks")}>
-              <label style={ui.labelSmall}>Total Marks</label>
-              <input
-                style={{ ...ui.input, ...ui.inputSmall }}
-                type="number"
-                min="0"
-                step="1"
-                disabled={isLocked || marksMode !== "overall"}
-                value={
-                  marksMode === "overall"
-                    ? (value?.scoring?.overallMarks ?? "")
-                    : Math.max(0, Math.round(derivedOverallMarks))
-                }
-                onChange={(e) =>
-                  updateMeta({
-                    scoring: {
-                      ...(value?.scoring || {}),
-                      overallMarks: Math.max(0, Math.round(Number(e.target.value || 0))),
-                    },
-                  })
-                }
-              />
-            </div>
-            <div style={getSettingsCellStyle("marksMode")}>
-              <label style={ui.labelSmall}>Marks Mode</label>
-              <select
-                style={ui.input}
-                disabled={isLocked}
-                value={marksMode}
-                onChange={(e) =>
-                  updateMeta({
-                    rules: {
-                      ...(value?.rules || {}),
-                      marksMode: e.target.value,
-                    },
-                  })
-                }
-              >
-                <option value="per_question">Per Question</option>
-                <option value="overall">Total Marks</option>
-                <option value="section">Per Section Marks</option>
-              </select>
-              {marksMode === "section" && (
-                <div style={ui.helperSmall}>
-                  Set marks per section in Sections tab.
-                </div>
-              )}
-            </div>
-            {marksMode === "per_question" && (
-              <div style={getSettingsCellStyle("perQuestionDefault")}>
-                <label style={ui.labelSmall}>Per Question Default Points</label>
-                <input
-                  style={{ ...ui.input, ...ui.inputSmall }}
-                  type="number"
-                  min="0"
-                  disabled={isLocked}
-                  value={value?.scoring?.defaultPoints ?? 1}
-                  onChange={(e) =>
-                    updateMeta({
-                      scoring: {
-                        ...(value?.scoring || {}),
-                        defaultPoints: Number(e.target.value),
-                      },
-                    })
-                  }
-                />
-              </div>
-            )}
-            <div style={getSettingsCellStyle("negativeType")}>
-              <label style={ui.labelSmall}>Negative Marking Type</label>
-              <select
-                style={ui.input}
-                disabled={isLocked}
-                value={negative.type || "none"}
-                onChange={(e) => {
-                  const nextType = e.target.value;
-                  const currentValue = Number(negative.value || 0);
-                  const nextValue =
-                    nextType === "none"
-                      ? 0
-                      : nextType === "fraction"
-                      ? currentValue > 0
-                        ? currentValue
-                        : 1 / 3
-                      : currentValue;
-                  if (nextType === "fraction") {
-                    setNegativeFractionDraft(formatFractionValue(nextValue));
-                  }
-                  updateMeta({
-                    scoring: {
-                      ...(value?.scoring || {}),
-                      negativeMarking: {
-                        type: nextType,
-                        value: nextValue,
-                        numerator:
-                          nextType === "fraction"
-                            ? Number(negative.numerator || 1)
-                            : null,
-                        denominator:
-                          nextType === "fraction"
-                            ? Number(negative.denominator || 3)
-                            : null,
-                      },
-                    },
-                  });
-                }}
-              >
-                <option value="none">None</option>
-                <option value="fraction">Fraction (1/3, 1/4)</option>
-                <option value="custom">Custom</option>
-              </select>
-            </div>
-            <div style={getSettingsCellStyle("negativeValue")}>
-              <label style={ui.labelSmall}>Negative Value</label>
-              <input
-                style={{ ...ui.input, ...ui.inputSmall }}
-                type={negative.type === "fraction" ? "text" : "number"}
-                step={negative.type === "fraction" ? undefined : "0.01"}
-                disabled={isLocked}
-                placeholder={negative.type === "fraction" ? "e.g. 1/3 or 1/4" : undefined}
-                value={
-                  negative.type === "fraction"
-                    ? negativeFractionDraft
-                    : (negative.value ?? 0)
-                }
-                onChange={(e) => {
-                  const raw = e.target.value;
-                  if (negative.type === "fraction") {
-                    setNegativeFractionDraft(raw);
-                    const parsed = parseFractionInput(raw);
-                    if (parsed === null) return;
-                    updateMeta({
-                      scoring: {
-                        ...(value?.scoring || {}),
-                        negativeMarking: {
-                          type: negative.type || "none",
-                          value: parsed.value,
-                          numerator: parsed.numerator,
-                          denominator: parsed.denominator,
-                        },
-                      },
-                    });
-                    return;
-                  }
-                  updateMeta({
-                    scoring: {
-                      ...(value?.scoring || {}),
-                      negativeMarking: {
-                        type: negative.type || "none",
-                        value: Number(raw),
-                        numerator: null,
-                        denominator: null,
-                      },
-                    },
-                  });
-                }}
-              />
-            </div>
-            <div style={getSettingsCellStyle("minAttempt")}>
-              <label style={ui.labelSmall}>Min Attempt %</label>
-              <input
-                style={ui.input}
-                type="number"
-                min="0"
-                max="100"
-                disabled={isLocked}
-                value={value?.rules?.minAttemptPercent ?? ""}
-                onChange={(e) =>
-                  updateMeta({
-                    rules: {
-                      ...(value?.rules || {}),
-                      minAttemptPercent: Number(e.target.value),
-                    },
-                  })
-                }
-              />
-            </div>
-            <div style={getSettingsCellStyle("shuffleQuestions")}>
-              <label style={ui.labelSmall}>Shuffle Questions</label>
-              <TogglePair
-                value={value?.rules?.shuffleQuestions ? "right" : "left"}
-                leftLabel="No"
-                rightLabel="Yes"
-                onChange={(val) =>
-                  updateMeta({
-                    rules: {
-                      ...(value?.rules || {}),
-                      shuffleQuestions: val === "right",
-                    },
-                  })
-                }
-              />
-            </div>
-            <div style={getSettingsCellStyle("shuffleSections")}>
-              <label style={ui.labelSmall}>Shuffle Sections</label>
-              <TogglePair
-                value={value?.rules?.shuffleSections ? "right" : "left"}
-                leftLabel="No"
-                rightLabel="Yes"
-                onChange={(val) =>
-                  updateMeta({
-                    rules: {
-                      ...(value?.rules || {}),
-                      shuffleSections: val === "right",
-                    },
-                  })
-                }
-              />
-            </div>
-            <div style={getSettingsCellStyle("shuffleOptions")}>
-              <label style={ui.labelSmall}>Shuffle Options</label>
-              <TogglePair
-                value={value?.rules?.shuffleOptions ? "right" : "left"}
-                leftLabel="No"
-                rightLabel="Yes"
-                onChange={(val) =>
-                  updateMeta({
-                    rules: {
-                      ...(value?.rules || {}),
-                      shuffleOptions: val === "right",
-                    },
-                  })
-                }
-              />
-            </div>
             <div style={getSettingsCellStyle("showExplanation")}>
-              <label style={ui.labelSmall}>Show Explanation After Submit</label>
+              <label style={ui.labelSmall}>Show Explanation</label>
               <TogglePair
                 value={value?.rules?.showExplanation === false ? "left" : "right"}
                 leftLabel="No"
@@ -4957,21 +4525,36 @@ export default function QuizContentEditor({
                 <option value="section">Per Section</option>
               </select>
             </div>
-            <div style={getSettingsCellStyle("timingMode")}>
-              <label style={ui.labelSmall}>Timing Mode</label>
-              <TogglePair
-                value={value?.rules?.timingMode === "section" ? "right" : "left"}
-                leftLabel="Overall"
-                rightLabel="Per Section"
-                onChange={(val) =>
-                  updateMeta({
-                    rules: {
-                      ...(value?.rules || {}),
-                      timingMode: val === "right" ? "section" : "overall",
-                    },
-                  })
+            <div style={getSettingsCellStyle("examYearDisplay")}>
+              <label style={ui.labelSmall}>Exam/Year in Public Lists</label>
+              <select
+                style={ui.input}
+                disabled={isLocked}
+                value={String(examYearDisplayMode || "auto")}
+                onChange={(e) =>
+                  onExamYearDisplayModeChange?.(String(e.target.value || "auto"))
                 }
-              />
+              >
+                {EXAM_YEAR_DISPLAY_OPTIONS.map((opt) => (
+                  <option key={opt.id} value={opt.id}>
+                    {opt.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div style={getSettingsCellStyle("publicAnswers")}>
+              <label style={ui.labelSmall}>Public Answers</label>
+              <select
+                style={ui.input}
+                disabled={isLocked}
+                value={hideAnswersDefault ? "hide" : "show"}
+                onChange={(e) =>
+                  onHideAnswersDefaultChange?.(e.target.value === "hide")
+                }
+              >
+                <option value="hide">Hide by default</option>
+                <option value="show">Show by default</option>
+              </select>
             </div>
           </div>
         {workspaceTab === "settings" && (
@@ -4990,7 +4573,7 @@ export default function QuizContentEditor({
               {isTemplatesOpen && (
                 <>
                   <div style={ui.helper}>
-                    Save your current settings (time, rules, scoring, sections) as a template.
+                    Save your current settings (rules and sections) as a template.
                   </div>
                   <div style={ui.filterPresetRow}>
                     <div style={ui.filterPresetList}>
@@ -5268,8 +4851,8 @@ export default function QuizContentEditor({
                         style={{
                           ...ui.sectionPanelRow,
                           ...(marksMode === "section"
-                            ? { gridTemplateColumns: "minmax(220px, 1.6fr) 130px 130px auto" }
-                            : { gridTemplateColumns: "minmax(220px, 1.6fr) 130px auto" }),
+                            ? { gridTemplateColumns: "minmax(220px, 1.6fr) 130px auto" }
+                            : { gridTemplateColumns: "minmax(220px, 1.6fr) auto" }),
                         }}
                       >
                         <div style={ui.sectionTitleCell}>
@@ -5286,21 +4869,6 @@ export default function QuizContentEditor({
                               }
                             />
                           </div>
-                        </div>
-                        <div>
-                          <label style={ui.labelSmall}>Section Time (minutes)</label>
-                          <input
-                            style={{ ...ui.input, ...ui.inputSmall }}
-                            type="number"
-                            min="0"
-                            disabled={isLocked}
-                            value={selected.durationMinutes ?? ""}
-                            onChange={(e) =>
-                              updateSection(selectedIndex, {
-                                durationMinutes: Number(e.target.value),
-                              })
-                            }
-                          />
                         </div>
                         {marksMode === "section" && (
                           <div>
@@ -5595,7 +5163,7 @@ export default function QuizContentEditor({
                       value={exportFileName}
                       disabled={isLocked}
                       onChange={(e) => setExportFileName(e.target.value)}
-                      placeholder="quiz-export"
+                      placeholder="pyq-export"
                     />
                   </div>
                   {isSuperAdmin && (
@@ -5615,18 +5183,18 @@ export default function QuizContentEditor({
                     type="button"
                     onClick={() => {
                       const csv =
-                        "id,difficulty,category,subcategory,topic,subtopic,source_type,source_name,exam,year,tags,type,prompt_en,prompt_hi,optionA_en,optionB_en,optionC_en,optionD_en,optionE_en,optionA_hi,optionB_hi,optionC_hi,optionD_hi,optionE_hi,answer,points,section,explanation_en,explanation_hi\n" +
-                        "q1,medium,History,Modern,Revolt 1857,Causes,pyq,,SSC CGL,2023,SSC|GK,single,Sample question?,,A,B,C,D,, , , , , ,C,1,Section 1,Short explanation,\n";
+                        "id,subject,topic,subtopic,tags,difficulty,content_type,ca_date,type,prompt_en,prompt_hi,optionA_en,optionB_en,optionC_en,optionD_en,optionE_en,optionA_hi,optionB_hi,optionC_hi,optionD_hi,optionE_hi,answer,pyq_exams,exam,year,section,explanation_en,explanation_hi\n" +
+                        "q1,History,Modern India,Revolt 1857,ssc|pyq,medium,static,,single,Sample question?,,Option A,Option B,Option C,Option D,,,,,,,C,\"SSC CGL\",SSC CGL,2023,Section 1,Short explanation,\n";
                       const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
                       const url = URL.createObjectURL(blob);
                       const a = document.createElement("a");
                       a.href = url;
-                      a.download = "quiz-template.csv";
+                      a.download = "pyq-template.csv";
                       a.click();
                       URL.revokeObjectURL(url);
                     }}
                   >
-                    Download CSV Template
+                    Download PYQ CSV Template
                   </button>
                   <button
                     style={ui.btnGhost}
@@ -5636,20 +5204,23 @@ export default function QuizContentEditor({
                         [
                           {
                             type: "single",
-                            prompt: "Sample question?",
+                            prompt: { en: "Sample question?", hi: "" },
                             options: ["A", "B", "C", "D"],
                             answer: "C",
-                            points: 1,
                             section: "Section 1",
+                            tags: ["ssc", "pyq"],
                             meta: {
                               category: "History",
                               topic: "Modern India",
-                              sourceType: "pyq",
-                              sourceName: "",
+                              subtopic: "Revolt 1857",
+                              contentType: "static",
+                              isPYQ: true,
+                              pyqExams: ["SSC CGL"],
+                              pyqData: [{ exam: "SSC CGL", year: "2023" }],
                               exam: "SSC CGL",
                               year: "2023",
                             },
-                            explanation: "Short explanation",
+                            explanation: { en: "Short explanation", hi: "" },
                           },
                         ],
                         null,
@@ -5659,12 +5230,12 @@ export default function QuizContentEditor({
                       const url = URL.createObjectURL(blob);
                       const a = document.createElement("a");
                       a.href = url;
-                      a.download = "quiz-template.json";
+                      a.download = "pyq-template.json";
                       a.click();
                       URL.revokeObjectURL(url);
                     }}
                   >
-                    Download JSON Template
+                    Download PYQ JSON Template
                   </button>
                 </div>
               </div>
@@ -5681,15 +5252,15 @@ export default function QuizContentEditor({
               style={ui.importTextarea}
               placeholder={
                 importFormat === "csv"
-                  ? "id,difficulty,category,subcategory,topic,subtopic,source_type,source_name,exam,year,tags,type,prompt_en,prompt_hi,optionA_en,optionB_en,optionC_en,optionD_en,optionE_en,optionA_hi,optionB_hi,optionC_hi,optionD_hi,optionE_hi,answer,points,section,explanation_en,explanation_hi"
-                  : '[{\"type\":\"single\",\"prompt\":\"...\",\"options\":[\"A\",\"B\",\"C\",\"D\",\"E\"],\"answer\":\"A\",\"points\":1,\"section\":\"Section 1\",\"meta\":{\"category\":\"History\",\"topic\":\"Modern India\",\"sourceType\":\"pyq\",\"sourceName\":\"\",\"exam\":\"SSC CGL\",\"year\":\"2023\"},\"explanation\":\"\"}]'
+                  ? "id,subject,topic,subtopic,tags,difficulty,content_type,ca_date,type,prompt_en,prompt_hi,optionA_en,optionB_en,optionC_en,optionD_en,optionE_en,optionA_hi,optionB_hi,optionC_hi,optionD_hi,optionE_hi,answer,pyq_exams,exam,year,section,explanation_en,explanation_hi"
+                  : '[{\"type\":\"single\",\"prompt\":{\"en\":\"...\",\"hi\":\"\"},\"options\":[\"A\",\"B\",\"C\",\"D\",\"E\"],\"answer\":\"A\",\"section\":\"Section 1\",\"tags\":[\"ssc\",\"pyq\"],\"meta\":{\"category\":\"History\",\"topic\":\"Modern India\",\"subtopic\":\"\",\"contentType\":\"static\",\"isPYQ\":true,\"pyqExams\":[\"SSC CGL\"],\"pyqData\":[{\"exam\":\"SSC CGL\",\"year\":\"2023\"}]},\"explanation\":{\"en\":\"...\",\"hi\":\"\"}}]'
               }
               value={importText}
               onChange={(e) => setImportText(e.target.value)}
             />
             <div style={ui.importPrimaryRow}>
               <button style={ui.btn} onClick={importFromText} disabled={isLocked}>
-                Import Into Quiz
+                Import Into PYQ
               </button>
             </div>
             {importError && <div style={ui.importError}>{importError}</div>}
@@ -5750,6 +5321,26 @@ export default function QuizContentEditor({
       <div style={{ ...ui.workspacePanel, ...(workspaceTab !== "quality" ? { display: "none" } : {}) }}>
         {workspaceTab === "quality" && (
           <>
+            <div style={ui.qualitySummaryRow}>
+              <div
+                style={{
+                  ...ui.qualitySummaryChip,
+                  ...(qualitySummary.completenessScore >= 90
+                    ? ui.qualityScoreGood
+                    : qualitySummary.completenessScore >= 70
+                    ? ui.qualityScoreWarn
+                    : ui.qualityScoreBad),
+                }}
+              >
+                Completeness Score: {qualitySummary.completenessScore}%
+              </div>
+              <div style={ui.qualitySummaryChip}>
+                Metadata Coverage: {qualitySummary.metadataCoveragePct}%
+              </div>
+              <div style={ui.qualitySummaryChip}>
+                Exam/Year Coverage: {qualitySummary.examYearCoveragePct}%
+              </div>
+            </div>
             <div style={ui.helperSmall}>
               Issues found: {qualityIssues.length}
             </div>
@@ -5908,20 +5499,9 @@ export default function QuizContentEditor({
                 )}
                 <div>
                   <label style={ui.labelSmall}>PYQ</label>
-                  <select
-                    style={ui.input}
-                    value={questionFilter.pyqMode}
-                    disabled={isLocked}
-                    onChange={(e) =>
-                      setQuestionFilter((s) => ({ ...s, pyqMode: e.target.value }))
-                    }
-                  >
-                    <option value="all">All</option>
-                    <option value="only_pyq">PYQ Only</option>
-                    <option value="only_non_pyq">No PYQ</option>
-                  </select>
+                  <div style={ui.readonlyMetaChip}>Always ON (PYQ Only)</div>
                 </div>
-                {questionFilter.pyqMode !== "only_non_pyq" && (
+                {
                   <>
                     <div>
                       <label style={ui.labelSmall}>Exam</label>
@@ -5948,7 +5528,7 @@ export default function QuizContentEditor({
                       />
                     </div>
                   </>
-                )}
+                }
                 <div>
                   <label style={ui.labelSmall}>Section Filter</label>
                   <select
@@ -6217,17 +5797,9 @@ export default function QuizContentEditor({
                 )}
                 <div style={ui.bulkField}>
                   <label style={ui.labelSmall}>PYQ Toggle</label>
-                  <select
-                    style={ui.input}
-                    value={bulkIsPYQ}
-                    onChange={(e) => setBulkIsPYQ(e.target.value)}
-                  >
-                    <option value="keep">Keep Current</option>
-                    <option value="on">ON</option>
-                    <option value="off">OFF</option>
-                  </select>
+                  <div style={ui.readonlyMetaChip}>Always ON</div>
                 </div>
-                {bulkIsPYQ === "on" && (
+                {
                   <>
                     <div style={ui.bulkField}>
                       <label style={ui.labelSmall}>PYQ Exams (comma)</label>
@@ -6307,7 +5879,7 @@ export default function QuizContentEditor({
                       </div>
                     </div>
                   </>
-                )}
+                }
                 <div style={{ ...ui.bulkField, ...ui.bulkFieldAction }}>
                   <label style={ui.labelSmall}>Action</label>
                   <button style={ui.btn} type="button" onClick={applyBulkChanges}>
@@ -6328,20 +5900,13 @@ export default function QuizContentEditor({
                 <div style={ui.filterSubTabs}>
                   <button
                     type="button"
-                    style={{ ...ui.filterSubTabBtn, ...(bankPanelTab === "normal" ? ui.tabBtnActive : {}) }}
+                    style={{ ...ui.filterSubTabBtn, ...ui.tabBtnActive }}
                     onClick={() => setBankPanelTab("normal")}
                   >
                     Normal Bank
                   </button>
-                  <button
-                    type="button"
-                    style={{ ...ui.filterSubTabBtn, ...(bankPanelTab === "rule" ? ui.tabBtnActive : {}) }}
-                    onClick={() => setBankPanelTab("rule")}
-                  >
-                    Create Quiz From Bank Rule
-                  </button>
                 </div>
-                {bankPanelTab === "normal" && (
+                {true && (
                   <>
                 <div style={ui.collapsibleHeader}>
                   <div style={{ display: "flex", gap: 8 }}>
@@ -6460,24 +6025,9 @@ export default function QuizContentEditor({
                   )}
                   <div>
                     <label style={ui.labelSmall}>PYQ Filter</label>
-                    <select
-                      style={ui.input}
-                      value={bankPyqMode}
-                      onChange={(e) => {
-                        const nextMode = e.target.value;
-                        setBankPyqMode(nextMode);
-                        if (nextMode === "only_non_pyq") {
-                          setBankExam("");
-                          setBankYear("");
-                        }
-                      }}
-                    >
-                      <option value="all">All</option>
-                      <option value="only_pyq">PYQ Only</option>
-                      <option value="only_non_pyq">No PYQ</option>
-                    </select>
+                    <div style={ui.readonlyMetaChip}>Always ON (PYQ Only)</div>
                   </div>
-                  {bankPyqMode !== "only_non_pyq" && (
+                  {
                     <>
                       <div>
                         <label style={ui.labelSmall}>Exam Name</label>
@@ -6504,7 +6054,7 @@ export default function QuizContentEditor({
                         />
                       </div>
                     </>
-                  )}
+                  }
                   <div>
                     <label style={ui.labelSmall}>Tag Match</label>
                     <select
@@ -6531,6 +6081,27 @@ export default function QuizContentEditor({
                   </div>
                 </div>
                 {bankError && <div style={ui.importError}>{bankError}</div>}
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+                  <button
+                    type="button"
+                    style={ui.btnGhost}
+                    onClick={selectAllBankFiltered}
+                    disabled={filteredSortedBankItems.length === 0}
+                  >
+                    Select All ({filteredSortedBankItems.length})
+                  </button>
+                  <button
+                    type="button"
+                    style={ui.btnGhost}
+                    onClick={clearBankSelection}
+                    disabled={Object.keys(bankSelected || {}).filter((k) => bankSelected[k]).length === 0}
+                  >
+                    Deselect All
+                  </button>
+                  <span style={ui.helper}>
+                    Selected: {Object.keys(bankSelected || {}).filter((k) => bankSelected[k]).length}
+                  </span>
+                </div>
                 <div style={ui.bankList}>
                   {visibleBankItems.map((q) => {
                     const tags = Array.isArray(q.tags) ? q.tags : [];
@@ -6588,7 +6159,6 @@ export default function QuizContentEditor({
                         </div>
                         <div style={ui.bankMetaLine}>
                           {`Type: ${String(q.type || "single").toUpperCase()}`}
-                          {` | Points: ${q.points ?? 0}`}
                           {answerText ? ` | Answer: ${answerText}` : ""}
                         </div>
                         {tags.length > 0 && (
@@ -6670,12 +6240,12 @@ export default function QuizContentEditor({
                     )}
                   </div>
                   <button style={ui.btn} type="button" onClick={addSelectedBankItems}>
-                    Add Selected to Quiz
+                    Add Selected to PYQ
                   </button>
                 </div>
                   </>
                 )}
-                {bankPanelTab === "rule" && (
+                {false && (
                 <div style={ui.bankRuleCard}>
                   <div style={ui.filterPanelTitle}>Create Quiz From Bank Rule</div>
                   <div style={ui.bankRuleNotice}>
@@ -6946,37 +6516,21 @@ export default function QuizContentEditor({
                               onChange={(e) => handleContentStaticChange(e.target.value)}
                             />
                           </div>
-                          {Number(bankRuleContentStatic || 0) > 0 && (
-                            <>
-                              <div>
-                                <label style={ui.labelSmall}>
-                                  {bankRuleGlobalValueMode === "count" ? "Static PYQ Count" : "Static PYQ %"}
-                                </label>
-                                <input
-                                  style={{ ...ui.input, ...ui.bankRuleInputTiny }}
-                                  type="number"
-                                  min="0"
-                                  value={bankRuleStaticPyq}
-                                  onChange={(e) => handleStaticPyqChange(e.target.value)}
-                                />
-                              </div>
-                              <div>
-                                <label style={ui.labelSmall}>
-                                  {bankRuleGlobalValueMode === "count" ? "Static Non-PYQ Count" : "Static Non-PYQ %"}
-                                </label>
-                                <input
-                                  style={{ ...ui.input, ...ui.bankRuleInputTiny }}
-                                  type="number"
-                                  min="0"
-                                  value={bankRuleStaticNonPyq}
-                                  onChange={(e) => handleStaticNonPyqChange(e.target.value)}
-                                />
-                              </div>
-                            </>
-                          )}
                           <div>
                             <label style={ui.labelSmall}>
-                              {bankRuleGlobalValueMode === "count" ? "Current Count" : "Current %"}
+                              {bankRuleGlobalValueMode === "count" ? "Static PYQ Count" : "Static PYQ %"}
+                            </label>
+                            <input
+                              style={{ ...ui.input, ...ui.bankRuleInputTiny }}
+                              type="number"
+                              min="0"
+                              value={bankRuleContentStatic}
+                              onChange={(e) => handleContentStaticChange(e.target.value)}
+                            />
+                          </div>
+                          <div>
+                            <label style={ui.labelSmall}>
+                              {bankRuleGlobalValueMode === "count" ? "Current PYQ Count" : "Current PYQ %"}
                             </label>
                             <input
                               style={{ ...ui.input, ...ui.bankRuleInputTiny }}
@@ -6986,34 +6540,6 @@ export default function QuizContentEditor({
                               onChange={(e) => handleContentCurrentChange(e.target.value)}
                             />
                           </div>
-                          {Number(bankRuleContentCurrent || 0) > 0 && (
-                            <>
-                              <div>
-                                <label style={ui.labelSmall}>
-                                  {bankRuleGlobalValueMode === "count" ? "Current PYQ Count" : "Current PYQ %"}
-                                </label>
-                                <input
-                                  style={{ ...ui.input, ...ui.bankRuleInputTiny }}
-                                  type="number"
-                                  min="0"
-                                  value={bankRuleCurrentPyq}
-                                  onChange={(e) => handleCurrentPyqChange(e.target.value)}
-                                />
-                              </div>
-                              <div>
-                                <label style={ui.labelSmall}>
-                                  {bankRuleGlobalValueMode === "count" ? "Current Non-PYQ Count" : "Current Non-PYQ %"}
-                                </label>
-                                <input
-                                  style={{ ...ui.input, ...ui.bankRuleInputTiny }}
-                                  type="number"
-                                  min="0"
-                                  value={bankRuleCurrentNonPyq}
-                                  onChange={(e) => handleCurrentNonPyqChange(e.target.value)}
-                                />
-                              </div>
-                            </>
-                          )}
                         </>
                       )}
                     </div>
@@ -7022,160 +6548,6 @@ export default function QuizContentEditor({
                     <>
                   <div style={ui.bankRuleSubTitle}>PYQ Rules (optional)</div>
                   <div style={ui.bankRuleSetList}>
-                    <div style={ui.bankRuleDifficultyScopeRow}>
-                      <div>
-                        <label style={ui.labelSmall}>PYQ Difficulty Matches Global</label>
-                        <TogglePair
-                          value={bankRulePyqDifficultyUseGlobal ? "right" : "left"}
-                          leftLabel="No"
-                          rightLabel="Yes"
-                          onChange={(val) => setBankRulePyqDifficultyUseGlobal(val === "right")}
-                        />
-                      </div>
-                      {bankRuleEnableDifficultyMix && !bankRulePyqDifficultyUseGlobal && (
-                        <>
-                          <div style={ui.bankRuleDifficultyControlsRow}>
-                            <button
-                              type="button"
-                              style={ui.btnGhost}
-                              onClick={() => {
-                                const next = getDifficultyPresetValues("easy_heavy", bankRuleTargets.pyqTarget);
-                                setBankRulePyqDifficultyEasy(next.easy);
-                                setBankRulePyqDifficultyMedium(next.medium);
-                                setBankRulePyqDifficultyHard(next.hard);
-                                setBankRulePyqDifficultyAdvanced(next.advanced);
-                              }}
-                            >
-                              Easy-heavy
-                            </button>
-                            <button
-                              type="button"
-                              style={ui.btnGhost}
-                              onClick={() => {
-                                const next = getDifficultyPresetValues("balanced", bankRuleTargets.pyqTarget);
-                                setBankRulePyqDifficultyEasy(next.easy);
-                                setBankRulePyqDifficultyMedium(next.medium);
-                                setBankRulePyqDifficultyHard(next.hard);
-                                setBankRulePyqDifficultyAdvanced(next.advanced);
-                              }}
-                            >
-                              Balanced
-                            </button>
-                            <button
-                              type="button"
-                              style={ui.btnGhost}
-                              onClick={() => {
-                                const next = getDifficultyPresetValues("hard_heavy", bankRuleTargets.pyqTarget);
-                                setBankRulePyqDifficultyEasy(next.easy);
-                                setBankRulePyqDifficultyMedium(next.medium);
-                                setBankRulePyqDifficultyHard(next.hard);
-                                setBankRulePyqDifficultyAdvanced(next.advanced);
-                              }}
-                            >
-                              Hard-heavy
-                            </button>
-                            <div style={ui.bankRuleDifficultyField}>
-                              <label style={ui.labelSmall}>
-                                {bankRuleGlobalValueMode === "count" ? "Easy Count" : "Easy %"}
-                              </label>
-                              <input
-                                style={{ ...ui.input, ...ui.bankRuleInputTiny }}
-                                type="number"
-                                min="0"
-                                value={bankRulePyqDifficultyEasy}
-                                onChange={(e) =>
-                                  setBankRulePyqDifficultyEasy(
-                                    String(e.target.value || "").replace(
-                                      bankRuleGlobalValueMode === "count" ? /\D/g : /[^\d.]/g,
-                                      ""
-                                    )
-                                  )
-                                }
-                              />
-                            </div>
-                            <div style={ui.bankRuleDifficultyField}>
-                              <label style={ui.labelSmall}>
-                                {bankRuleGlobalValueMode === "count" ? "Medium Count" : "Medium %"}
-                              </label>
-                              <input
-                                style={{ ...ui.input, ...ui.bankRuleInputTiny }}
-                                type="number"
-                                min="0"
-                                value={bankRulePyqDifficultyMedium}
-                                onChange={(e) =>
-                                  setBankRulePyqDifficultyMedium(
-                                    String(e.target.value || "").replace(
-                                      bankRuleGlobalValueMode === "count" ? /\D/g : /[^\d.]/g,
-                                      ""
-                                    )
-                                  )
-                                }
-                              />
-                            </div>
-                            <div style={ui.bankRuleDifficultyField}>
-                              <label style={ui.labelSmall}>
-                                {bankRuleGlobalValueMode === "count" ? "Hard Count" : "Hard %"}
-                              </label>
-                              <input
-                                style={{ ...ui.input, ...ui.bankRuleInputTiny }}
-                                type="number"
-                                min="0"
-                                value={bankRulePyqDifficultyHard}
-                                onChange={(e) =>
-                                  setBankRulePyqDifficultyHard(
-                                    String(e.target.value || "").replace(
-                                      bankRuleGlobalValueMode === "count" ? /\D/g : /[^\d.]/g,
-                                      ""
-                                    )
-                                  )
-                                }
-                              />
-                            </div>
-                            <div style={ui.bankRuleDifficultyField}>
-                              <label style={ui.labelSmall}>
-                                {bankRuleGlobalValueMode === "count" ? "Advanced Count" : "Advanced %"}
-                              </label>
-                              <input
-                                style={{ ...ui.input, ...ui.bankRuleInputTiny }}
-                                type="number"
-                                min="0"
-                                value={bankRulePyqDifficultyAdvanced}
-                                onChange={(e) =>
-                                  setBankRulePyqDifficultyAdvanced(
-                                    String(e.target.value || "").replace(
-                                      bankRuleGlobalValueMode === "count" ? /\D/g : /[^\d.]/g,
-                                      ""
-                                    )
-                                  )
-                                }
-                              />
-                            </div>
-                            <button
-                              type="button"
-                              style={ui.btnGhost}
-                              onClick={() => {
-                                setBankRulePyqDifficultyEasy(String(bankRuleDifficultyEasy || ""));
-                                setBankRulePyqDifficultyMedium(String(bankRuleDifficultyMedium || ""));
-                                setBankRulePyqDifficultyHard(String(bankRuleDifficultyHard || ""));
-                                setBankRulePyqDifficultyAdvanced(String(bankRuleDifficultyAdvanced || ""));
-                              }}
-                            >
-                              Reset to Global
-                            </button>
-                          </div>
-                          <div style={{ ...ui.helperSmall, gridColumn: "1 / -1" }}>
-                            {`Live total: ${
-                              Number(bankRulePyqDifficultyEasy || 0) +
-                              Number(bankRulePyqDifficultyMedium || 0) +
-                              Number(bankRulePyqDifficultyHard || 0) +
-                              Number(bankRulePyqDifficultyAdvanced || 0)
-                            } / ${
-                              bankRuleGlobalValueMode === "percent" ? 100 : bankRuleTargets.pyqTarget
-                            }`}
-                          </div>
-                        </>
-                      )}
-                    </div>
                     {bankRulePyqRows.length === 0 && (
                       <div style={ui.helper}>No PYQ sub-rules. Remaining PYQ quota is filled from all PYQ.</div>
                     )}
@@ -7366,321 +6738,6 @@ export default function QuizContentEditor({
                     ))}
                     <button type="button" style={ui.btnGhost} onClick={addPyqRuleRow}>
                       + Add PYQ Rule
-                    </button>
-                  </div>
-                  <div style={ui.bankRuleSubTitle}>Non-PYQ Subject Rules (optional)</div>
-                  <div style={ui.bankRuleSetList}>
-                    <div style={ui.bankRuleDifficultyScopeRow}>
-                      <div>
-                        <label style={ui.labelSmall}>Non-PYQ Difficulty Matches Global</label>
-                        <TogglePair
-                          value={bankRuleNonPyqDifficultyUseGlobal ? "right" : "left"}
-                          leftLabel="No"
-                          rightLabel="Yes"
-                          onChange={(val) => setBankRuleNonPyqDifficultyUseGlobal(val === "right")}
-                        />
-                      </div>
-                      {bankRuleEnableDifficultyMix && !bankRuleNonPyqDifficultyUseGlobal && (
-                        <>
-                          <div style={ui.bankRuleDifficultyControlsRow}>
-                            <button
-                              type="button"
-                              style={ui.btnGhost}
-                              onClick={() => {
-                                const next = getDifficultyPresetValues("easy_heavy", bankRuleTargets.nonPyqTarget);
-                                setBankRuleNonPyqDifficultyEasy(next.easy);
-                                setBankRuleNonPyqDifficultyMedium(next.medium);
-                                setBankRuleNonPyqDifficultyHard(next.hard);
-                                setBankRuleNonPyqDifficultyAdvanced(next.advanced);
-                              }}
-                            >
-                              Easy-heavy
-                            </button>
-                            <button
-                              type="button"
-                              style={ui.btnGhost}
-                              onClick={() => {
-                                const next = getDifficultyPresetValues("balanced", bankRuleTargets.nonPyqTarget);
-                                setBankRuleNonPyqDifficultyEasy(next.easy);
-                                setBankRuleNonPyqDifficultyMedium(next.medium);
-                                setBankRuleNonPyqDifficultyHard(next.hard);
-                                setBankRuleNonPyqDifficultyAdvanced(next.advanced);
-                              }}
-                            >
-                              Balanced
-                            </button>
-                            <button
-                              type="button"
-                              style={ui.btnGhost}
-                              onClick={() => {
-                                const next = getDifficultyPresetValues("hard_heavy", bankRuleTargets.nonPyqTarget);
-                                setBankRuleNonPyqDifficultyEasy(next.easy);
-                                setBankRuleNonPyqDifficultyMedium(next.medium);
-                                setBankRuleNonPyqDifficultyHard(next.hard);
-                                setBankRuleNonPyqDifficultyAdvanced(next.advanced);
-                              }}
-                            >
-                              Hard-heavy
-                            </button>
-                            <div style={ui.bankRuleDifficultyField}>
-                              <label style={ui.labelSmall}>
-                                {bankRuleGlobalValueMode === "count" ? "Easy Count" : "Easy %"}
-                              </label>
-                              <input
-                                style={{ ...ui.input, ...ui.bankRuleInputTiny }}
-                                type="number"
-                                min="0"
-                                value={bankRuleNonPyqDifficultyEasy}
-                                onChange={(e) =>
-                                  setBankRuleNonPyqDifficultyEasy(
-                                    String(e.target.value || "").replace(
-                                      bankRuleGlobalValueMode === "count" ? /\D/g : /[^\d.]/g,
-                                      ""
-                                    )
-                                  )
-                                }
-                              />
-                            </div>
-                            <div style={ui.bankRuleDifficultyField}>
-                              <label style={ui.labelSmall}>
-                                {bankRuleGlobalValueMode === "count" ? "Medium Count" : "Medium %"}
-                              </label>
-                              <input
-                                style={{ ...ui.input, ...ui.bankRuleInputTiny }}
-                                type="number"
-                                min="0"
-                                value={bankRuleNonPyqDifficultyMedium}
-                                onChange={(e) =>
-                                  setBankRuleNonPyqDifficultyMedium(
-                                    String(e.target.value || "").replace(
-                                      bankRuleGlobalValueMode === "count" ? /\D/g : /[^\d.]/g,
-                                      ""
-                                    )
-                                  )
-                                }
-                              />
-                            </div>
-                            <div style={ui.bankRuleDifficultyField}>
-                              <label style={ui.labelSmall}>
-                                {bankRuleGlobalValueMode === "count" ? "Hard Count" : "Hard %"}
-                              </label>
-                              <input
-                                style={{ ...ui.input, ...ui.bankRuleInputTiny }}
-                                type="number"
-                                min="0"
-                                value={bankRuleNonPyqDifficultyHard}
-                                onChange={(e) =>
-                                  setBankRuleNonPyqDifficultyHard(
-                                    String(e.target.value || "").replace(
-                                      bankRuleGlobalValueMode === "count" ? /\D/g : /[^\d.]/g,
-                                      ""
-                                    )
-                                  )
-                                }
-                              />
-                            </div>
-                            <div style={ui.bankRuleDifficultyField}>
-                              <label style={ui.labelSmall}>
-                                {bankRuleGlobalValueMode === "count" ? "Advanced Count" : "Advanced %"}
-                              </label>
-                              <input
-                                style={{ ...ui.input, ...ui.bankRuleInputTiny }}
-                                type="number"
-                                min="0"
-                                value={bankRuleNonPyqDifficultyAdvanced}
-                                onChange={(e) =>
-                                  setBankRuleNonPyqDifficultyAdvanced(
-                                    String(e.target.value || "").replace(
-                                      bankRuleGlobalValueMode === "count" ? /\D/g : /[^\d.]/g,
-                                      ""
-                                    )
-                                  )
-                                }
-                              />
-                            </div>
-                            <button
-                              type="button"
-                              style={ui.btnGhost}
-                              onClick={() => {
-                                setBankRuleNonPyqDifficultyEasy(String(bankRuleDifficultyEasy || ""));
-                                setBankRuleNonPyqDifficultyMedium(String(bankRuleDifficultyMedium || ""));
-                                setBankRuleNonPyqDifficultyHard(String(bankRuleDifficultyHard || ""));
-                                setBankRuleNonPyqDifficultyAdvanced(String(bankRuleDifficultyAdvanced || ""));
-                              }}
-                            >
-                              Reset to Global
-                            </button>
-                          </div>
-                          <div style={{ ...ui.helperSmall, gridColumn: "1 / -1" }}>
-                            {`Live total: ${
-                              Number(bankRuleNonPyqDifficultyEasy || 0) +
-                              Number(bankRuleNonPyqDifficultyMedium || 0) +
-                              Number(bankRuleNonPyqDifficultyHard || 0) +
-                              Number(bankRuleNonPyqDifficultyAdvanced || 0)
-                            } / ${
-                              bankRuleGlobalValueMode === "percent" ? 100 : bankRuleTargets.nonPyqTarget
-                            }`}
-                          </div>
-                        </>
-                      )}
-                    </div>
-                    {bankRuleNonPyqRows.length === 0 && (
-                      <div style={ui.helper}>No Non-PYQ sub-rules. Remaining Non-PYQ quota is filled from all Non-PYQ.</div>
-                    )}
-                    {bankRuleNonPyqRows.map((row) => (
-                      <div
-                        key={row.id}
-                        style={
-                          bankRuleSectionMode !== "no_section"
-                            ? ui.bankRuleRowGridNonPyq
-                            : ui.bankRuleRowGridNonPyqNoSection
-                        }
-                      >
-                        <div>
-                          <label style={ui.labelSmall}>Subject</label>
-                          <input
-                            style={ui.input}
-                            placeholder="Subject"
-                            value={row.subject}
-                            onChange={(e) =>
-                              setBankRuleNonPyqRows((prev) =>
-                                prev.map((x) => (x.id === row.id ? { ...x, subject: e.target.value } : x))
-                              )
-                            }
-                          />
-                        </div>
-                        <div>
-                          <label style={ui.labelSmall}>Topic</label>
-                          <input
-                            style={ui.input}
-                            placeholder="Topic"
-                            value={row.topic || ""}
-                            onChange={(e) =>
-                              setBankRuleNonPyqRows((prev) =>
-                                prev.map((x) => (x.id === row.id ? { ...x, topic: e.target.value } : x))
-                              )
-                            }
-                          />
-                        </div>
-                        <div>
-                          <label style={ui.labelSmall}>Subtopic</label>
-                          <input
-                            style={ui.input}
-                            placeholder="Subtopic"
-                            value={row.subtopic || ""}
-                            onChange={(e) =>
-                              setBankRuleNonPyqRows((prev) =>
-                                prev.map((x) => (x.id === row.id ? { ...x, subtopic: e.target.value } : x))
-                              )
-                            }
-                          />
-                        </div>
-                        <div>
-                          <label style={ui.labelSmall}>Tags</label>
-                          <input
-                            style={ui.input}
-                            placeholder="tag1, tag2"
-                            value={row.tags || ""}
-                            onChange={(e) =>
-                              setBankRuleNonPyqRows((prev) =>
-                                prev.map((x) => (x.id === row.id ? { ...x, tags: e.target.value } : x))
-                              )
-                            }
-                          />
-                        </div>
-                        <div>
-                          <label style={ui.labelSmall}>Content Type</label>
-                          <select
-                            style={ui.input}
-                            value={row.contentType || "static"}
-                            onChange={(e) =>
-                              setBankRuleNonPyqRows((prev) =>
-                                prev.map((x) => (x.id === row.id ? { ...x, contentType: e.target.value } : x))
-                              )
-                            }
-                          >
-                            <option value="static">Static</option>
-                            <option value="current_affairs">Current Affairs</option>
-                          </select>
-                        </div>
-                        {String(row.contentType || "static") === "current_affairs" && (
-                          <div>
-                            <label style={ui.labelSmall}>CA Range</label>
-                            <select
-                              style={ui.input}
-                              value={String(row.caRangeMonths || "")}
-                              onChange={(e) =>
-                                setBankRuleNonPyqRows((prev) =>
-                                  prev.map((x) =>
-                                    x.id === row.id ? { ...x, caRangeMonths: e.target.value } : x
-                                  )
-                                )
-                              }
-                            >
-                              <option value="">All dates</option>
-                              <option value="1">Last 1 month</option>
-                              <option value="3">Last 3 month</option>
-                              <option value="6">Last 6 month</option>
-                              <option value="9">Last 9 month</option>
-                              <option value="12">Last 12 month</option>
-                              <option value="15">Last 15 month</option>
-                              <option value="18">Last 18 month</option>
-                              <option value="24">Last 24 month</option>
-                            </select>
-                          </div>
-                        )}
-                        <div>
-                          <label style={ui.labelSmall}>
-                            {bankRuleGlobalValueMode === "count" ? "Count" : "%"}
-                          </label>
-                          <input
-                            style={ui.input}
-                            type="number"
-                            min="1"
-                            placeholder={bankRuleGlobalValueMode === "count" ? "Count" : "%"}
-                            value={row.count}
-                            onChange={(e) =>
-                              setBankRuleNonPyqRows((prev) =>
-                                prev.map((x) => (x.id === row.id ? { ...x, count: e.target.value } : x))
-                              )
-                            }
-                          />
-                        </div>
-                        {bankRuleSectionMode !== "no_section" && (
-                          <div>
-                            <label style={ui.labelSmall}>Target Section</label>
-                            <select
-                              style={ui.input}
-                              value={row.sectionId || ""}
-                              onChange={(e) =>
-                                setBankRuleNonPyqRows((prev) =>
-                                  prev.map((x) =>
-                                    x.id === row.id ? { ...x, sectionId: e.target.value } : x
-                                  )
-                                )
-                              }
-                            >
-                              {(value?.sections || []).map((section) => (
-                                <option key={`br-npyq-sec-${row.id}-${section.id}`} value={section.id}>
-                                  {section.title}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                        )}
-                        <button
-                          type="button"
-                          style={{ ...ui.btnDangerIcon, justifySelf: "end" }}
-                          onClick={() => setBankRuleNonPyqRows((prev) => prev.filter((x) => x.id !== row.id))}
-                          aria-label="Remove Non-PYQ rule"
-                          title="Remove"
-                        >
-                          X
-                        </button>
-                      </div>
-                    ))}
-                    <button type="button" style={ui.btnGhost} onClick={addNonPyqRuleRow}>
-                      + Add Non-PYQ Rule
                     </button>
                   </div>
                     </>
@@ -8199,6 +7256,14 @@ export default function QuizContentEditor({
               <div
                 key={q.id || globalIndex}
                 id={`admin-q-${q.id}`}
+                ref={(el) => {
+                  if (!q?.id) return;
+                  if (el) {
+                    questionCardRefs.current[q.id] = el;
+                  } else {
+                    delete questionCardRefs.current[q.id];
+                  }
+                }}
                 style={ui.questionCard}
                 onClick={() => setActiveQuestionId(q.id)}
                 onMouseDown={(e) => {
@@ -8271,12 +7336,11 @@ export default function QuizContentEditor({
                   style={{
                     ...ui.fieldHintRow,
                     ...(useSections
-                      ? { gridTemplateColumns: "96px 72px 66px minmax(140px, 180px) minmax(0, 1fr)" }
-                      : { gridTemplateColumns: "96px 72px 66px minmax(0, 1fr)" }),
+                      ? { gridTemplateColumns: "96px 66px minmax(140px, 180px) minmax(0, 1fr)" }
+                      : { gridTemplateColumns: "96px 66px minmax(0, 1fr)" }),
                   }}
                 >
                   <span>Type</span>
-                  <span>Points</span>
                   <span>Position</span>
                   {useSections && <span>Section</span>}
                   <span />
@@ -8285,8 +7349,8 @@ export default function QuizContentEditor({
                   style={{
                     ...ui.grid3,
                     ...(useSections
-                      ? { gridTemplateColumns: "96px 72px 66px minmax(140px, 180px) minmax(0, 1fr)" }
-                      : { gridTemplateColumns: "96px 72px 66px minmax(0, 1fr)" }),
+                      ? { gridTemplateColumns: "96px 66px minmax(140px, 180px) minmax(0, 1fr)" }
+                      : { gridTemplateColumns: "96px 66px minmax(0, 1fr)" }),
                   }}
                 >
                   <select
@@ -8318,23 +7382,6 @@ export default function QuizContentEditor({
                     <option value="multiple">Multiple</option>
                     <option value="fill">Fill</option>
                   </select>
-                  <input
-                    style={{ ...ui.input, ...ui.inputCompact }}
-                    type={marksMode === "overall" || marksMode === "section" ? "text" : "number"}
-                    value={
-                      marksMode === "overall" || marksMode === "section"
-                        ? Number(q.points ?? 0).toFixed(2)
-                        : (q.points ?? value?.scoring?.defaultPoints ?? 1)
-                    }
-                    disabled={isLocked || marksMode === "overall" || marksMode === "section"}
-                    placeholder="Points"
-                    onFocus={() => setActiveQuestionId(q.id)}
-                    onChange={(e) =>
-                      updateQuestion(globalIndex, {
-                        points: Number(e.target.value),
-                      })
-                    }
-                  />
                   <input
                     style={{ ...ui.input, ...ui.inputCompact }}
                     type="number"
@@ -8382,40 +7429,15 @@ export default function QuizContentEditor({
                   )}
                   <div style={ui.rowActionsRight}>
                     <button
-                      style={ui.btnPreview}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (
-                          showPreview &&
-                          activeQuestionId === q.id &&
-                          showQuestionPreview === q.id
-                        ) {
-                          setShowQuestionPreview(null);
-                          setShowPreview(false);
-                          return;
-                        }
-                        setActiveQuestionId(q.id);
-                        setShowPreview(true);
-                        setShowQuestionPreview(q.id);
-                      }}
-                    >
-                      {showQuestionPreview === q.id ? "Hide" : "Show"} Preview
-                    </button>
-                    <button
                       style={ui.btnLive}
                       onClick={(e) => {
                         e.stopPropagation();
-                        if (
-                          showPreview &&
-                          activeQuestionId === q.id &&
-                          showQuestionPreview !== q.id
-                        ) {
+                        if (showPreview && activeQuestionId === q.id) {
                           setShowPreview(false);
                           return;
                         }
                         setActiveQuestionId(q.id);
                         setShowPreview(true);
-                        setShowQuestionPreview(null);
                       }}
                     >
                       Live Preview
@@ -8553,38 +7575,15 @@ export default function QuizContentEditor({
                   )}
                   <div>
                     <label style={ui.labelSmall}>Is PYQ</label>
-                    <TogglePair
-                      value={normalizeQuestionMeta(q.meta || {}).isPYQ ? "right" : "left"}
-                      leftLabel="No"
-                      rightLabel="Yes"
-                      onChange={(val) => {
-                        const meta = normalizeQuestionMeta(q.meta || {});
-                        const nextIsPyq = val === "right";
-                        const currentRows = Array.isArray(meta.pyqData) ? meta.pyqData : [];
-                        const nextRows =
-                          nextIsPyq && currentRows.length === 0
-                            ? [{ exam: "", year: "" }]
-                            : currentRows;
-                        const mergedExams = mergePyqExamsWithManual(
-                          meta.pyqExams,
-                          nextRows.map((row) => row?.exam).filter(Boolean),
-                          currentRows.map((row) => row?.exam).filter(Boolean)
-                        );
-                        updateQuestion(globalIndex, {
-                          meta: {
-                            ...meta,
-                            isPYQ: nextIsPyq,
-                            pyqData: nextRows,
-                            pyqExams: mergedExams,
-                          },
-                        });
-                      }}
-                    />
+                    <div style={ui.readonlyMetaChip}>Always On</div>
                   </div>
                 </div>
-                {normalizeQuestionMeta(q.meta || {}).isPYQ && (
+                {(
                   <div style={ui.pyqWrap}>
                     <label style={ui.labelSmall}>PYQ Data (Optional)</label>
+                    <div style={ui.helperSmall}>
+                      Source of truth: PYQ Data rows (exam/year). PYQ Exams auto-fills from exam names and is still editable.
+                    </div>
                     {(normalizeQuestionMeta(q.meta || {}).pyqData || []).map((row, rowIndex) => (
                       <div key={`${q.id || globalIndex}-pyq-${rowIndex}`} style={ui.pyqRow}>
                         <input
@@ -9032,28 +8031,28 @@ export default function QuizContentEditor({
           <div style={ui.block}>
             <div style={ui.previewHeader}>
               <div style={ui.title}>
-                {showQuestionPreview === activeQuestionId ? "Question Preview" : "Live Preview"}
+                Live Preview
               </div>
               <div style={{ display: "flex", gap: 8 }} />
             </div>
             <div style={ui.previewCard}>
-              {showQuestionPreview === activeQuestionId && activePreviewQuestion ? (
+              {false ? (
                 <div style={ui.qPreview}>
                   <div style={ui.qPreviewTitle}>Post-Submit Preview</div>
                   <div style={ui.qPreviewBody}>
                     <div style={ui.qPreviewPrompt}>
-                      {getLangValue(activePreviewQuestion.prompt, "en") || "-"}
+                      {getLangValue(previewQuestion.prompt, "en") || "-"}
                     </div>
-                    {(activePreviewQuestion.type === "single" ||
-                      activePreviewQuestion.type === "multiple") && (
+                    {(previewQuestion.type === "single" ||
+                      previewQuestion.type === "multiple") && (
                       <div style={ui.qPreviewOptions}>
                         {Array.from({ length: optionCount }).map((_, i) => {
-                          const optionsEn = getLangOptions(activePreviewQuestion.options, "en");
+                          const optionsEn = getLangOptions(previewQuestion.options, "en");
                           const isCorrect =
-                            activePreviewQuestion.type === "single"
-                              ? Number(activePreviewQuestion.answer) === i
-                              : Array.isArray(activePreviewQuestion.answer) &&
-                                activePreviewQuestion.answer.map(Number).includes(i);
+                            previewQuestion.type === "single"
+                              ? Number(previewQuestion.answer) === i
+                              : Array.isArray(previewQuestion.answer) &&
+                                previewQuestion.answer.map(Number).includes(i);
                           return (
                             <div
                               key={`qprev-opt-${i}`}
@@ -9071,40 +8070,29 @@ export default function QuizContentEditor({
                         })}
                       </div>
                     )}
-                    {activePreviewQuestion.type === "fill" && (
+                    {previewQuestion.type === "fill" && (
                       <div style={ui.qPreviewOption}>
                         Accepted:{" "}
-                        {Array.isArray(activePreviewQuestion.answerText)
-                          ? activePreviewQuestion.answerText.join(", ")
-                          : activePreviewQuestion.answerText || "-"}
+                        {Array.isArray(previewQuestion.answerText)
+                          ? previewQuestion.answerText.join(", ")
+                          : previewQuestion.answerText || "-"}
                       </div>
                     )}
                     {(languageMode === "dual"
-                      ? getLangValue(activePreviewQuestion.explanation, "en")
-                      : activePreviewQuestion.explanation) &&
+                      ? getLangValue(previewQuestion.explanation, "en")
+                      : previewQuestion.explanation) &&
                       value?.rules?.showExplanation !== false && (
                       <div style={ui.qPreviewExplanation}>
                         Explanation:{" "}
                         {languageMode === "dual"
-                          ? getLangValue(activePreviewQuestion.explanation, "en")
-                          : activePreviewQuestion.explanation}
+                          ? getLangValue(previewQuestion.explanation, "en")
+                          : previewQuestion.explanation}
                       </div>
                     )}
                   </div>
                 </div>
               ) : (
                 <>
-                  <div style={ui.previewSettings}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span style={ui.labelSmall}>Section Lock Preview</span>
-                      <TogglePair
-                        value={previewSectionLocked ? "right" : "left"}
-                        leftLabel="Off"
-                        rightLabel="On"
-                        onChange={(val) => setPreviewSectionLocked(val === "right")}
-                      />
-                    </div>
-                  </div>
                   {languageMode === "dual" && (
                     <div style={ui.previewSettings}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -9138,16 +8126,139 @@ export default function QuizContentEditor({
                       )}
                     </div>
                   )}
-                  <QuizClient
-                    key={`preview-${previewResetKey}`}
-                    quiz={quizData}
-                    embedded
-                    focusQuestionId={activeQuestionId}
-                    previewLanguage={previewLanguage}
-                    previewMode={previewMode}
-                    previewFull
-                    previewSectionLocked={previewSectionLocked}
-                  />
+                  <div style={ui.docPreviewWrap}>
+                    {(displayedQuestions || []).length === 0 ? (
+                      <div style={ui.empty}>No PYQ questions to preview.</div>
+                    ) : (
+                      (displayedQuestions || []).map((q, idx) => {
+                        const meta = normalizeQuestionMeta(q?.meta || {});
+                        const promptEn = getLangValue(q?.prompt, "en");
+                        const promptHi = getLangValue(q?.prompt, "hi");
+                        const optionsEn = getLangOptions(q?.options, "en").slice(0, optionCount);
+                        const optionsHi = getLangOptions(q?.options, "hi").slice(0, optionCount);
+                        const resolvedLang = previewLanguage === "hi" ? "hi" : "en";
+                        const showDual = languageMode === "dual" && previewMode === "dual";
+                        const answerIndexes =
+                          q?.type === "multiple"
+                            ? (Array.isArray(q?.answer) ? q.answer.map(Number) : [])
+                            : q?.type === "single"
+                            ? [Number(q?.answer)]
+                            : [];
+                        return (
+                          <div
+                            key={`doc-prev-${q?.id || idx}`}
+                            ref={(el) => {
+                              if (!q?.id) return;
+                              if (el) {
+                                previewCardRefs.current[q.id] = el;
+                              } else {
+                                delete previewCardRefs.current[q.id];
+                              }
+                            }}
+                            style={{
+                              ...ui.docPreviewCard,
+                              ...(q?.id && questionCardHeights?.[q.id]
+                                ? { minHeight: questionCardHeights[q.id] }
+                                : {}),
+                              ...(activeQuestionId === q?.id ? ui.docPreviewCardActive : {}),
+                            }}
+                          >
+                            <div style={ui.docPreviewHeader}>
+                              <span style={ui.docPreviewIndex}>Q{idx + 1}</span>
+                              <span style={ui.docPreviewMeta}>
+                                {String(meta.contentType || "static") === "current_affairs"
+                                  ? "Current Affairs"
+                                  : "Static"}
+                              </span>
+                            </div>
+                            <div style={ui.docPreviewQuestion}>
+                              {showDual ? (
+                                <>
+                                  <div>{promptEn || "-"}</div>
+                                  <div style={ui.docPreviewQuestionAlt}>{promptHi || "-"}</div>
+                                </>
+                              ) : resolvedLang === "hi" ? (
+                                promptHi || promptEn || "-"
+                              ) : (
+                                promptEn || promptHi || "-"
+                              )}
+                            </div>
+                            {(() => {
+                              const examBadges = getPreviewExamYearBadges(q);
+                              if (!examBadges.length) return null;
+                              return (
+                                <div style={ui.docPreviewExamBadges}>
+                                  {examBadges.map((badge, badgeIdx) => (
+                                    <span
+                                      key={`doc-prev-exam-${q?.id || idx}-${badgeIdx}`}
+                                      style={ui.docPreviewExamBadge}
+                                    >
+                                      {badge}
+                                    </span>
+                                  ))}
+                                </div>
+                              );
+                            })()}
+                            {(q?.type === "single" || q?.type === "multiple") && (
+                              <div style={ui.docPreviewOptions}>
+                                {optionsEn.map((optEn, i) => {
+                                  const optHi = optionsHi?.[i] || "";
+                                  const isCorrect = answerIndexes.includes(i);
+                                  return (
+                                    <div
+                                      key={`doc-prev-opt-${q?.id || idx}-${i}`}
+                                      style={{
+                                        ...ui.docPreviewOption,
+                                        ...(isCorrect ? ui.docPreviewOptionCorrect : {}),
+                                      }}
+                                    >
+                                      <span>
+                                        {String.fromCharCode(65 + i)}.{" "}
+                                        {showDual
+                                          ? `${optEn || "-"}${optHi ? ` / ${optHi}` : ""}`
+                                          : resolvedLang === "hi"
+                                          ? optHi || optEn || "-"
+                                          : optEn || optHi || "-"}
+                                      </span>
+                                      {isCorrect ? <span style={ui.docPreviewBadge}>Correct</span> : null}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                            {q?.type === "fill" && (
+                              <div style={ui.docPreviewFill}>
+                                Accepted:{" "}
+                                {Array.isArray(q?.answerText)
+                                  ? q.answerText.join(", ")
+                                  : q?.answerText || "-"}
+                              </div>
+                            )}
+                            {value?.rules?.showExplanation !== false &&
+                              (getLangValue(q?.explanation, "en") ||
+                                getLangValue(q?.explanation, "hi")) && (
+                                <div style={ui.docPreviewExplanation}>
+                                  Explanation:{" "}
+                                  {showDual
+                                    ? `${getLangValue(q?.explanation, "en") || "-"}${
+                                        getLangValue(q?.explanation, "hi")
+                                          ? ` / ${getLangValue(q?.explanation, "hi")}`
+                                          : ""
+                                      }`
+                                    : resolvedLang === "hi"
+                                    ? getLangValue(q?.explanation, "hi") ||
+                                      getLangValue(q?.explanation, "en") ||
+                                      "-"
+                                    : getLangValue(q?.explanation, "en") ||
+                                      getLangValue(q?.explanation, "hi") ||
+                                      "-"}
+                                </div>
+                              )}
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
                 </>
               )}
             </div>
@@ -9329,7 +8440,11 @@ const ui = {
     alignItems: "start",
   },
   contentCol: { display: "flex", flexDirection: "column", gap: 16 },
-  previewCol: { display: "flex", flexDirection: "column", gap: 12 },
+  previewCol: {
+    display: "flex",
+    flexDirection: "column",
+    gap: 12,
+  },
   previewToggleRow: {
     display: "flex",
     alignItems: "center",
@@ -9669,16 +8784,6 @@ const ui = {
     justifyContent: "flex-end",
     alignItems: "center",
   },
-  btnPreview: {
-    padding: "7px 12px",
-    borderRadius: 10,
-    border: "1px solid #2563eb",
-    background: "#eff6ff",
-    color: "#1d4ed8",
-    cursor: "pointer",
-    fontSize: 12,
-    fontWeight: 700,
-  },
   btnLive: {
     padding: "7px 12px",
     borderRadius: 10,
@@ -9930,6 +9035,116 @@ const ui = {
   qPreviewExplanation: {
     marginTop: 4,
     color: "#475569",
+  },
+  docPreviewWrap: {
+    display: "grid",
+    gap: 10,
+    padding: 10,
+    background: "#f8fafc",
+  },
+  docPreviewCard: {
+    borderWidth: 1,
+    borderStyle: "solid",
+    borderColor: "#e2e8f0",
+    borderRadius: 10,
+    background: "#ffffff",
+    padding: 10,
+    display: "grid",
+    gap: 8,
+  },
+  docPreviewCardActive: {
+    borderColor: "#93c5fd",
+    boxShadow: "0 0 0 1px rgba(59,130,246,0.2)",
+    background: "#f8fbff",
+  },
+  docPreviewHeader: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  docPreviewIndex: {
+    fontSize: 12,
+    fontWeight: 700,
+    color: "#0f172a",
+  },
+  docPreviewMeta: {
+    fontSize: 11,
+    color: "#475569",
+  },
+  docPreviewQuestion: {
+    fontSize: 13,
+    fontWeight: 600,
+    color: "#111827",
+    lineHeight: 1.45,
+    display: "grid",
+    gap: 4,
+  },
+  docPreviewQuestionAlt: {
+    fontWeight: 500,
+    color: "#334155",
+  },
+  docPreviewOptions: {
+    display: "grid",
+    gap: 6,
+  },
+  docPreviewExamBadges: {
+    marginTop: 6,
+    display: "flex",
+    flexWrap: "wrap",
+    justifyContent: "flex-end",
+    gap: 6,
+  },
+  docPreviewExamBadge: {
+    display: "inline-flex",
+    alignItems: "center",
+    borderRadius: 999,
+    border: "1px solid #bfdbfe",
+    background: "#eff6ff",
+    color: "#1e3a8a",
+    fontSize: 11,
+    fontWeight: 700,
+    padding: "2px 8px",
+    lineHeight: 1.2,
+  },
+  docPreviewOption: {
+    borderWidth: 1,
+    borderStyle: "solid",
+    borderColor: "#e5e7eb",
+    borderRadius: 8,
+    padding: "6px 8px",
+    background: "#fff",
+    fontSize: 12,
+    color: "#111827",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 8,
+  },
+  docPreviewOptionCorrect: {
+    borderColor: "#86efac",
+    background: "#ecfdf5",
+    color: "#166534",
+  },
+  docPreviewBadge: {
+    fontSize: 10,
+    fontWeight: 700,
+    color: "#166534",
+    background: "#dcfce7",
+    border: "1px solid #86efac",
+    borderRadius: 999,
+    padding: "1px 7px",
+    whiteSpace: "nowrap",
+  },
+  docPreviewFill: {
+    fontSize: 12,
+    color: "#0f172a",
+  },
+  docPreviewExplanation: {
+    fontSize: 12,
+    color: "#475569",
+    borderTop: "1px dashed #e2e8f0",
+    paddingTop: 6,
   },
   toggleLabel: {
     display: "flex",
@@ -10470,6 +9685,38 @@ const ui = {
     gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
     gap: 8,
   },
+  qualitySummaryRow: {
+    display: "flex",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 6,
+  },
+  qualitySummaryChip: {
+    display: "inline-flex",
+    alignItems: "center",
+    borderRadius: 999,
+    border: "1px solid #cbd5e1",
+    background: "#f8fafc",
+    color: "#0f172a",
+    fontSize: 12,
+    fontWeight: 700,
+    padding: "4px 10px",
+  },
+  qualityScoreGood: {
+    borderColor: "#86efac",
+    background: "#dcfce7",
+    color: "#166534",
+  },
+  qualityScoreWarn: {
+    borderColor: "#fcd34d",
+    background: "#fef3c7",
+    color: "#92400e",
+  },
+  qualityScoreBad: {
+    borderColor: "#fca5a5",
+    background: "#fee2e2",
+    color: "#991b1b",
+  },
   qualityRow: {
     alignItems: "center",
     justifyContent: "space-between",
@@ -10600,6 +9847,19 @@ const ui = {
     background: "#f8fafc",
     borderRadius: 999,
     padding: "2px 6px",
+  },
+  readonlyMetaChip: {
+    border: "1px solid #bfdbfe",
+    background: "#eff6ff",
+    color: "#1e40af",
+    borderRadius: 999,
+    padding: "8px 10px",
+    fontSize: 12,
+    fontWeight: 600,
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 36,
   },
   tagRow: {
     display: "flex",
@@ -10853,6 +10113,8 @@ const ui = {
     color: "#0f172a",
   },
 };
+
+
 
 
 

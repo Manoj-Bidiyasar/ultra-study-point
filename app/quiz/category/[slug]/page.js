@@ -1,74 +1,9 @@
 import Link from "next/link";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { serializeFirestoreData } from "@/lib/serialization/serializeFirestore";
+import { QUIZ_TAXONOMY_MAP } from "@/lib/quiz/taxonomy";
 
 export const dynamic = "force-dynamic";
-
-const CATEGORY_MAP = {
-  "current-affairs": {
-    title: "Current Affairs",
-    desc: "Daily and monthly current affairs quizzes.",
-    categories: ["Daily CA", "Monthly CA"],
-  },
-  "general-science": {
-    title: "General Science",
-    desc: "Physics, Biology, Chemistry practice sets.",
-    categories: ["General Science"],
-  },
-  "indian-gk": {
-    title: "Indian GK",
-    desc: "Polity, History, Geography practice sets.",
-    categories: ["Indian GK"],
-  },
-  "rajasthan-gk": {
-    title: "Rajasthan GK",
-    desc: "Culture, Polity, History practice sets.",
-    categories: ["Rajasthan GK"],
-  },
-  miscellaneous: {
-    title: "Miscellaneous",
-    desc: "Awards, firsts, and important days.",
-    categories: ["Miscellaneous"],
-  },
-  exams: {
-    title: "Exams by Pattern",
-    desc: "SSC, Patwar, RPSC and other exam mocks.",
-    categories: ["Exams by Pattern", "Exam", "Mock"],
-  },
-  "mock-marathon": {
-    title: "Mock Marathon",
-    desc: "Full-length practice tests.",
-    categories: ["Mock Marathon", "Mock"],
-  },
-  "quick-revision": {
-    title: "Quick Revision",
-    desc: "Short quizzes for quick practice.",
-    categories: ["Quick Revision"],
-  },
-  math: {
-    title: "Math",
-    desc: "Arithmetic, algebra, geometry practice sets.",
-    categories: ["Math", "Mathematics"],
-  },
-  reasoning: {
-    title: "Reasoning",
-    desc: "Logical, verbal, and non-verbal practice sets.",
-    categories: ["Reasoning", "Logical Reasoning"],
-  },
-};
-
-const SUBCATEGORY_MAP = {
-  "current-affairs": ["Daily CA", "Monthly CA"],
-  "general-science": ["Physics", "Chemistry", "Biology"],
-  "indian-gk": ["Polity", "Economy", "Geography", "History", "Culture"],
-  "rajasthan-gk": ["History", "Geography", "Polity", "Economy", "Culture"],
-  miscellaneous: ["Awards", "First in India", "Important Days"],
-  exams: ["SSC", "Patwar", "RPSC", "Railways"],
-  "mock-marathon": ["Full Length", "Sectional"],
-  "quick-revision": ["One Liners", "Mixed Practice"],
-  math: ["Arithmetic", "Algebra", "Geometry", "Trigonometry", "Mensuration"],
-  reasoning: ["Logical", "Verbal", "Non-Verbal", "Analytical"],
-};
 
 export default async function QuizCategoryPage(props) {
   const slug = props?.params?.slug || "";
@@ -77,9 +12,11 @@ export default async function QuizCategoryPage(props) {
     searchParams?.view === "full"
       ? "full"
       : "all";
+  const selectedSubcategoryId =
+    typeof searchParams?.subcat === "string" ? searchParams.subcat : "";
   const selectedExam =
     typeof searchParams?.exam === "string" ? searchParams.exam : "";
-  const meta = CATEGORY_MAP[slug];
+  const meta = QUIZ_TAXONOMY_MAP[slug];
 
   if (!meta) {
     return (
@@ -126,12 +63,31 @@ export default async function QuizCategoryPage(props) {
     serializeFirestoreData({ id: doc.id, ...doc.data() })
   );
 
-  const filtered = allQuizzes.filter((q) => {
+  const filteredByCategory = allQuizzes.filter((q) => {
+    const categoryId = String(q.quizMeta?.categoryId || q.categoryId || "").trim();
     const label = q.quizMeta?.category || q.category || "";
-    return meta.categories.some((cat) => label.includes(cat));
+    if (categoryId && categoryId === slug) return true;
+    return (meta.legacyCategories || []).some((cat) => label.includes(cat));
   });
 
-  const subcats = SUBCATEGORY_MAP[slug] || [];
+  const subcats = Array.isArray(meta?.subcategories) ? meta.subcategories : [];
+  const fallbackSubcatFromExam =
+    !selectedSubcategoryId && selectedExam
+      ? (subcats.find((s) => s.name === selectedExam)?.id || "")
+      : "";
+  const activeSubcategoryId = selectedSubcategoryId || fallbackSubcatFromExam;
+  const activeSubcategory = subcats.find((s) => s.id === activeSubcategoryId) || null;
+  const activeSubcategoryName = activeSubcategory?.name || "";
+
+  const filtered = filteredByCategory.filter((q) => {
+    if (!activeSubcategoryId && !activeSubcategoryName) return true;
+    const qSubId = String(q.quizMeta?.subcategoryId || q.subcategoryId || "").trim();
+    const qSubName = String(q.quizMeta?.subcategory || q.subcategory || "").trim();
+    if (qSubId && qSubId === activeSubcategoryId) return true;
+    if (activeSubcategoryName && qSubName && qSubName.toLowerCase() === activeSubcategoryName.toLowerCase()) return true;
+    return false;
+  });
+
   const showSubcats = subcats.length > 0;
 
   return (
@@ -144,7 +100,7 @@ export default async function QuizCategoryPage(props) {
                 Quiz Category
               </p>
               <h1 className="mt-2 text-2xl md:text-3xl font-semibold">
-                {meta.title}
+                {meta.name}
               </h1>
               <p className="mt-2 text-sm text-gray-600 max-w-xl">
                 {meta.desc}
@@ -162,19 +118,31 @@ export default async function QuizCategoryPage(props) {
 
           {showSubcats && slug !== "exams" && (
             <div className="mt-3 flex flex-nowrap gap-2 overflow-x-auto text-xs font-semibold">
-              <span className="rounded-full border border-gray-300 px-3 py-1 text-gray-600">
+              <Link
+                href={`/quiz/category/${slug}`}
+                className={`rounded-full border px-3 py-1 transition ${
+                  !activeSubcategoryId
+                    ? "border-emerald-500 bg-emerald-50 text-emerald-700"
+                    : "border-gray-300 text-gray-600 hover:border-gray-400"
+                }`}
+              >
                 All
-              </span>
+              </Link>
               <span className="rounded-full border border-gray-300 px-3 py-1 text-gray-600">
                 Full Test
               </span>
               {subcats.map((item) => (
-                <span
-                  key={item}
-                  className="rounded-full border border-gray-300 px-3 py-1 text-gray-600"
+                <Link
+                  key={item.id}
+                  href={`/quiz/category/${slug}?subcat=${encodeURIComponent(item.id)}`}
+                  className={`rounded-full border px-3 py-1 transition ${
+                    activeSubcategoryId === item.id
+                      ? "border-emerald-500 bg-emerald-50 text-emerald-700"
+                      : "border-gray-300 text-gray-600 hover:border-gray-400"
+                  }`}
                 >
-                  {item}
-                </span>
+                  {item.name}
+                </Link>
               ))}
             </div>
           )}
@@ -184,7 +152,7 @@ export default async function QuizCategoryPage(props) {
               <Link
                 href={`/quiz/category/${slug}`}
                 className={`rounded-full border px-3 py-1 transition ${
-                  !selectedExam
+                  !activeSubcategoryId
                     ? "border-emerald-500 bg-emerald-50 text-emerald-700"
                     : "border-gray-300 text-gray-600 hover:border-gray-400"
                 }`}
@@ -192,12 +160,12 @@ export default async function QuizCategoryPage(props) {
                 All
               </Link>
               {subcats.map((item) => {
-                const isActive = selectedExam === item;
+                const isActive = activeSubcategoryId === item.id;
                 return (
                   <Link
-                    key={item}
-                    href={`/quiz/category/${slug}?exam=${encodeURIComponent(
-                      item
+                    key={item.id}
+                    href={`/quiz/category/${slug}?subcat=${encodeURIComponent(
+                      item.id
                     )}`}
                     className={`rounded-full border px-3 py-1 transition ${
                       isActive
@@ -205,14 +173,14 @@ export default async function QuizCategoryPage(props) {
                         : "border-gray-300 text-gray-600 hover:border-gray-400"
                     }`}
                   >
-                    {item}
+                    {item.name}
                   </Link>
                 );
               })}
             </div>
           )}
 
-          {showSubcats && slug === "exams" && selectedExam && (
+          {showSubcats && slug === "exams" && activeSubcategoryId && (
             <div className="mt-3 flex flex-wrap gap-2 text-xs font-semibold">
               <span className="rounded-full border border-gray-300 px-3 py-1 text-gray-600">
                 Full Test

@@ -39,6 +39,7 @@ import SeoSection from "@/components/admin/sections/SeoSection";
 import RelatedContentSection from "@/components/admin/sections/RelatedContentSection";
 import WorkflowSection from "@/components/admin/sections/WorkflowSection";
 import QuizContentEditor from "@/components/admin/sections/QuizContentEditor";
+import PyqContentEditor from "@/components/admin/sections/PyqContentEditor";
 import CollapsibleCard from "@/components/admin/ui/CollapsibleCard";
 import StatusBadge from "@/components/admin/ui/StatusBadge";
 import StickySidebar from "@/components/admin/ui/StickySidebar";
@@ -106,11 +107,24 @@ notesMeta: rawData.notesMeta || {
   subCategoryName: "",
   topic: "",
 },
-pyqMeta: rawData.pyqMeta || {
-  exam: rawData.exam || "",
-  year: rawData.year || "",
-  subject: rawData.subject || "",
-  hideAnswersDefault: rawData.hideAnswersDefault ?? true,
+pyqMeta: {
+  exam: rawData.pyqMeta?.exam || rawData.exam || "",
+  year: rawData.pyqMeta?.year || rawData.year || "",
+  subject: rawData.pyqMeta?.subject || rawData.subject || "",
+  course: rawData.pyqMeta?.course || rawData.course || "",
+  type: rawData.pyqMeta?.type || rawData.type || "",
+  examYearDisplayMode: rawData.pyqMeta?.examYearDisplayMode || "auto",
+  categoryMode: rawData.pyqMeta?.categoryMode || "exam",
+  examCategoryId: rawData.pyqMeta?.examCategoryId || "",
+  subjectCategoryId: rawData.pyqMeta?.subjectCategoryId || "",
+  pyqCategoryId:
+    rawData.pyqMeta?.pyqCategoryId ||
+    rawData.pyqCategoryId ||
+    "",
+  hideAnswersDefault:
+    rawData.pyqMeta?.hideAnswersDefault ??
+    rawData.hideAnswersDefault ??
+    true,
 },
 quizMeta: {
   durationMinutes: rawData.durationMinutes ?? rawData.quizMeta?.durationMinutes ?? 60,
@@ -533,6 +547,48 @@ const docRef = doc(
     return errors;
   }
 
+  function derivePyqFromQuestions(questions = []) {
+    const list = Array.isArray(questions) ? questions : [];
+    const subjects = [];
+    const exams = [];
+    const years = [];
+
+    const push = (arr, value) => {
+      const v = String(value || "").trim();
+      if (v) arr.push(v);
+    };
+
+    list.forEach((q) => {
+      const meta = q?.meta || {};
+      push(subjects, meta.subject);
+      push(subjects, q?.subject);
+
+      const rows = Array.isArray(meta.pyqData) ? meta.pyqData : [];
+      rows.forEach((r) => {
+        push(exams, r?.exam);
+        push(years, r?.year);
+      });
+
+      push(exams, meta.exam);
+      push(exams, q?.exam);
+      push(years, meta.year);
+      push(years, q?.year);
+    });
+
+    const top = (arr) => {
+      const freq = new Map();
+      arr.forEach((v) => freq.set(v, (freq.get(v) || 0) + 1));
+      if (freq.size === 0) return "";
+      return [...freq.entries()].sort((a, b) => b[1] - a[1])[0][0];
+    };
+
+    return {
+      exam: top(exams),
+      year: top(years),
+      subject: top(subjects),
+    };
+  }
+
   async function saveToFirestore({ mode = "auto" } = {}) {
     if (!currentUserProfile) return false;
     if (isLocked) return false;
@@ -576,6 +632,16 @@ const docRef = doc(
             ? "scheduled"
             : "draft"
           : state.status;
+      const derivedPyq = derivePyqFromQuestions(state.quizMeta?.questions || []);
+      const nextPyqMeta =
+        type === "pyq"
+          ? {
+              ...state.pyqMeta,
+              exam: derivedPyq.exam || state.pyqMeta?.exam || "",
+              year: derivedPyq.year || state.pyqMeta?.year || "",
+              subject: derivedPyq.subject || state.pyqMeta?.subject || "",
+            }
+          : {};
 
       const payload = {
         id: state.id,
@@ -588,7 +654,7 @@ const docRef = doc(
         dailyMeta: isCA ? state.dailyMeta : {},
         monthlyMeta: isCA ? state.monthlyMeta : {},
         notesMeta: type === "notes" ? state.notesMeta : {},
-        pyqMeta: type === "pyq" ? state.pyqMeta : {},
+        pyqMeta: nextPyqMeta,
         quizMeta: type === "quiz" || type === "pyq" ? state.quizMeta : {},
         ...(type === "quiz" || type === "pyq"
           ? {
@@ -600,10 +666,17 @@ const docRef = doc(
               questions: state.quizMeta?.questions || [],
               ...(type === "pyq"
                 ? {
-                    exam: state.pyqMeta?.exam || "",
-                    year: state.pyqMeta?.year || "",
-                    subject: state.pyqMeta?.subject || "",
-                    hideAnswersDefault: state.pyqMeta?.hideAnswersDefault ?? true,
+                    exam: nextPyqMeta.exam || "",
+                    year: nextPyqMeta.year || "",
+                    subject: nextPyqMeta.subject || "",
+                    course: nextPyqMeta.course || "",
+                    type: nextPyqMeta.type || "",
+                    pyqCategoryId:
+                      nextPyqMeta.pyqCategoryId ||
+                      (nextPyqMeta.categoryMode === "subject"
+                        ? nextPyqMeta.subjectCategoryId || ""
+                        : nextPyqMeta.examCategoryId || ""),
+                    hideAnswersDefault: nextPyqMeta.hideAnswersDefault ?? true,
                   }
                 : {}),
             }
@@ -1220,7 +1293,11 @@ useEffect(() => {
           <div style={ui.card}>
             <div style={ui.sectionHeader}>
               <h3 style={ui.sectionTitle}>
-                {type === "quiz" || type === "pyq" ? "Quiz Content" : "Content"}
+                {type === "quiz"
+                  ? "Quiz Content"
+                  : type === "pyq"
+                  ? "PYQ Content"
+                  : "Content"}
               </h3>
               <div style={ui.sectionMeta}>
                 <span style={ui.contentStatusText}>
@@ -1237,7 +1314,9 @@ useEffect(() => {
                 {saveErrors.length > 0 && (
                   <div style={ui.warn}>
                     <div style={{ fontWeight: 600, marginBottom: 6 }}>
-                      Quiz validation errors:
+                      {type === "pyq"
+                        ? "PYQ validation errors:"
+                        : "Quiz validation errors:"}
                     </div>
                     <ul style={{ margin: 0, paddingLeft: 18 }}>
                       {saveErrors.map((e, i) => (
@@ -1246,17 +1325,52 @@ useEffect(() => {
                     </ul>
                   </div>
                 )}
-                <QuizContentEditor
-                  title={state.title}
-                  description={state.summary}
-                  value={state.quizMeta}
-                  isLocked={isLocked}
-                  role={role}
-                  docId={state.id}
-                  onChange={(quizMeta) =>
-                    setState((s) => ({ ...s, quizMeta }))
-                  }
-                />
+                {type === "pyq" ? (
+                  <PyqContentEditor
+                    title={state.title}
+                    description={state.summary}
+                    value={state.quizMeta}
+                    examYearDisplayMode={state.pyqMeta?.examYearDisplayMode || "auto"}
+                    hideAnswersDefault={state.pyqMeta?.hideAnswersDefault ?? true}
+                    isLocked={isLocked}
+                    role={role}
+                    docId={state.id}
+                    onChange={(quizMeta) =>
+                      setState((s) => ({ ...s, quizMeta }))
+                    }
+                    onExamYearDisplayModeChange={(examYearDisplayMode) =>
+                      setState((s) => ({
+                        ...s,
+                        pyqMeta: {
+                          ...(s.pyqMeta || {}),
+                          examYearDisplayMode:
+                            String(examYearDisplayMode || "auto"),
+                        },
+                      }))
+                    }
+                    onHideAnswersDefaultChange={(hideAnswersDefault) =>
+                      setState((s) => ({
+                        ...s,
+                        pyqMeta: {
+                          ...(s.pyqMeta || {}),
+                          hideAnswersDefault: !!hideAnswersDefault,
+                        },
+                      }))
+                    }
+                  />
+                ) : (
+                  <QuizContentEditor
+                    title={state.title}
+                    description={state.summary}
+                    value={state.quizMeta}
+                    isLocked={isLocked}
+                    role={role}
+                    docId={state.id}
+                    onChange={(quizMeta) =>
+                      setState((s) => ({ ...s, quizMeta }))
+                    }
+                  />
+                )}
               </>
             ) : (
               <EditorLayout

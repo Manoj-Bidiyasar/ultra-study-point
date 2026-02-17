@@ -11,8 +11,64 @@ function normalizeText(value) {
   return String(value || "").toLowerCase().replace(/\s+/g, " ").trim();
 }
 
+function toYearValue(value) {
+  const year = Number.parseInt(String(value || "").trim(), 10);
+  return Number.isFinite(year) ? year : -1;
+}
+
+function getQuestionExamYearBadges(question, fallbackData) {
+  const rows = Array.isArray(question?.meta?.pyqData) ? question.meta.pyqData : [];
+  const explicitExams = Array.isArray(question?.meta?.pyqExams) ? question.meta.pyqExams : [];
+  const fallbackExam = String(
+    question?.meta?.exam || question?.exam || fallbackData?.exam || ""
+  ).trim();
+  const fallbackYear = String(
+    question?.meta?.year || question?.year || fallbackData?.year || ""
+  ).trim();
+
+  const dedupe = new Map();
+  rows.forEach((row) => {
+    const exam = String(row?.exam || "").trim();
+    const year = String(row?.year || "").trim();
+    if (!exam && !year) return;
+    const key = `${exam.toLowerCase()}|${year}`;
+    if (!dedupe.has(key)) {
+      dedupe.set(key, { exam, year });
+    }
+  });
+
+  explicitExams.forEach((examName) => {
+    const exam = String(examName || "").trim();
+    if (!exam) return;
+    const key = `${exam.toLowerCase()}|`;
+    if (!dedupe.has(key)) {
+      dedupe.set(key, { exam, year: "" });
+    }
+  });
+
+  if (dedupe.size === 0 && (fallbackExam || fallbackYear)) {
+    const key = `${fallbackExam.toLowerCase()}|${fallbackYear}`;
+    dedupe.set(key, { exam: fallbackExam, year: fallbackYear });
+  }
+
+  return Array.from(dedupe.values())
+    .sort((a, b) => {
+      const yearDiff = toYearValue(b.year) - toYearValue(a.year);
+      if (yearDiff !== 0) return yearDiff;
+      return a.exam.localeCompare(b.exam);
+    })
+    .map((entry) =>
+      String([entry.exam, entry.year].filter(Boolean).join(" ")).trim()
+    )
+    .filter(Boolean);
+}
+
 export default function PyqDetailClient({ data }) {
   const questions = Array.isArray(data?.questions) ? data.questions : [];
+  const safeQuestions = Array.isArray(questions) ? questions : [];
+  const showAnswersByDefault =
+    (data?.pyqMeta?.hideAnswersDefault ?? data?.hideAnswersDefault ?? true) === false;
+  const showExplanation = data?.rules?.showExplanation !== false;
   const [search, setSearch] = useState("");
   const [difficulty, setDifficulty] = useState("all");
   const [tag, setTag] = useState("all");
@@ -22,15 +78,15 @@ export default function PyqDetailClient({ data }) {
 
   const availableTags = useMemo(() => {
     const tags = new Set();
-    questions.forEach((q) => {
+    safeQuestions.forEach((q) => {
       (Array.isArray(q.tags) ? q.tags : []).forEach((t) => tags.add(t));
     });
     return Array.from(tags);
-  }, [questions]);
+  }, [safeQuestions]);
 
   const filtered = useMemo(() => {
     const s = normalizeText(search);
-    return questions.filter((q) => {
+    return safeQuestions.filter((q) => {
       const matchSearch = !s || normalizeText(q.prompt).includes(s);
       const matchDiff =
         difficulty === "all" || (q.difficulty || "medium") === difficulty;
@@ -44,7 +100,7 @@ export default function PyqDetailClient({ data }) {
         String(data?.year || "").toLowerCase() === yearChip;
       return matchSearch && matchDiff && matchTag && matchExam && matchYear;
     });
-  }, [questions, search, difficulty, tag, examChip, yearChip, data?.exam, data?.year]);
+  }, [safeQuestions, search, difficulty, tag, examChip, yearChip, data?.exam, data?.year]);
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">
@@ -57,8 +113,7 @@ export default function PyqDetailClient({ data }) {
             {data?.title || "PYQ Paper"}
           </h1>
           <div className="mt-2 text-sm text-gray-500">
-            {data?.exam || "Exam"} • {data?.year || "Year"} •{" "}
-            {questions.length} Questions
+            Total Questions: {safeQuestions.length}
           </div>
           {data?.description && (
             <p className="mt-4 text-sm text-gray-600 max-w-3xl">
@@ -134,64 +189,111 @@ export default function PyqDetailClient({ data }) {
               )}
             </div>
             <div className="text-xs text-gray-500">
-              Showing {filtered.length} / {questions.length}
+              Showing {Array.isArray(filtered) ? filtered.length : 0} / {safeQuestions.length}
             </div>
           </div>
         </div>
 
         <div className="mt-8 grid gap-4">
-          {filtered.length === 0 && (
+          {(Array.isArray(filtered) ? filtered.length : 0) === 0 && (
             <div className="rounded-2xl border border-dashed border-gray-300 p-6 text-gray-500">
               No questions match your filters.
             </div>
           )}
 
-          {filtered.map((q, idx) => (
+          {(Array.isArray(filtered) ? filtered : []).map((q, idx) => (
             <div
               key={q.id || idx}
               className="rounded-2xl border border-gray-200 bg-white p-5"
             >
-              <div className="text-sm text-gray-500">
-                Question {idx + 1}
+              {(() => {
+                const shouldRevealAnswers = showAnswersByDefault || !!openAnswers[q.id || idx];
+                const answerIndexes =
+                  q?.type === "multiple"
+                    ? (Array.isArray(q?.answer) ? q.answer.map(Number) : [])
+                    : q?.type === "single"
+                    ? [Number(q?.answer)]
+                    : [];
+                return (
+                  <>
+              <div className="flex flex-wrap items-center gap-2 leading-6">
+                <span className="text-sm font-semibold text-gray-500 leading-6">
+                  Q{idx + 1}.
+                </span>
+                <span className="text-base font-semibold text-gray-900 leading-6">
+                  {q.prompt || "Untitled question"}
+                </span>
               </div>
-              <div className="mt-2 text-base font-semibold text-gray-900">
-                {q.prompt || "Untitled question"}
-              </div>
+              {(() => {
+                const examBadges = getQuestionExamYearBadges(q, data);
+                const safeExamBadges = Array.isArray(examBadges) ? examBadges : [];
+                if (safeExamBadges.length === 0) return null;
+                return (
+                  <div className="mt-2 flex justify-end">
+                    <div className="inline-flex max-w-full flex-wrap gap-2">
+                      {safeExamBadges.map((badge) => (
+                        <span
+                          key={`${q.id || idx}-${badge}`}
+                          className="inline-flex items-center rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-[11px] font-semibold text-sky-800"
+                        >
+                          {badge}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
 
               {Array.isArray(q.options) && q.options.length > 0 && (
                 <div className="mt-3 grid gap-2 text-sm text-gray-600">
                   {q.options.map((opt, oIdx) => (
                     <div
                       key={`${q.id || idx}-opt-${oIdx}`}
-                      className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-2"
+                      className={`rounded-xl border px-4 py-2 ${
+                        shouldRevealAnswers && answerIndexes.includes(oIdx)
+                          ? "border-emerald-300 bg-emerald-50 text-emerald-900"
+                          : "border-gray-200 bg-gray-50"
+                      }`}
                     >
-                      <span className="text-gray-500 mr-2">
-                        {indexToLetter(oIdx)}.
-                      </span>
-                      {opt}
+                      <div className="flex items-center justify-between gap-3">
+                        <span>
+                          <span className="text-gray-500 mr-2">
+                            {indexToLetter(oIdx)}.
+                          </span>
+                          {opt}
+                        </span>
+                        {shouldRevealAnswers && answerIndexes.includes(oIdx) ? (
+                          <span className="rounded-full border border-emerald-300 bg-emerald-100 px-2 py-0.5 text-[11px] font-semibold text-emerald-800">
+                            Correct
+                          </span>
+                        ) : null}
+                      </div>
                     </div>
                   ))}
                 </div>
               )}
 
               {(q.answer !== undefined || q.explanation) && (
-                <div className="mt-3">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setOpenAnswers((s) => ({
-                        ...s,
-                        [q.id || idx]: !s[q.id || idx],
-                      }))
-                    }
-                    className="rounded-full border border-emerald-500 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700"
-                  >
-                    {openAnswers[q.id || idx] ? "Hide Answer" : "Show Answer"}
-                  </button>
-                </div>
+                !showAnswersByDefault ? (
+                  <div className="mt-3">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setOpenAnswers((s) => ({
+                          ...s,
+                          [q.id || idx]: !s[q.id || idx],
+                        }))
+                      }
+                      className="rounded-full border border-emerald-500 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700"
+                    >
+                      {openAnswers[q.id || idx] ? "Hide Answer" : "Show Answer"}
+                    </button>
+                  </div>
+                ) : null
               )}
 
-              {openAnswers[q.id || idx] &&
+              {!showAnswersByDefault &&
+                openAnswers[q.id || idx] &&
                 q.answer !== undefined &&
                 q.answer !== null && (
                   <div className="mt-3 text-xs text-emerald-700">
@@ -200,11 +302,16 @@ export default function PyqDetailClient({ data }) {
                       : indexToLetter(q.answer)}
                   </div>
                 )}
-              {openAnswers[q.id || idx] && q.explanation && (
+              {showExplanation &&
+                (showAnswersByDefault || openAnswers[q.id || idx]) &&
+                q.explanation && (
                 <div className="mt-2 text-xs text-gray-500">
                   Explanation: {q.explanation}
                 </div>
               )}
+                  </>
+                );
+              })()}
             </div>
           ))}
         </div>
@@ -212,3 +319,4 @@ export default function PyqDetailClient({ data }) {
     </div>
   );
 }
+

@@ -197,6 +197,11 @@ export default function QuizClient({
   }, [questions, quiz?.sections, quiz?.scoring?.defaultPoints, quiz?.scoring?.overallMarks, marksMode]);
 
   const scoringConfig = useMemo(() => {
+    const formatMaxTwoDecimals = (val) => {
+      const n = Number(val || 0);
+      if (!Number.isFinite(n)) return "0";
+      return Number.isInteger(n) ? String(n) : n.toFixed(2).replace(/\.?0+$/, "");
+    };
     const negative = quiz?.scoring?.negativeMarking || { type: "none", value: 0 };
     let negativeValue = 0;
     let negativeLabel = "None";
@@ -205,15 +210,15 @@ export default function QuizClient({
       const den = Number(negative?.denominator);
       if (Number.isFinite(num) && Number.isFinite(den) && den !== 0) {
         negativeValue = num / den;
-        negativeLabel = `-${num}/${den}`;
+        negativeLabel = `-${formatMaxTwoDecimals(negativeValue)}`;
       } else {
         negativeValue = Number(negative.value || 0);
-        negativeLabel = negativeValue > 0 ? `-${negativeValue}` : "None";
+        negativeLabel = negativeValue > 0 ? `-${formatMaxTwoDecimals(negativeValue)}` : "None";
       }
     }
     if (negative.type === "custom") negativeValue = Number(negative.value || 0);
     if (negative.type === "custom") {
-      negativeLabel = negativeValue > 0 ? `-${negativeValue}` : "None";
+      negativeLabel = negativeValue > 0 ? `-${formatMaxTwoDecimals(negativeValue)}` : "None";
     }
     if (negative.type === "none") {
       negativeLabel = "None";
@@ -286,6 +291,11 @@ export default function QuizClient({
     if (!Number.isFinite(n)) return "0";
     return Number.isInteger(n) ? String(n) : n.toFixed(2).replace(/\.?0+$/, "");
   };
+  const formatResultMarks = (val) => {
+    const n = Number(val || 0);
+    if (!Number.isFinite(n)) return "0";
+    return Number.isInteger(n) ? String(n) : n.toFixed(2).replace(/\.?0+$/, "");
+  };
   const scorePercent = submitted
     ? Math.max(0, Math.min(100, (submitted.score / (submitted.maxScore || 1)) * 100))
     : 0;
@@ -297,6 +307,39 @@ export default function QuizClient({
       : scorePercent < 75
       ? "#eab308"
       : "#22c55e";
+  const getPerformanceMeta = (percent) => {
+    if (percent >= 85) {
+      return {
+        label: t("Excellent", "\u0909\u0924\u094d\u0915\u0943\u0937\u094d\u091f"),
+        className: "bg-emerald-100 text-emerald-800 border-emerald-200",
+        line1: t("Outstanding accuracy and pace.", "\u0936\u093e\u0928\u0926\u093e\u0930 \u0938\u091f\u0940\u0915\u0924\u093e \u0914\u0930 \u0930\u095e\u094d\u0924\u093e\u0930\u0964"),
+        line2: t("Keep this consistency for the real exam.", "\u0905\u0938\u0932\u0940 \u092a\u0930\u0940\u0915\u094d\u0937\u093e \u0915\u0947 \u0932\u093f\u090f \u092f\u0939 \u0932\u092f \u092c\u0928\u093e\u090f \u0930\u0916\u0947\u0902\u0964"),
+      };
+    }
+    if (percent >= 70) {
+      return {
+        label: t("Very Good", "\u092c\u0939\u0941\u0924 \u0905\u091a\u094d\u091b\u093e"),
+        className: "bg-blue-100 text-blue-800 border-blue-200",
+        line1: t("Strong performance overall.", "\u0915\u0941\u0932 \u092e\u093f\u0932\u093e\u0915\u0930 \u0915\u093e\u0930\u094d\u092f\u0928\u093f\u0937\u094d\u092a\u093e\u0926\u0928 \u0905\u091a\u094d\u091b\u093e \u0939\u0948\u0964"),
+        line2: t("Focus on weak topics to move higher.", "\u0905\u0917\u0932\u093e \u0938\u094d\u0915\u094b\u0930 \u092c\u0922\u093c\u093e\u0928\u0947 \u0915\u0947 \u0932\u093f\u090f \u0915\u092e\u091c\u094b\u0930 \u091f\u0949\u092a\u093f\u0915 \u092a\u0930 \u0927\u094d\u092f\u093e\u0928 \u0926\u0947\u0902\u0964"),
+      };
+    }
+    if (percent >= 50) {
+      return {
+        label: t("Good", "\u0905\u091a\u094d\u091b\u093e"),
+        className: "bg-amber-100 text-amber-900 border-amber-200",
+        line1: t("Decent attempt with scope to improve.", "\u0915\u094b\u0936\u093f\u0936 \u0905\u091a\u094d\u091b\u0940 \u0939\u0948, \u0938\u0941\u0927\u093e\u0930 \u0915\u0940 \u0917\u0941\u0902\u091c\u093e\u0907\u0936 \u0939\u0948\u0964"),
+        line2: t("Revise mistakes and improve speed.", "\u0917\u0932\u0924\u093f\u092f\u094b\u0902 \u0915\u0940 \u0938\u092e\u0940\u0915\u094d\u0937\u093e \u0915\u0930\u0947\u0902 \u0914\u0930 \u0938\u094d\u092a\u0940\u0921 \u092c\u0922\u093c\u093e\u090f\u0902\u0964"),
+      };
+    }
+    return {
+      label: t("Needs Improvement", "\u0938\u0941\u0927\u093e\u0930 \u0915\u0940 \u091c\u0930\u0942\u0930\u0924"),
+      className: "bg-red-100 text-red-800 border-red-200",
+      line1: t("Do not worry, build step by step.", "\u091a\u093f\u0902\u0924\u093e \u0928 \u0915\u0930\u0947\u0902, \u0915\u0926\u092e-\u0926\u0930-\u0915\u0926\u092e \u0938\u0941\u0927\u093e\u0930 \u0915\u0930\u0947\u0902\u0964"),
+      line2: t("Practice daily and reattempt this test.", "\u0930\u094b\u091c\u093c \u0905\u092d\u094d\u092f\u093e\u0938 \u0915\u0930\u0947\u0902 \u0914\u0930 \u092f\u0939 \u091f\u0947\u0938\u094d\u091f \u092b\u093f\u0930 \u0938\u0947 \u0926\u0947\u0902\u0964"),
+    };
+  };
+  const performanceMeta = getPerformanceMeta(scorePercent);
 
   useEffect(() => {
     if (languageMode !== "dual") {
@@ -950,63 +993,66 @@ export default function QuizClient({
         <div className="bg-white rounded-xl border p-6">
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <h1 className="text-2xl font-bold">{quiz.title}</h1>
-            {previewFull && (
-              <button
-                className="px-3 py-1.5 rounded border text-sm"
-                onClick={resetPreviewState}
-              >
-                Reset Preview
-              </button>
-            )}
+            <div className="flex items-center gap-2 flex-wrap justify-end">
+              {startedAt && !submitted && (sectionTimeLeft !== null || timeLeft !== null) && (
+                <div className="px-3 py-1.5 rounded border bg-slate-50 text-sm font-semibold text-slate-700">
+                  {sectionTimeLeft !== null ? "Section Time Left" : "Time Left"}:{" "}
+                  {Math.floor((sectionTimeLeft !== null ? sectionTimeLeft : timeLeft) / 60000)}:
+                  {String(
+                    Math.floor(
+                      (((sectionTimeLeft !== null ? sectionTimeLeft : timeLeft) % 60000) / 1000)
+                    )
+                  ).padStart(2, "0")}
+                </div>
+              )}
+              {previewFull && (
+                <button
+                  className="px-3 py-1.5 rounded border text-sm"
+                  onClick={resetPreviewState}
+                >
+                  Reset Preview
+                </button>
+              )}
+            </div>
           </div>
           {quiz.description && (
             <p className="text-slate-600 mt-2">{quiz.description}</p>
           )}
 
-        <div className="mt-4 text-sm text-slate-600 flex gap-4 flex-wrap">
-          <div>
-            Questions: <b>{questions.length}</b>
-          </div>
+          <div className="mt-4 text-sm text-slate-600 flex gap-4 flex-wrap">
+            <div>
+              Total Questions: <b>{questions.length}</b>
+            </div>
+            <div>
+              Total Marks: <b>{formatMarks(totalMarks)}</b>
+            </div>
+            <div>
+              Total Time:{" "}
+              <b>
+                {totalTimeMinutes !== null ? `${totalTimeMinutes} min` : "No limit"}
+              </b>
+            </div>
+            {quiz?.rules?.useSections === true && (
+              <div>
+                Sections: <b>{sections.length}</b>
+              </div>
+            )}
             {(shuffleQuestions || shuffleOptions || shuffleSections) && (
               <div className="text-xs px-2 py-0.5 rounded-full border bg-slate-50 text-slate-700">
                 Shuffled
               </div>
             )}
-            {!hasSectionTiming && (
-              <div>
-                Time:{" "}
-                <b>
-                  {quiz.durationMinutes ? `${quiz.durationMinutes} min` : "No limit"}
-                </b>
-              </div>
-            )}
-            {hasSectionTiming && (
-              <div>
-                Section Timing: <b>Enabled</b>
-              </div>
-            )}
-        </div>
-
-          {timeLeft !== null && (
-            <div className="mt-3 text-sm font-semibold">
-              Time left:{" "}
-              {Math.floor(timeLeft / 60000)}:
-              {String(Math.floor((timeLeft % 60000) / 1000)).padStart(2, "0")}
-            </div>
-          )}
-
-          {sectionTimeLeft !== null && (
-            <div className="mt-2 text-sm font-semibold">
-              Section time left:{" "}
-              {Math.floor(sectionTimeLeft / 60000)}:
-              {String(Math.floor((sectionTimeLeft % 60000) / 1000)).padStart(2, "0")}
-            </div>
-          )}
+          </div>
         </div>
 
         {submitted && startedAt && (
           <div className="mt-6 bg-white rounded-xl border p-6">
-            <h2 className="text-xl font-semibold">{t("Your Result", "\u0906\u092a\u0915\u093e \u092a\u0930\u093f\u0923\u093e\u092e")}</h2>
+            <div className="flex items-center justify-between gap-3 flex-wrap">
+              <h2 className="text-xl font-semibold">{t("Your Result", "\u0906\u092a\u0915\u093e \u092a\u0930\u093f\u0923\u093e\u092e")}</h2>
+              <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${performanceMeta.className}`}>
+                {performanceMeta.label}
+              </span>
+            </div>
             <div className="mt-3 flex flex-wrap gap-6 items-center">
               <div className="relative w-28 h-28">
                 <div
@@ -1016,17 +1062,21 @@ export default function QuizClient({
                   }}
                 />
                 <div className="absolute inset-2 rounded-full bg-white border flex flex-col items-center justify-center text-sm font-semibold">
-                  <div>{submitted.score}</div>
-                  <div className="text-xs text-slate-500">/ {submitted.maxScore}</div>
+                  <div>{formatResultMarks(submitted.score)}</div>
+                  <div className="text-xs text-slate-500">/ {formatResultMarks(submitted.maxScore)}</div>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>Score: <b>{submitted.score}</b></div>
-                <div>Max: <b>{submitted.maxScore}</b></div>
+                <div>Score: <b>{formatResultMarks(submitted.score)}</b></div>
+                <div>Max: <b>{formatResultMarks(submitted.maxScore)}</b></div>
                 <div>Correct: <b>{submitted.correctCount}</b></div>
                 <div>Wrong: <b>{submitted.wrongCount}</b></div>
                 <div>Unattempted: <b>{submitted.blankCount}</b></div>
               </div>
+            </div>
+            <div className={`mt-4 rounded-lg border px-3 py-2 text-sm ${performanceMeta.className}`}>
+              <div>{performanceMeta.line1}</div>
+              <div>{performanceMeta.line2}</div>
             </div>
           </div>
         )}
@@ -1037,14 +1087,14 @@ export default function QuizClient({
               <div className="bg-white rounded-xl border overflow-hidden">
                 <div className="px-5 py-3 bg-slate-800 text-white flex items-center justify-between gap-3 flex-wrap">
                   <div className="font-semibold text-base">
-                    {quiz?.title || t("Mock Test", "\u092e\u0949\u0915 \u091f\u0947\u0938\u094d\u091f")}
+                    {t("Before You Start", "\u0936\u0941\u0930\u0942 \u0915\u0930\u0928\u0947 \u0938\u0947 \u092a\u0939\u0932\u0947")}
                   </div>
                   <div className="text-xs text-slate-200">
                     {t("Read instructions carefully before starting.", "\u0936\u0941\u0930\u0942 \u0915\u0930\u0928\u0947 \u0938\u0947 \u092a\u0939\u0932\u0947 \u0928\u093f\u0930\u094d\u0926\u0947\u0936 \u0927\u094d\u092f\u093e\u0928 \u0938\u0947 \u092a\u0922\u093c\u0947\u0902\u0964")}
                   </div>
                 </div>
 
-                <div className="p-5 grid gap-4 md:grid-cols-[minmax(0,1fr)_320px]">
+                <div className="p-5">
                   <div className="space-y-3">
                     <div className="text-sm font-semibold text-slate-800">
                       {t("Important Instructions", "\u092e\u0939\u0924\u094d\u0935\u092a\u0942\u0930\u094d\u0923 \u0928\u093f\u0930\u094d\u0926\u0947\u0936")}
@@ -1107,34 +1157,6 @@ export default function QuizClient({
                       </div>
                     )}
                   </div>
-
-                  <div className="rounded-lg border bg-slate-50 p-4 h-fit">
-                    <div className="text-xs font-semibold uppercase tracking-wide text-slate-700">
-                      {t("Exam Summary", "\u092a\u0930\u0940\u0915\u094d\u0937\u093e \u0938\u093e\u0930\u093e\u0902\u0936")}
-                    </div>
-                    <div className="mt-3 grid grid-cols-2 gap-2 text-sm text-slate-700">
-                      <div className="rounded border bg-white px-3 py-2">
-                        <div className="text-[11px] text-slate-500">{t("Questions", "\u092a\u094d\u0930\u0936\u094d\u0928")}</div>
-                        <div className="font-semibold">{questions.length}</div>
-                      </div>
-                      <div className="rounded border bg-white px-3 py-2">
-                        <div className="text-[11px] text-slate-500">{t("Marks", "\u0905\u0902\u0915")}</div>
-                        <div className="font-semibold">{formatMarks(totalMarks)}</div>
-                      </div>
-                      <div className="rounded border bg-white px-3 py-2">
-                        <div className="text-[11px] text-slate-500">{t("Time", "\u0938\u092e\u092f")}</div>
-                        <div className="font-semibold">
-                          {totalTimeMinutes !== null ? `${totalTimeMinutes} min` : t("No limit", "\u0915\u094b\u0908 \u0938\u0940\u092e\u093e \u0928\u0939\u0940\u0902")}
-                        </div>
-                      </div>
-                      <div className="rounded border bg-white px-3 py-2">
-                        <div className="text-[11px] text-slate-500">{t("Negative", "\u0928\u0947\u0917\u0947\u091f\u093f\u0935")}</div>
-                        <div className="font-semibold">
-                          {scoringConfig.negativeValue > 0 ? scoringConfig.negativeLabel : t("None", "\u0928\u0939\u0940\u0902")}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
                 </div>
               </div>
             )}
@@ -1162,7 +1184,7 @@ export default function QuizClient({
                 </div>
               </div>
             )}
-            {startedAt && (
+            {startedAt && quiz?.rules?.useSections === true && (
               <div className="bg-white rounded-xl border p-4">
                 <div className="flex items-center gap-2">
                   <div className="font-semibold">
@@ -1173,9 +1195,6 @@ export default function QuizClient({
                       Section Locked
                     </span>
                   )}
-                </div>
-                <div className="text-sm text-slate-600">
-                  Section {currentSectionIndex + 1} of {sections.length}
                 </div>
               </div>
             )}
@@ -1582,7 +1601,7 @@ export default function QuizClient({
                             <td className="p-2 border">{stats.wrongCount}</td>
                             <td className="p-2 border">{stats.blankCount}</td>
                             <td className="p-2 border">
-                              {stats.score} / {stats.maxScore}
+                              {formatResultMarks(stats.score)} / {formatResultMarks(stats.maxScore)}
                             </td>
                           </tr>
                         );
@@ -1593,7 +1612,7 @@ export default function QuizClient({
                         <td className="p-2 border">{submitted.wrongCount}</td>
                         <td className="p-2 border">{submitted.blankCount}</td>
                         <td className="p-2 border">
-                          {submitted.score} / {submitted.maxScore}
+                          {formatResultMarks(submitted.score)} / {formatResultMarks(submitted.maxScore)}
                         </td>
                       </tr>
                     </tbody>
