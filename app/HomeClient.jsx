@@ -2,9 +2,18 @@
 
 import Link from "next/link";
 
+const toJsDate = (value) => {
+  if (!value) return null;
+  if (value instanceof Date) return value;
+  if (typeof value?.toDate === "function") return value.toDate();
+  if (typeof value?.seconds === "number") return new Date(value.seconds * 1000);
+  const d = new Date(value);
+  return isNaN(d.getTime()) ? null : d;
+};
+
 const formatDailyDate = (caDate) => {
-  if (!caDate) return { day: "??", month: "???" };
-  const d = new Date(caDate);
+  const d = toJsDate(caDate);
+  if (!d) return { day: "??", month: "???" };
   return {
     day: d.getDate(),
     month: d.toLocaleString("default", { month: "short" }).toUpperCase(),
@@ -12,8 +21,8 @@ const formatDailyDate = (caDate) => {
 };
 
 const formatMonthlyLabel = (caDate) => {
-  if (!caDate) return "Month YYYY Monthly Compilation";
-  const d = new Date(caDate);
+  const d = toJsDate(caDate);
+  if (!d) return "Month YYYY Monthly Compilation";
   const month = d.toLocaleString("default", { month: "long" });
   const year = d.getFullYear();
   return `${month} ${year} Monthly Compilation`;
@@ -31,11 +40,8 @@ export default function HomeClient({
   const hasPyqs = Array.isArray(latestPyqs) && latestPyqs.length > 0;
 
   const formatCardDate = (value) => {
-    if (!value) return { day: "??", month: "???" };
-    const date = new Date(value);
-    if (isNaN(date.getTime())) {
-      return { day: "??", month: "???" };
-    }
+    const date = toJsDate(value);
+    if (!date) return { day: "??", month: "???" };
     return {
       day: date.getDate(),
       month: date.toLocaleString("default", {

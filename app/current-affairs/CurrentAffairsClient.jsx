@@ -14,6 +14,15 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase/client";
 
+const toJsDate = (value) => {
+  if (!value) return null;
+  if (value instanceof Date) return value;
+  if (typeof value?.toDate === "function") return value.toDate();
+  if (typeof value?.seconds === "number") return new Date(value.seconds * 1000);
+  const d = new Date(value);
+  return isNaN(d.getTime()) ? null : d;
+};
+
 export default function CurrentAffairsClient({
   initialDaily,
   initialMonthly,
@@ -39,9 +48,8 @@ export default function CurrentAffairsClient({
   }, [searchParams]);
 
   const formatDailyDate = (caDate) => {
-    if (!caDate) return { day: "--", month: "--" };
-    const d = new Date(caDate);
-    if (isNaN(d.getTime())) return { day: "--", month: "---" };
+    const d = toJsDate(caDate);
+    if (!d) return { day: "--", month: "---" };
     return {
       day: d.getDate(),
       month: d.toLocaleString("default", { month: "short" }).toUpperCase(),
@@ -49,9 +57,8 @@ export default function CurrentAffairsClient({
   };
 
   const formatMonthlyLabel = (caDate) => {
-    if (!caDate) return "Month YYYY Month Compilation";
-    const d = new Date(caDate);
-    if (isNaN(d.getTime())) return "Month YYYY Monthly Compilation";
+    const d = toJsDate(caDate);
+    if (!d) return "Month YYYY Monthly Compilation";
     const month = d.toLocaleString("default", { month: "long" });
     const year = d.getFullYear();
     return `${month} ${year} Month Compilation`;
@@ -75,8 +82,8 @@ export default function CurrentAffairsClient({
       setLoadingMore(false);
       return;
     }
-    const cursorDate = new Date(last.caDate);
-    if (isNaN(cursorDate.getTime())) {
+    const cursorDate = toJsDate(last.caDate);
+    if (!cursorDate) {
       setLoadingMore(false);
       return;
     }
@@ -107,7 +114,7 @@ export default function CurrentAffairsClient({
         (doc) =>
           doc.status === "published" &&
           doc.caDate &&
-          !isNaN(new Date(doc.caDate).getTime())
+          !!toJsDate(doc.caDate)
       );
       if (safeMore.length === 0) {
         setHasMore(false);
@@ -129,7 +136,7 @@ export default function CurrentAffairsClient({
   const canLoadMore =
     articles.length > 0 &&
     articles[articles.length - 1]?.caDate &&
-    !isNaN(new Date(articles[articles.length - 1].caDate).getTime());
+    !!toJsDate(articles[articles.length - 1].caDate);
   const shouldShowLoadMore =
     hasMore &&
     (activeTab === "daily"
