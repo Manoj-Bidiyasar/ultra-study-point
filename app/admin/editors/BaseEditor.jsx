@@ -6,7 +6,6 @@ import {
   getDoc,
   setDoc,
   updateDoc,
-  deleteField,
   serverTimestamp,
   collection,
   addDoc,
@@ -655,10 +654,8 @@ const docRef = doc(
         dailyMeta: isCA ? state.dailyMeta : {},
         monthlyMeta: isCA ? state.monthlyMeta : {},
         notesMeta: type === "notes" ? state.notesMeta : {},
-        ...(type === "pyq" ? { pyqMeta: nextPyqMeta } : {}),
-        ...(type === "quiz" || type === "pyq"
-          ? { quizMeta: state.quizMeta }
-          : {}),
+        pyqMeta: nextPyqMeta,
+        quizMeta: type === "quiz" || type === "pyq" ? state.quizMeta : {},
         ...(type === "quiz" || type === "pyq"
           ? {
               description: state.summary,
@@ -708,28 +705,7 @@ const docRef = doc(
         });
         setState((s) => ({ ...s, __isNew: false }));
       } else {
-        const updatePayload = { ...payload };
-
-        // Keep CA/notes docs clean by removing quiz/pyq-specific fields.
-        if (type !== "quiz" && type !== "pyq") {
-          updatePayload.quizMeta = deleteField();
-          updatePayload.durationMinutes = deleteField();
-          updatePayload.rules = deleteField();
-          updatePayload.scoring = deleteField();
-          updatePayload.sections = deleteField();
-          updatePayload.questions = deleteField();
-        }
-        if (type !== "pyq") {
-          updatePayload.pyqMeta = deleteField();
-          updatePayload.exam = deleteField();
-          updatePayload.year = deleteField();
-          updatePayload.subject = deleteField();
-          updatePayload.course = deleteField();
-          updatePayload.pyqCategoryId = deleteField();
-          updatePayload.hideAnswersDefault = deleteField();
-        }
-
-        await updateDoc(docRef, updatePayload);
+        await updateDoc(docRef, payload);
       }
 
       setAutoSaveStatus("Saved");
