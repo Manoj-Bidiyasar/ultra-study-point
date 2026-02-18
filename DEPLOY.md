@@ -10,7 +10,12 @@ Set these in hPanel -> Node.js Apps -> Environment Variables:
 Server:
 - `FIREBASE_PROJECT_ID`
 - `FIREBASE_CLIENT_EMAIL`
-- `FIREBASE_SERVICE_ACCOUNT_PATH`
+- One of these credential options:
+  - `FIREBASE_SERVICE_ACCOUNT_PATH` (recommended on Hostinger)
+  - `GOOGLE_APPLICATION_CREDENTIALS` (path to same JSON file)
+  - `FIREBASE_SERVICE_ACCOUNT_JSON` (full JSON as string)
+  - `FIREBASE_SERVICE_ACCOUNT_JSON_BASE64` (JSON base64-encoded)
+  - `FIREBASE_PRIVATE_KEY_BASE64` + `FIREBASE_CLIENT_EMAIL` + `FIREBASE_PROJECT_ID`
 
 Client (public):
 - `NEXT_PUBLIC_FIREBASE_API_KEY`
@@ -34,6 +39,11 @@ Then set:
 
 If your hPanel only allows `public_html`, use:
 `/home/uXXXX/domains/update3111.ultrastudypoint.in/public_html/secure/ultra-study-point-xxxx.json`
+
+Notes:
+- If Hostinger rejects long multiline private keys, use path-based vars above.
+- Do not use typo var names. Use `FIREBASE_SERVICE_ACCOUNT_PATH` (with leading `F`).
+- After env changes, always Redeploy.
 
 ## 4) Redeploy
 After updating env vars or files, click **Redeploy** in Node.js Apps.

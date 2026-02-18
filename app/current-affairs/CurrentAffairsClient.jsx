@@ -38,24 +38,46 @@ export default function CurrentAffairsClient({
     }
   }, [searchParams]);
 
-  const formatDailyDate = (caDate) => {
-    if (!caDate) return { day: "--", month: "--" };
-    const d = new Date(caDate);
-    if (isNaN(d.getTime())) return { day: "--", month: "---" };
+  const toDateValue = (value) => {
+    if (!value) return null;
+    if (value instanceof Date) return value;
+    if (typeof value?.toDate === "function") return value.toDate();
+    if (typeof value === "object" && typeof value.seconds === "number") {
+      return new Date(value.seconds * 1000);
+    }
+    const d = new Date(value);
+    return isNaN(d.getTime()) ? null : d;
+  };
+
+  const getArticleDate = (item) => item?.caDate || null;
+
+  const formatDailyDate = (dateInput) => {
+    const d = toDateValue(dateInput);
+    if (!d) return { day: "--", month: "---" };
     return {
       day: d.getDate(),
       month: d.toLocaleString("default", { month: "short" }).toUpperCase(),
     };
   };
 
-  const formatMonthlyLabel = (caDate) => {
-    if (!caDate) return "Month YYYY Month Compilation";
-    const d = new Date(caDate);
-    if (isNaN(d.getTime())) return "Month YYYY Monthly Compilation";
+  const formatMonthlyLabel = (dateInput) => {
+    const d = toDateValue(dateInput);
+    if (!d) return "Month YYYY Monthly Compilation";
     const month = d.toLocaleString("default", { month: "long" });
     const year = d.getFullYear();
     return `${month} ${year} Month Compilation`;
   };
+
+  const normalizeArticle = (item) => {
+    const d = toDateValue(item?.caDate);
+    return {
+      ...item,
+      caDate: d ? d.toISOString() : "",
+      type: item?.type || activeTab,
+    };
+  };
+
+  const isValidArticleDate = (item) => Boolean(toDateValue(item?.caDate));
 
   const handleTabChange = (tab) => {
     setActiveTab(tab);
@@ -71,12 +93,12 @@ export default function CurrentAffairsClient({
       return;
     }
     const last = list[list.length - 1];
-    if (!last?.caDate || !last?.id) {
+    if (!last?.id) {
       setLoadingMore(false);
       return;
     }
-    const cursorDate = new Date(last.caDate);
-    if (isNaN(cursorDate.getTime())) {
+    const cursorDate = toDateValue(getArticleDate(last));
+    if (!cursorDate) {
       setLoadingMore(false);
       return;
     }
@@ -99,16 +121,11 @@ export default function CurrentAffairsClient({
         limit(isDaily ? 30 : 12)
       );
       const snap = await getDocs(q);
-      const more = snap.docs.map((d) => ({
+      const more = snap.docs.map((d) => normalizeArticle({
         id: d.id,
         ...d.data(),
       }));
-      const safeMore = more.filter(
-        (doc) =>
-          doc.status === "published" &&
-          doc.caDate &&
-          !isNaN(new Date(doc.caDate).getTime())
-      );
+      const safeMore = more.filter((doc) => doc.status === "published" && isValidArticleDate(doc));
       if (safeMore.length === 0) {
         setHasMore(false);
         setLoadingMore(false);
@@ -128,8 +145,7 @@ export default function CurrentAffairsClient({
   const articles = activeTab === "daily" ? dailyArticles : monthlyArticles;
   const canLoadMore =
     articles.length > 0 &&
-    articles[articles.length - 1]?.caDate &&
-    !isNaN(new Date(articles[articles.length - 1].caDate).getTime());
+    isValidArticleDate(articles[articles.length - 1]);
   const shouldShowLoadMore =
     hasMore &&
     (activeTab === "daily"
@@ -214,8 +230,9 @@ export default function CurrentAffairsClient({
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {articles.map((item, index) => {
-            const dailyDate = formatDailyDate(item.caDate);
-            const monthlyLabel = formatMonthlyLabel(item.caDate);
+            const dateValue = getArticleDate(item);
+            const dailyDate = formatDailyDate(dateValue);
+            const monthlyLabel = formatMonthlyLabel(dateValue);
 
             return (
               <Link
@@ -256,7 +273,7 @@ export default function CurrentAffairsClient({
                       : monthlyLabel}
                   </h3>
                   {activeTab === "monthly" && (
-                    <span className="text-[9px] font-bold uppercase mt-0.5 text-red-700">
+                    <span className="hidden sm:inline text-[9px] font-bold uppercase mt-0.5 text-red-700">
                       Full Month Compilation
                     </span>
                   )}

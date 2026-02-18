@@ -2,6 +2,7 @@ import "./globals.css";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { SITE_URL, SITE_NAME, DEFAULT_OG_IMAGE } from "@/lib/seo/siteConfig";
+import ServiceWorkerCleanup from "./ServiceWorkerCleanup";
 
 /* ===================== */
 /* METADATA (SEO + PWA)  */
@@ -75,6 +76,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body suppressHydrationWarning>
+        <ServiceWorkerCleanup />
         {/* Layout wrapper – NOT body */}
         <div className="flex flex-col min-h-screen">
           <script

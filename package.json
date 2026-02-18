@@ -3,8 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "clean:next": "node scripts/clean-next-safe.js",
+    "dev": "node scripts/dev-safe.js",
+    "dev:clean": "npm run clean:next && node scripts/dev-safe.js",
     "build": "next build",
+    "build:clean": "npm run clean:next && next build",
+    "smoke:deploy": "node scripts/post-deploy-smoke.js",
+    "migrate:clean:type-fields": "node scripts/migrate-clean-type-fields.js",
+    "migrate:clean:type-fields:apply": "node scripts/migrate-clean-type-fields.js --apply",
     "start": "next start",
     "lint": "eslint"
   },

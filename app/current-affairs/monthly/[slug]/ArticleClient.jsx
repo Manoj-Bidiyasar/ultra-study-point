@@ -3,23 +3,20 @@
 import dynamic from "next/dynamic";
 import UniversalRenderer from "@/components/content/renderer/UniversalRenderer";
 import Breadcrumbs from "@/components/Breadcrumbs";
+import { formatMonthYear } from "@/lib/dates/formatters";
 
 const RelatedContent = dynamic(
   () => import("@/components/related/RelatedContent"),
   { ssr: false }
 );
 const getMonthYearFromDate = (dateValue) => {
-  if (!dateValue) return { month: "", year: "" };
-
-  const date = new Date(dateValue);
-
-  const month = date.toLocaleString("en-IN", {
-    month: "long",
-  });
-
-  const year = date.getFullYear();
-
-  return { month, year };
+  const label = formatMonthYear(dateValue);
+  if (!label || label === "—") return { month: "", year: "" };
+  const parts = label.split(" ");
+  return {
+    month: parts[0] || "",
+    year: parts[1] || "",
+  };
 };
 
 export default function ArticleClient({
@@ -51,12 +48,12 @@ const title =
         {/* HEADER */}
 
         <header className="py-4 md:py-10 mb-5 md:mb-12 bg-gray-200 border-b">
-          <div className="max-w-7xl mx-auto px-4 md:px-6">
+          <div className="max-w-7xl mx-auto px-3 md:px-6">
             <div className="flex items-center justify-center md:justify-start gap-2 flex-wrap">
               <h1 className="text-xl md:text-4xl font-extrabold leading-[1.1] m-0 text-center md:text-left">
                 {title}
               </h1>
-              <span className="inline-flex items-center align-middle rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-[10px] md:text-xs font-semibold leading-none text-red-700">
+              <span className="hidden md:inline-flex items-center align-middle rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-[10px] md:text-xs font-semibold leading-none text-red-700">
                 Monthly Update
               </span>
             </div>
@@ -68,7 +65,7 @@ const title =
               
               {/* TAGS */}
               {data.tags?.length > 0 && (
-                <div className="mt-2 md:mt-4 flex flex-wrap gap-1.5 md:gap-2">
+                <div className="hidden md:flex mt-2 md:mt-4 flex-wrap gap-1.5 md:gap-2">
                   {data.tags.map((tag, i) => (
                     <span
                       key={i}
@@ -83,10 +80,10 @@ const title =
         </header>
 
         {/* CONTENT */}
-        <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_280px] gap-6 lg:gap-7">
+        <div className="max-w-7xl mx-auto px-3 md:px-4 lg:px-4 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_280px] gap-6 lg:gap-7">
           <div className="space-y-10">
             {/* ================= MAIN CONTENT ================= */}
-<article className="bg-white rounded-xl shadow p-6">
+<article className="bg-white rounded-xl shadow p-3 sm:p-5 md:p-6">
 
   <UniversalRenderer
     blocks={data.content?.blocks || []}

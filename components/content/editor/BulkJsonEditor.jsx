@@ -4,7 +4,11 @@ import { useEffect, useState } from "react";
 import { validateBlocks } from "@/components/content/utils/validateBlocks";
 import { isValidContent } from "@/components/content/schema/contentSchema";
 
-export default function BulkJsonEditor({ value, onChange }) {
+export default function BulkJsonEditor({
+  value,
+  onChange,
+  validateDocument,
+}) {
   const [text, setText] = useState("");
   const [error, setError] = useState(null);
   const [parsed, setParsed] = useState(null);
@@ -27,6 +31,11 @@ export default function BulkJsonEditor({ value, onChange }) {
       const blockError = validateBlocks(content.blocks);
       if (blockError) {
         return setError(blockError);
+      }
+
+      const customError = validateDocument?.(obj);
+      if (customError) {
+        return setError(customError);
       }
 
       setParsed(obj);

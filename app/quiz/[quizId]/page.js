@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getAdminDb } from "@/lib/firebase/admin";
+import { requireAdminDb } from "@/lib/firebase/admin";
 import { serializeFirestoreData } from "@/lib/serialization/serializeFirestore";
 import QuizClient from "./QuizClient";
 import { verifyPreviewToken } from "@/lib/preview/verifyPreviewToken";
@@ -10,8 +10,8 @@ export default async function QuizPage({ params, searchParams }) {
   const resolvedParams = await params;
   const resolvedSearchParams = await searchParams;
   const { quizId } = resolvedParams || {};
-  const adminDb = getAdminDb();
-  if (!adminDb || !quizId) notFound();
+  const adminDb = requireAdminDb();
+  if (!quizId) notFound();
 
   const isPreview = resolvedSearchParams?.preview === "true";
   if (isPreview) {

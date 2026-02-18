@@ -2,18 +2,10 @@
 
 import Link from "next/link";
 
-const formatDailyDate = (caDate) => {
-  if (!caDate) return { day: "??", month: "???" };
-  const d = new Date(caDate);
-  return {
-    day: d.getDate(),
-    month: d.toLocaleString("default", { month: "short" }).toUpperCase(),
-  };
-};
-
 const formatMonthlyLabel = (caDate) => {
   if (!caDate) return "Month YYYY Monthly Compilation";
   const d = new Date(caDate);
+  if (isNaN(d.getTime())) return "Month YYYY Monthly Compilation";
   const month = d.toLocaleString("default", { month: "long" });
   const year = d.getFullYear();
   return `${month} ${year} Monthly Compilation`;
@@ -32,7 +24,10 @@ export default function HomeClient({
 
   const formatCardDate = (value) => {
     if (!value) return { day: "??", month: "???" };
-    const date = new Date(value);
+    const date =
+      typeof value?.toDate === "function"
+        ? value.toDate()
+        : new Date(value);
     if (isNaN(date.getTime())) {
       return { day: "??", month: "???" };
     }

@@ -6,6 +6,7 @@ import {
   getDoc,
   setDoc,
   updateDoc,
+  deleteField,
   serverTimestamp,
   collection,
   addDoc,
@@ -396,6 +397,18 @@ const docRef = doc(
 
   function safeDate(v) {
     if (!v) return null;
+    if (v instanceof Date) {
+      return Number.isNaN(v.getTime()) ? null : v;
+    }
+    if (typeof v === "object" && typeof v.toDate === "function") {
+      const d = v.toDate();
+      return d instanceof Date && !Number.isNaN(d.getTime()) ? d : null;
+    }
+    if (typeof v === "object" && typeof v.seconds === "number") {
+      const ms = v.seconds * 1000 + Math.floor((v.nanoseconds || 0) / 1e6);
+      const d = new Date(ms);
+      return Number.isNaN(d.getTime()) ? null : d;
+    }
     const d = new Date(v);
     return isNaN(d.getTime()) ? null : d;
   }
@@ -426,6 +439,197 @@ const docRef = doc(
     if (seo.keywords?.trim()) out.keywords = seo.keywords.trim();
     if (seo.newsKeywords?.trim()) out.newsKeywords = seo.newsKeywords.trim();
     return out;
+  }
+
+  function normalizeDateInput(value) {
+    const d = safeDate(value);
+    return d ? d.toISOString() : "";
+  }
+
+  function getDateSyncErrorFromDoc(docValue) {
+    if (!docValue || (type !== "daily" && type !== "monthly")) return "";
+    const top = normalizeDateInput(docValue.caDate);
+    const metaDate =
+      type === "daily"
+        ? normalizeDateInput(docValue?.dailyMeta?.caDate)
+        : normalizeDateInput(docValue?.monthlyMeta?.caDate);
+
+    if (top && metaDate && top !== metaDate) {
+      return `Date mismatch: caDate (${top.slice(0, 10)}) and ${
+        type === "daily" ? "dailyMeta.caDate" : "monthlyMeta.caDate"
+      } (${metaDate.slice(0, 10)}) must be same.`;
+    }
+    return "";
+  }
+
+  function validateImportedDocument(next) {
+    return getDateSyncErrorFromDoc(next);
+  }
+
+  function normalizeImportedDocument(prev, next) {
+    if (!next || typeof next !== "object") return prev;
+
+    const out = { ...prev };
+    const apply = (key) => {
+      if (Object.prototype.hasOwnProperty.call(next, key)) {
+        out[key] = next[key];
+      }
+    };
+
+    // Common editable fields.
+    [
+      "title",
+      "slug",
+      "summary",
+      "language",
+      "tags",
+      "status",
+      "publishedAt",
+      "content",
+      "seo",
+      "relatedContent",
+      "review",
+    ].forEach(apply);
+
+    // Keep editor identity stable even if JSON contains mismatched ids/types.
+    out.id = prev.id;
+    out.__isNew = prev.__isNew;
+    out.createdBy = prev.createdBy;
+    out.updatedBy = prev.updatedBy;
+    out.isLocked = prev.isLocked;
+
+    if (type === "daily") {
+      const normalizedTop = normalizeDateInput(next.caDate);
+      const normalizedMeta = normalizeDateInput(next?.dailyMeta?.caDate);
+      const normalized = normalizedTop || normalizedMeta;
+
+      if (next.dailyMeta && typeof next.dailyMeta === "object") {
+        out.dailyMeta = {
+          ...next.dailyMeta,
+          caDate: normalized || "",
+        };
+      }
+      if (normalized) {
+        out.caDate = normalized;
+      } else if (Object.prototype.hasOwnProperty.call(next, "caDate")) {
+        out.caDate = next.caDate || "";
+      }
+      return out;
+    }
+
+    if (type === "monthly") {
+      const normalizedTop = normalizeDateInput(next.caDate);
+      const normalizedMeta = normalizeDateInput(next?.monthlyMeta?.caDate);
+      const normalized = normalizedTop || normalizedMeta;
+
+      if (next.monthlyMeta && typeof next.monthlyMeta === "object") {
+        out.monthlyMeta = {
+          ...next.monthlyMeta,
+          caDate: normalized || "",
+        };
+      }
+      if (normalized) {
+        out.caDate = normalized;
+      } else if (Object.prototype.hasOwnProperty.call(next, "caDate")) {
+        out.caDate = next.caDate || "";
+      }
+      if (Object.prototype.hasOwnProperty.call(next, "pdfUrl")) {
+        out.pdfUrl = next.pdfUrl;
+      } else if (next.monthlyMeta?.pdfUrl) {
+        out.pdfUrl = next.monthlyMeta.pdfUrl;
+      }
+      return out;
+    }
+
+    if (type === "notes") {
+      if (next.notesMeta && typeof next.notesMeta === "object") {
+        out.notesMeta = next.notesMeta;
+      }
+      return out;
+    }
+
+    if (type === "quiz") {
+      if (next.quizMeta && typeof next.quizMeta === "object") {
+        out.quizMeta = next.quizMeta;
+      }
+      return out;
+    }
+
+    if (type === "pyq") {
+      if (next.quizMeta && typeof next.quizMeta === "object") {
+        out.quizMeta = next.quizMeta;
+      }
+      if (next.pyqMeta && typeof next.pyqMeta === "object") {
+        out.pyqMeta = next.pyqMeta;
+      }
+      return out;
+    }
+
+    return out;
+  }
+
+  function buildBulkDocumentValue(doc) {
+    if (!doc || typeof doc !== "object") return doc;
+
+    const base = {
+      id: doc.id,
+      title: doc.title,
+      slug: doc.slug,
+      summary: doc.summary,
+      language: doc.language,
+      tags: doc.tags,
+      status: doc.status,
+      isLocked: doc.isLocked,
+      publishedAt: doc.publishedAt,
+      content: doc.content,
+      seo: doc.seo,
+      relatedContent: doc.relatedContent,
+      createdBy: doc.createdBy,
+      updatedBy: doc.updatedBy,
+      review: doc.review,
+      __isNew: doc.__isNew,
+    };
+
+    if (type === "daily") {
+      return {
+        ...base,
+        dailyMeta: doc.dailyMeta || {},
+        caDate: doc.caDate || doc.dailyMeta?.caDate || "",
+      };
+    }
+
+    if (type === "monthly") {
+      return {
+        ...base,
+        monthlyMeta: doc.monthlyMeta || {},
+        caDate: doc.caDate || doc.monthlyMeta?.caDate || "",
+        pdfUrl: doc.pdfUrl || doc.monthlyMeta?.pdfUrl || "",
+      };
+    }
+
+    if (type === "notes") {
+      return {
+        ...base,
+        notesMeta: doc.notesMeta || {},
+      };
+    }
+
+    if (type === "quiz") {
+      return {
+        ...base,
+        quizMeta: doc.quizMeta || {},
+      };
+    }
+
+    if (type === "pyq") {
+      return {
+        ...base,
+        quizMeta: doc.quizMeta || {},
+        pyqMeta: doc.pyqMeta || {},
+      };
+    }
+
+    return base;
   }
 
   async function upsertReviewQueue({
@@ -477,6 +681,9 @@ const docRef = doc(
       feedback: feedback || "",
     });
   }
+
+  const dateSyncError = getDateSyncErrorFromDoc(state);
+  const bulkDocumentValue = buildBulkDocumentValue(state);
 
   /* ======================================================
      AUTO SAVE
@@ -643,47 +850,16 @@ const docRef = doc(
             }
           : {};
 
-      const payload = {
+      const basePayload = {
         id: state.id,
+        type,
         title: state.title,
         slug: normalizedSlug,
         summary: state.summary,
         language: state.language,
         tags: state.tags,
         content: state.content,
-        dailyMeta: isCA ? state.dailyMeta : {},
-        monthlyMeta: isCA ? state.monthlyMeta : {},
-        notesMeta: type === "notes" ? state.notesMeta : {},
-        pyqMeta: nextPyqMeta,
-        quizMeta: type === "quiz" || type === "pyq" ? state.quizMeta : {},
-        ...(type === "quiz" || type === "pyq"
-          ? {
-              description: state.summary,
-              durationMinutes: state.quizMeta?.durationMinutes ?? 0,
-              rules: state.quizMeta?.rules || {},
-              scoring: state.quizMeta?.scoring || {},
-              sections: state.quizMeta?.sections || [],
-              questions: state.quizMeta?.questions || [],
-              ...(type === "pyq"
-                ? {
-                    exam: nextPyqMeta.exam || "",
-                    year: nextPyqMeta.year || "",
-                    subject: nextPyqMeta.subject || "",
-                    course: nextPyqMeta.course || "",
-                    type: nextPyqMeta.type || "",
-                    pyqCategoryId:
-                      nextPyqMeta.pyqCategoryId ||
-                      (nextPyqMeta.categoryMode === "subject"
-                        ? nextPyqMeta.subjectCategoryId || ""
-                        : nextPyqMeta.examCategoryId || ""),
-                    hideAnswersDefault: nextPyqMeta.hideAnswersDefault ?? true,
-                  }
-                : {}),
-            }
-          : {}),
         relatedContent: state.relatedContent,
-        caDate: isCA ? safeDate(state.caDate) : null,
-        pdfUrl: isCA ? state.pdfUrl : "",
         status: safeStatus,
         publishedAt: safeStatus === "scheduled" ? safeDate(state.publishedAt) : null,
         review: {
@@ -694,10 +870,121 @@ const docRef = doc(
         seo: cleanSeo(state.seo),
       };
 
+      const quizPayload =
+        type === "quiz" || type === "pyq"
+          ? {
+              quizMeta: state.quizMeta,
+              description: state.summary,
+              durationMinutes: state.quizMeta?.durationMinutes ?? 0,
+              rules: state.quizMeta?.rules || {},
+              scoring: state.quizMeta?.scoring || {},
+              sections: state.quizMeta?.sections || [],
+              questions: state.quizMeta?.questions || [],
+            }
+          : {};
+
+      const typePayload =
+        type === "daily"
+          ? {
+              dailyMeta: {
+                ...(state.dailyMeta || {}),
+                caDate: safeDate(
+                  state.dailyMeta?.caDate || state.caDate
+                ),
+              },
+              caDate: safeDate(
+                state.caDate || state.dailyMeta?.caDate
+              ),
+            }
+          : type === "monthly"
+          ? {
+              monthlyMeta: {
+                ...(state.monthlyMeta || {}),
+                caDate: safeDate(
+                  state.monthlyMeta?.caDate || state.caDate
+                ),
+                pdfUrl:
+                  state.monthlyMeta?.pdfUrl ||
+                  state.pdfUrl ||
+                  "",
+              },
+              caDate: safeDate(
+                state.caDate || state.monthlyMeta?.caDate
+              ),
+              pdfUrl: state.monthlyMeta?.pdfUrl || state.pdfUrl || "",
+            }
+          : type === "notes"
+          ? {
+              notesMeta: state.notesMeta || {},
+            }
+          : type === "pyq"
+          ? {
+              pyqMeta: nextPyqMeta,
+              exam: nextPyqMeta.exam || "",
+              year: nextPyqMeta.year || "",
+              subject: nextPyqMeta.subject || "",
+              course: nextPyqMeta.course || "",
+              pyqCategoryId:
+                nextPyqMeta.pyqCategoryId ||
+                (nextPyqMeta.categoryMode === "subject"
+                  ? nextPyqMeta.subjectCategoryId || ""
+                  : nextPyqMeta.examCategoryId || ""),
+              hideAnswersDefault: nextPyqMeta.hideAnswersDefault ?? true,
+            }
+          : {};
+
+      const payload = {
+        ...basePayload,
+        ...quizPayload,
+        ...typePayload,
+      };
+
+      const cleanupPayload = {
+        dailyMeta: type === "daily" ? payload.dailyMeta : deleteField(),
+        monthlyMeta: type === "monthly" ? payload.monthlyMeta : deleteField(),
+        notesMeta: type === "notes" ? payload.notesMeta : deleteField(),
+        quizMeta:
+          type === "quiz" || type === "pyq"
+            ? payload.quizMeta
+            : deleteField(),
+        pyqMeta: type === "pyq" ? payload.pyqMeta : deleteField(),
+        caDate: isCA ? payload.caDate : deleteField(),
+        pdfUrl: type === "monthly" ? payload.pdfUrl : deleteField(),
+        description:
+          type === "quiz" || type === "pyq"
+            ? payload.description
+            : deleteField(),
+        durationMinutes:
+          type === "quiz" || type === "pyq"
+            ? payload.durationMinutes
+            : deleteField(),
+        rules:
+          type === "quiz" || type === "pyq" ? payload.rules : deleteField(),
+        scoring:
+          type === "quiz" || type === "pyq" ? payload.scoring : deleteField(),
+        sections:
+          type === "quiz" || type === "pyq"
+            ? payload.sections
+            : deleteField(),
+        questions:
+          type === "quiz" || type === "pyq"
+            ? payload.questions
+            : deleteField(),
+        exam: type === "pyq" ? payload.exam : deleteField(),
+        year: type === "pyq" ? payload.year : deleteField(),
+        subject: type === "pyq" ? payload.subject : deleteField(),
+        course: type === "pyq" ? payload.course : deleteField(),
+        pyqCategoryId:
+          type === "pyq" ? payload.pyqCategoryId : deleteField(),
+        hideAnswersDefault:
+          type === "pyq"
+            ? payload.hideAnswersDefault
+            : deleteField(),
+      };
+
       if (state.__isNew) {
         await setDoc(docRef, {
           ...payload,
-          type,
           isDeleted: false,
           status: "draft",
           createdAt: serverTimestamp(),
@@ -705,7 +992,10 @@ const docRef = doc(
         });
         setState((s) => ({ ...s, __isNew: false }));
       } else {
-        await updateDoc(docRef, payload);
+        await updateDoc(docRef, {
+          ...payload,
+          ...cleanupPayload,
+        });
       }
 
       setAutoSaveStatus("Saved");
@@ -1171,6 +1461,11 @@ useEffect(() => {
       isLocked={isLocked}
       onChange={setState}
     />
+    {dateSyncError && (
+      <div style={ui.warn}>
+        {dateSyncError}
+      </div>
+    )}
   </CollapsibleCard>
 
   {/* ================= SEO ================= */}
@@ -1378,8 +1673,13 @@ useEffect(() => {
                 onChange={(content) =>
                   setState((s) => ({ ...s, content }))
                 }
-                documentValue={state}
-                onDocumentChange={setState}
+                documentValue={bulkDocumentValue}
+                onDocumentChange={(nextDoc) =>
+                  setState((prev) =>
+                    normalizeImportedDocument(prev, nextDoc)
+                  )
+                }
+                onDocumentValidate={validateImportedDocument}
                 role={role}
                 saveStatus={autoSaveStatus}
                 isSaving={isSaving}

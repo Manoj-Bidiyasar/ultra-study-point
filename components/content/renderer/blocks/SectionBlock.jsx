@@ -58,12 +58,12 @@ export default function SectionBlock({ block, context }) {
 
       {/* TITLE */}
       {block.title && (
-        <h2 className={`px-4 py-2 text-lg md:text-xl font-bold ${toneClasses.titleBar}`}>
+        <h2 className={`px-3 md:px-4 py-2 text-lg md:text-xl font-bold ${toneClasses.titleBar}`}>
           {block.title}
         </h2>
       )}
 
-      <div className={`px-4 py-4 md:py-5 ${toneClasses.body}`}>
+      <div className={`px-3 md:px-4 py-3 md:py-5 ${toneClasses.body}`}>
         {/* SUBTITLE */}
         {block.subtitle && (
           <div className={`text-sm mb-3 ${toneClasses.subtitle}`}>

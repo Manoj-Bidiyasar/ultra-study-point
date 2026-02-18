@@ -66,15 +66,29 @@ const getInitialCurrentAffairs = unstable_cache(
       .get(),
   ]);
 
+  const hasValidCaDate = (value) => {
+    if (!value) return false;
+    if (typeof value?.toDate === "function") {
+      const d = value.toDate();
+      return d instanceof Date && !Number.isNaN(d.getTime());
+    }
+    const d = new Date(value);
+    return !Number.isNaN(d.getTime());
+  };
+
   return {
-    daily: dailySnap.docs.map((d) => ({
-      id: d.id,
-      ...serializeFirestoreData(d.data()),
-    })),
-    monthly: monthlySnap.docs.map((d) => ({
-      id: d.id,
-      ...serializeFirestoreData(d.data()),
-    })),
+    daily: dailySnap.docs
+      .filter((d) => hasValidCaDate(d.data()?.caDate))
+      .map((d) => ({
+        id: d.id,
+        ...serializeFirestoreData(d.data()),
+      })),
+    monthly: monthlySnap.docs
+      .filter((d) => hasValidCaDate(d.data()?.caDate))
+      .map((d) => ({
+        id: d.id,
+        ...serializeFirestoreData(d.data()),
+      })),
   };
   },
   ["current-affairs-index"],

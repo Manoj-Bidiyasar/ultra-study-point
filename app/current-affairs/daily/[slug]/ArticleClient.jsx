@@ -35,7 +35,7 @@ export default function ArticleClient({ data, schema, breadcrumbs, related }) {
         <Breadcrumbs items={breadcrumbs} />
       {/* HEADER */}
       <header className="py-4 md:py-10 mb-5 md:mb-12 bg-gray-200 border-b">
-        <div className="max-w-7xl mx-auto px-4 md:px-6">
+        <div className="max-w-7xl mx-auto px-3 md:px-6">
           {/*LEFT TITLE*/}
           {/*MAIN HEADING*/}
           <div>
@@ -43,7 +43,7 @@ export default function ArticleClient({ data, schema, breadcrumbs, related }) {
               <h1 className="text-xl md:text-4xl font-extrabold leading-[1.1] m-0 text-center md:text-left">
                 {headingTitle}
               </h1>
-              <span className="inline-flex items-center align-middle rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[10px] md:text-xs font-semibold leading-none text-blue-700">
+              <span className="hidden md:inline-flex items-center align-middle rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[10px] md:text-xs font-semibold leading-none text-blue-700">
                 Daily Update
               </span>
             </div>
@@ -56,7 +56,7 @@ export default function ArticleClient({ data, schema, breadcrumbs, related }) {
               
               {/* TAGS */}
               {data.tags?.length > 0 && (
-                <div className="mt-2 md:mt-4 flex flex-wrap gap-1.5 md:gap-2">
+                <div className="hidden md:flex mt-2 md:mt-4 flex-wrap gap-1.5 md:gap-2">
                   {data.tags.map((tag, i) => (
                     <span
                       key={i}
@@ -73,12 +73,12 @@ export default function ArticleClient({ data, schema, breadcrumbs, related }) {
         
 
       {/* CONTENT */}
-      <div className="max-w-7xl mx-auto px-4 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_280px] gap-6 lg:gap-7">
+      <div className="max-w-7xl mx-auto px-3 md:px-4 lg:px-4 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_280px] gap-6 lg:gap-7">
       {/* MAIN ARTICLE COLUMN */}
       <div className="space-y-10" itemProp="articleBody">
         
         {/* ================= MAIN CONTENT ================= */}
-<article className="bg-white rounded-xl shadow p-6">
+<article className="bg-white rounded-xl shadow p-3 sm:p-5 md:p-6">
 
   <UniversalRenderer
     blocks={data.content?.blocks || []}

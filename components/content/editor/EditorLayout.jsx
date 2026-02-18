@@ -25,7 +25,8 @@ export default function EditorLayout({
   onDirtyChange,   // ✅ NEW
 
   documentValue,
-  onDocumentChange,  
+  onDocumentChange,
+  onDocumentValidate,
   role = "editor",
 }) {
   const [tab, setTab] = useState("editor");
@@ -287,6 +288,7 @@ useEffect(() => {
                 <BulkJsonEditor
                   value={documentValue}
                   onChange={onDocumentChange}
+                  validateDocument={onDocumentValidate}
                 />
               )}
           </div>

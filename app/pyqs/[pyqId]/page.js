@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { getAdminDb } from "@/lib/firebase/admin";
+import { requireAdminDb } from "@/lib/firebase/admin";
 import { serializeFirestoreData } from "@/lib/serialization/serializeFirestore";
 import PyqDetailClient from "./PyqDetailClient";
 import { verifyPreviewToken } from "@/lib/preview/verifyPreviewToken";
@@ -10,9 +10,9 @@ export default async function PyqDetailPage({ params, searchParams }) {
   const resolvedParams = await params;
   const resolvedSearchParams = await searchParams;
   const { pyqId } = resolvedParams || {};
-  const adminDb = getAdminDb();
+  const adminDb = requireAdminDb();
 
-  if (!adminDb || !pyqId) notFound();
+  if (!pyqId) notFound();
 
   const isPreview = resolvedSearchParams?.preview === "true";
   if (isPreview) {

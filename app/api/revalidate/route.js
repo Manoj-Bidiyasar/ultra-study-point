@@ -4,8 +4,11 @@ import { NextResponse } from "next/server";
 export async function POST(request) {
   try {
     const { secret, paths } = await request.json();
+    const expectedSecret =
+      process.env.REVALIDATE_SECRET ||
+      process.env.NEXT_PUBLIC_REVALIDATE_SECRET;
 
-    if (secret !== process.env.REVALIDATE_SECRET) {
+    if (!expectedSecret || secret !== expectedSecret) {
       return NextResponse.json(
         { error: "Invalid secret" },
         { status: 401 }

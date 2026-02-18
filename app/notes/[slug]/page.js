@@ -1,6 +1,6 @@
 import NotesClient from "./NotesClient";
 import { notFound } from "next/navigation";
-import { getAdminDb } from "@/lib/firebase/admin";
+import { getAdminDb, requireAdminDb } from "@/lib/firebase/admin";
 import { migrateContentBlocks } from "@/components/content/utils/migrateContentBlocks";
 import { serializeFirestoreData } from "@/lib/serialization/serializeFirestore";
 import { unstable_cache } from "next/cache";
@@ -115,8 +115,7 @@ export async function generateMetadata(props) {
 export default async function NotesPage(props) {
   const params = await props.params;
   const searchParams = await props.searchParams;
-  const adminDb = getAdminDb();
-  if (!adminDb) notFound();
+  const adminDb = requireAdminDb();
 
   const slug = Array.isArray(params?.slug)
     ? params.slug[0]

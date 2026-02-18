@@ -1,6 +1,6 @@
 import ArticleClient from "./ArticleClient";
 import { notFound } from "next/navigation";
-import { getAdminDb } from "@/lib/firebase/admin";
+import { requireAdminDb } from "@/lib/firebase/admin";
 import { buildBreadcrumbSchema } from "@/lib/breadcrumbs/buildBreadcrumbSchema";
 import { resolveRelatedContent } from "@/lib/related/relatedEngine";
 import { serializeFirestoreData } from "@/lib/serialization/serializeFirestore";
@@ -36,14 +36,67 @@ function toJsDate(value) {
     return Number.isNaN(d.getTime()) ? null : d;
   }
 
+  // Firestore Timestamp may be de-prototyped by cache layers
+  if (typeof value === "object" && typeof value._seconds === "number") {
+    const ms =
+      value._seconds * 1000 + Math.floor((value._nanoseconds || 0) / 1e6);
+    const d = new Date(ms);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+
+  // Firestore export-like shape
+  if (
+    typeof value === "object" &&
+    value.type === "firestore/timestamp/1.0" &&
+    typeof value.seconds === "number"
+  ) {
+    const ms =
+      value.seconds * 1000 + Math.floor((value.nanoseconds || 0) / 1e6);
+    const d = new Date(ms);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }
+
   return null;
+}
+
+function resolveDailyCaDate(data) {
+  return toJsDate(data?.caDate) || toJsDate(data?.dailyMeta?.caDate);
+}
+
+function extractDateFromSlug(slug) {
+  if (!slug || typeof slug !== "string") return null;
+  const m = slug
+    .toLowerCase()
+    .match(/^(\d{1,2})-(january|february|march|april|may|june|july|august|september|october|november|december)-(\d{4})/);
+  if (!m) return null;
+
+  const day = Number(m[1]);
+  const year = Number(m[3]);
+  const monthMap = {
+    january: 0,
+    february: 1,
+    march: 2,
+    april: 3,
+    may: 4,
+    june: 5,
+    july: 6,
+    august: 7,
+    september: 8,
+    october: 9,
+    november: 10,
+    december: 11,
+  };
+  const month = monthMap[m[2]];
+  if (month === undefined) return null;
+  const d = new Date(Date.UTC(year, month, day));
+  return Number.isNaN(d.getTime()) ? null : d;
 }
 
 /* ================= DATE ================= */
 
 const getDailyBySlug = unstable_cache(
   async (slugOrId) => {
-    const adminDb = getAdminDb();
+    const adminDb = requireAdminDb();
     if (!adminDb) return null;
 
     const colRef = adminDb
@@ -73,17 +126,20 @@ const getDailyBySlug = unstable_cache(
 export async function generateMetadata(props) {
   const params = await props.params;
   const slug = params?.slug;
-  const adminDb = getAdminDb();
+  const adminDb = requireAdminDb();
   
   if (!slug || !adminDb) return {};
 
-  const cached = await getDailyBySlug(slug);
+  let cached = await getDailyBySlug(slug);
+  if (cached?.data?.status !== "published") {
+    cached = null;
+  }
   if (!cached) return {};
 
   const data = cached.data;
   const publishedAt = toJsDate(data.publishedAt)?.toISOString();
   const updatedAt = toJsDate(data.updatedAt)?.toISOString();
-  const caDate = toJsDate(data.caDate);
+  const caDate = resolveDailyCaDate(data) || extractDateFromSlug(data?.slug || slug);
   const formattedDate = formatIndianDate(caDate);
   const canonicalUrl =
     data.canonicalUrl || `${SITE_URL}/current-affairs/daily/${slug}`;
@@ -127,7 +183,7 @@ export async function generateMetadata(props) {
 export default async function ArticlePage(props) {
   const params = await props.params;
   const searchParams = await props.searchParams;
-  const adminDb = getAdminDb();
+  const adminDb = requireAdminDb();
 
   const slug = params?.slug;
 
@@ -158,6 +214,9 @@ export default async function ArticlePage(props) {
     .collection("currentAffairs");
 
   let data = cached?.data || null;
+  if (!isPreview && data?.status !== "published") {
+    data = null;
+  }
   if (!data) {
     const snap = await colRef
       .where("slug", "==", slug)
@@ -172,7 +231,7 @@ export default async function ArticlePage(props) {
     }
   }
   const publishedAt = toJsDate(data.publishedAt);
-  const caDate = toJsDate(data.caDate);
+  const caDate = resolveDailyCaDate(data) || extractDateFromSlug(data?.slug || slug);
   const now = new Date();
 
   /* ===== RELATED CONTENT ===== */
@@ -305,7 +364,7 @@ const breadcrumbItems = [
     href: "/current-affairs?tab=daily",
   },
   {
-    label: `${formatIndianDate(caDate) || "Daily"} Current Affairs`,
+    label: `${formatIndianDate(caDate) || "Daily"}`,
     href: null,
   },
 ];

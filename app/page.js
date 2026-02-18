@@ -19,6 +19,16 @@ const serializeDoc = (doc) => ({
   ...serializeFirestoreData(doc.data()),
 });
 
+const hasValidCaDate = (value) => {
+  if (!value) return false;
+  if (typeof value?.toDate === "function") {
+    const d = value.toDate();
+    return d instanceof Date && !Number.isNaN(d.getTime());
+  }
+  const d = new Date(value);
+  return !Number.isNaN(d.getTime());
+};
+
 /* ================= SEO METADATA ================= */
 export async function generateMetadata() {
   return {
@@ -128,8 +138,12 @@ const getHomeData = unstable_cache(
   ]);
 
   return {
-    dailyCA: dailySnap.docs.map(serializeDoc),
-    monthlyCA: monthlySnap.docs.map(serializeDoc),
+    dailyCA: dailySnap.docs
+      .filter((d) => hasValidCaDate(d.data()?.caDate))
+      .map(serializeDoc),
+    monthlyCA: monthlySnap.docs
+      .filter((d) => hasValidCaDate(d.data()?.caDate))
+      .map(serializeDoc),
     latestNotes: notesSnap.docs.map(serializeDoc),
     latestQuizzes: quizSnap.docs.map(serializeDoc),
     latestPyqs: pyqSnap.docs.map(serializeDoc),
