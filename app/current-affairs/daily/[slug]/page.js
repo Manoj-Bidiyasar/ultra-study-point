@@ -12,6 +12,15 @@ import { verifyPreviewToken } from "@/lib/preview/verifyPreviewToken";
 /* ================= RENDER MODE ================= */
 export const dynamic = "force-dynamic";
 
+function getSafeAdminDb() {
+  try {
+    return requireAdminDb();
+  } catch (err) {
+    console.error("Daily slug: Firebase Admin init failed:", err?.message);
+    return null;
+  }
+}
+
 function toJsDate(value) {
   if (!value) return null;
 
@@ -96,7 +105,7 @@ function extractDateFromSlug(slug) {
 
 const getDailyBySlug = unstable_cache(
   async (slugOrId) => {
-    const adminDb = requireAdminDb();
+    const adminDb = getSafeAdminDb();
     if (!adminDb) return null;
 
     const colRef = adminDb
@@ -126,7 +135,7 @@ const getDailyBySlug = unstable_cache(
 export async function generateMetadata(props) {
   const params = await props.params;
   const slug = params?.slug;
-  const adminDb = requireAdminDb();
+  const adminDb = getSafeAdminDb();
   
   if (!slug || !adminDb) return {};
 
@@ -183,7 +192,7 @@ export async function generateMetadata(props) {
 export default async function ArticlePage(props) {
   const params = await props.params;
   const searchParams = await props.searchParams;
-  const adminDb = requireAdminDb();
+  const adminDb = getSafeAdminDb();
 
   const slug = params?.slug;
 

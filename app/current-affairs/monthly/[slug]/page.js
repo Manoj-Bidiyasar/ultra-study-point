@@ -10,6 +10,15 @@ import { verifyPreviewToken } from "@/lib/preview/verifyPreviewToken";
 
 export const dynamic = "force-dynamic";
 
+function getSafeAdminDb() {
+  try {
+    return requireAdminDb();
+  } catch (err) {
+    console.error("Monthly slug: Firebase Admin init failed:", err?.message);
+    return null;
+  }
+}
+
 function toJsDate(value) {
   if (!value) return null;
   if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value;
@@ -94,7 +103,7 @@ function formatMonthYearFromDate(caDate) {
 
 const getMonthlyBySlug = unstable_cache(
   async (slugOrId) => {
-    const adminDb = requireAdminDb();
+    const adminDb = getSafeAdminDb();
     if (!adminDb) return null;
 
     const colRef = adminDb
@@ -120,7 +129,7 @@ const getMonthlyBySlug = unstable_cache(
 export async function generateMetadata(props) {
   const params = await props.params;
   const slug = params?.slug;
-  const adminDb = requireAdminDb();
+  const adminDb = getSafeAdminDb();
 
   if (!slug || !adminDb) return {};
 
@@ -163,7 +172,7 @@ export async function generateMetadata(props) {
 export default async function MonthlyArticlePage(props) {
   const params = await props.params;
   const searchParams = await props.searchParams;
-  const adminDb = requireAdminDb();
+  const adminDb = getSafeAdminDb();
 
   const slug = params?.slug;
   const isPreview = searchParams?.preview === "true";
