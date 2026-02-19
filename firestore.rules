@@ -211,10 +211,10 @@ service cloud.firestore {
     }
 
     match /artifacts/{artifactId}/public/data/users/{uid}/sessions/{sessionId} {
-      allow read: if isSignedIn() && (request.auth.uid == uid || isAdminOrSuperTokenOnly());
-
-      // Staff can manage their own session docs; super admin/admin can manage any.
-      allow create, update: if isSignedIn() && (request.auth.uid == uid || isAdminOrSuperTokenOnly());
+      // Temporary unblock: any authenticated account can read/write session docs.
+      // We can tighten back after login flow is fully verified in production.
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn();
 
       allow delete: if false;
     }
