@@ -28,6 +28,7 @@ export default function AdminLogin() {
       currentStep = "credentials";
       setDebugStep("Checking email and password...");
       const cred = await signInWithEmailAndPassword(auth, email, password);
+      await cred.user.getIdToken(true);
 
       currentStep = "profile";
       setDebugStep("Reading admin profile...");
