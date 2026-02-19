@@ -55,6 +55,7 @@ export default async function QuizCategoryPage(props) {
     .doc("data")
     .collection("Quizzes")
     .where("status", "==", "published")
+    .where("isDeleted", "==", false)
     .orderBy("updatedAt", "desc")
     .limit(30)
     .get();

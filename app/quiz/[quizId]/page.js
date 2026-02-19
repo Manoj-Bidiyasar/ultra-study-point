@@ -40,7 +40,7 @@ export default async function QuizPage({ params, searchParams }) {
     ...snap.data(),
   });
 
-  if (!isPreview && data.status !== "published") {
+  if (!isPreview && (data.status !== "published" || data.isDeleted === true)) {
     notFound();
   }
 

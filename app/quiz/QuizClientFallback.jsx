@@ -28,7 +28,13 @@ export default function QuizClientFallback({ searchParams }) {
         );
 
         const snap = await getDocs(
-          query(ref, where("status", "==", "published"), orderBy("updatedAt", "desc"), limit(24))
+          query(
+            ref,
+            where("status", "==", "published"),
+            where("isDeleted", "==", false),
+            orderBy("updatedAt", "desc"),
+            limit(24)
+          )
         );
         const list = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
         setQuizzes(list);

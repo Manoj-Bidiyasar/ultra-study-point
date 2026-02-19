@@ -25,7 +25,8 @@ export default async function QuizListPage(props) {
     .collection("public")
     .doc("data")
     .collection("Quizzes")
-    .where("status", "==", "published");
+    .where("status", "==", "published")
+    .where("isDeleted", "==", false);
 
   quizQuery = quizQuery.orderBy("updatedAt", "desc");
 

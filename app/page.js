@@ -146,6 +146,7 @@ async function getHomeData() {
       query(
         quizRef,
         where("status", "==", "published"),
+        where("isDeleted", "==", false),
         limit(120)
       )
     ),
