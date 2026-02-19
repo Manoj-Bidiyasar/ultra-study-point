@@ -18,6 +18,32 @@ const serializeDoc = (doc) => ({
   ...serializeFirestoreData(doc.data()),
 });
 
+const toMillis = (value) => {
+  if (!value) return 0;
+  if (typeof value?.toDate === "function") {
+    const d = value.toDate();
+    return d instanceof Date && !Number.isNaN(d.getTime()) ? d.getTime() : 0;
+  }
+  if (value instanceof Date) return Number.isNaN(value.getTime()) ? 0 : value.getTime();
+  if (typeof value === "number") return Number.isFinite(value) ? value : 0;
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? 0 : d.getTime();
+};
+
+const byBestTimestampDesc = (a, b) => {
+  const aTs =
+    toMillis(a.updatedAt) ||
+    toMillis(a.publishDate) ||
+    toMillis(a.date) ||
+    toMillis(a.createdAt);
+  const bTs =
+    toMillis(b.updatedAt) ||
+    toMillis(b.publishDate) ||
+    toMillis(b.date) ||
+    toMillis(b.createdAt);
+  return bTs - aTs;
+};
+
 const hasValidCaDate = (value) => {
   if (!value) return false;
   if (typeof value?.toDate === "function") {
@@ -112,28 +138,29 @@ async function getHomeData() {
     getDocs(
       query(
         notesRef,
-        where("status", "==", "published"),        
-        orderBy("updatedAt", "desc"),
-        limit(6)
+        where("status", "==", "published"),
+        limit(120)
       )
     ),
     getDocs(
       query(
         quizRef,
         where("status", "==", "published"),
-        orderBy("updatedAt", "desc"),
-        limit(6)
+        limit(120)
       )
     ),
     getDocs(
       query(
         pyqRef,
         where("status", "==", "published"),
-        orderBy("updatedAt", "desc"),
-        limit(6)
+        limit(120)
       )
     ),
   ]);
+
+  const latestNotes = notesSnap.docs.map(serializeDoc).sort(byBestTimestampDesc).slice(0, 6);
+  const latestQuizzes = quizSnap.docs.map(serializeDoc).sort(byBestTimestampDesc).slice(0, 6);
+  const latestPyqs = pyqSnap.docs.map(serializeDoc).sort(byBestTimestampDesc).slice(0, 6);
 
   return {
     dailyCA: dailySnap.docs
@@ -142,9 +169,9 @@ async function getHomeData() {
     monthlyCA: monthlySnap.docs
       .filter((d) => hasValidCaDate(d.data()?.caDate))
       .map(serializeDoc),
-    latestNotes: notesSnap.docs.map(serializeDoc),
-    latestQuizzes: quizSnap.docs.map(serializeDoc),
-    latestPyqs: pyqSnap.docs.map(serializeDoc),
+    latestNotes,
+    latestQuizzes,
+    latestPyqs,
   };
 }
 
