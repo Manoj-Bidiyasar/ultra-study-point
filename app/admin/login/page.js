@@ -78,7 +78,7 @@ export default function AdminLogin() {
         setError(`This device is not allowed. Share this Device ID with super admin: ${deviceId}`);
       } else if (code === "permission-denied" || code.includes("permission")) {
         setError(
-          "Missing or insufficient permissions. Firestore rules or user profile is blocking this login."
+          `Missing or insufficient permissions. Firestore rules or user profile is blocking this login. (code: ${code || "permission-denied"})`
         );
       } else {
         setError(err?.message || "Login failed. Please try again.");
@@ -144,10 +144,10 @@ const styles = {
 
   card: {
     width: "100%",
-    maxWidth: "420px",
+    maxWidth: "520px",
     background: "#f8fafc",
     borderRadius: "16px",
-    padding: "30px",
+    padding: "36px",
     border: "1px solid #cbd5e1",
     boxShadow: "0 24px 60px rgba(2, 6, 23, 0.3)",
   },
