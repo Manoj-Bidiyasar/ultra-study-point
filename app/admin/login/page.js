@@ -34,6 +34,29 @@ export default function AdminLogin() {
     throw lastErr;
   }
 
+  async function readProfileViaApi(user) {
+    const token = await user.getIdToken(true);
+    const res = await fetch("/api/admin-profile", {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      cache: "no-store",
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data?.ok) {
+      throw new Error(
+        data?.error
+          ? `Profile API failed: ${data.error}`
+          : "Profile API failed"
+      );
+    }
+    return {
+      exists: () => true,
+      data: () => data.profile || {},
+    };
+  }
+
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
@@ -60,7 +83,14 @@ export default function AdminLogin() {
         cred.user.uid
       );
 
-      const userSnap = await readProfileWithRetry(userRef, cred.user);
+      let userSnap;
+      try {
+        userSnap = await readProfileWithRetry(userRef, cred.user);
+      } catch (err) {
+        if (String(err?.code || "") !== "permission-denied") throw err;
+        setDebugStep("Client profile read denied. Trying server fallback...");
+        userSnap = await readProfileViaApi(cred.user);
+      }
       if (!userSnap.exists()) {
         throw new Error("User profile missing. Contact super admin.");
       }
