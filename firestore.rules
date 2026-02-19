@@ -28,6 +28,15 @@ service cloud.firestore {
       return isAdmin() || isSuperAdmin();
     }
 
+    // Token-only checks to avoid recursive reads on /users and /sessions rules.
+    function roleFromToken() {
+      return request.auth.token.role != null ? request.auth.token.role : "";
+    }
+
+    function isAdminOrSuperTokenOnly() {
+      return roleFromToken() == "admin" || roleFromToken() == "super_admin";
+    }
+
     match /artifacts/{artifactId}/public/data/currentAffairs/{docId} {
       allow read: if request.query != null;
       allow read: if resource != null && resource.data.status == "published" && resource.data.isDeleted == false;
@@ -193,19 +202,19 @@ service cloud.firestore {
     }
 
     match /artifacts/{artifactId}/public/data/users/{uid} {
-      allow read: if isSignedIn() && (request.auth.uid == uid || isAdminOrSuper());
+      allow read: if isSignedIn() && (request.auth.uid == uid || isAdminOrSuperTokenOnly());
 
-      allow update: if isSuperAdmin()
+      allow update: if roleFromToken() == "super_admin"
         && !("role" in request.resource.data.diff(resource.data).changedKeys());
 
-      allow create, delete: if isSuperAdmin();
+      allow create, delete: if roleFromToken() == "super_admin";
     }
 
     match /artifacts/{artifactId}/public/data/users/{uid}/sessions/{sessionId} {
-      allow read: if isSignedIn() && (request.auth.uid == uid || isAdminOrSuper());
+      allow read: if isSignedIn() && (request.auth.uid == uid || isAdminOrSuperTokenOnly());
 
       // Staff can manage their own session docs; super admin/admin can manage any.
-      allow create, update: if isSignedIn() && (request.auth.uid == uid || isAdminOrSuper());
+      allow create, update: if isSignedIn() && (request.auth.uid == uid || isAdminOrSuperTokenOnly());
 
       allow delete: if false;
     }
