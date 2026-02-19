@@ -4,10 +4,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
-import { auth } from "@/lib/firebase/client";
-import { db } from "@/lib/firebase/client";
+import { auth, db } from "@/lib/firebase/client";
 import { permissionsByRole } from "@/lib/admin/permissions";
-import { startAdminSession } from "@/lib/admin/sessionClient";
+import { getOrCreateAdminDeviceId, startAdminSession } from "@/lib/admin/sessionClient";
 
 export default function AdminLogin() {
   const router = useRouter();
@@ -15,15 +14,23 @@ export default function AdminLogin() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [debugStep, setDebugStep] = useState("");
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
+    setDebugStep("Starting login...");
     setLoading(true);
 
+    let currentStep = "auth";
+
     try {
+      currentStep = "credentials";
+      setDebugStep("Checking email and password...");
       const cred = await signInWithEmailAndPassword(auth, email, password);
 
+      currentStep = "profile";
+      setDebugStep("Reading admin profile...");
       const userRef = doc(
         db,
         "artifacts",
@@ -47,21 +54,37 @@ export default function AdminLogin() {
         throw new Error("Your account role is not allowed for admin panel.");
       }
 
+      currentStep = "session";
+      setDebugStep("Creating secure session...");
       await startAdminSession({
         uid: cred.user.uid,
         userData,
       });
 
+      currentStep = "redirect";
+      setDebugStep("Redirecting...");
       router.replace("/admin");
     } catch (err) {
       const code = String(err?.code || "");
-      if (code.includes("auth/invalid-credential") || code.includes("auth/wrong-password") || code.includes("auth/user-not-found")) {
+
+      if (
+        code.includes("auth/invalid-credential") ||
+        code.includes("auth/wrong-password") ||
+        code.includes("auth/user-not-found")
+      ) {
         setError("Invalid email or password");
       } else if (code === "session/device-not-allowed") {
-        setError("This device is not allowed. Contact super admin.");
+        const deviceId = getOrCreateAdminDeviceId();
+        setError(`This device is not allowed. Share this Device ID with super admin: ${deviceId}`);
+      } else if (code === "permission-denied" || code.includes("permission")) {
+        setError(
+          "Missing or insufficient permissions. Firestore rules or user profile is blocking this login."
+        );
       } else {
         setError(err?.message || "Login failed. Please try again.");
       }
+
+      setDebugStep(`Failed at step: ${currentStep}`);
       setLoading(false);
     }
   };
@@ -69,8 +92,11 @@ export default function AdminLogin() {
   return (
     <div style={styles.wrapper}>
       <div style={styles.card}>
-        <h1 style={styles.brand}>Ultra Study Point</h1>
-        <p style={styles.subtitle}>Admin Login</p>
+        <div style={styles.logoRow}>
+          <div style={styles.logoDot} />
+          <h1 style={styles.brand}>Ultra Study Point</h1>
+        </div>
+        <p style={styles.subtitle}>Admin Panel Sign In</p>
 
         <form onSubmit={handleLogin} style={styles.form}>
           <label style={styles.label}>Email Address</label>
@@ -86,29 +112,24 @@ export default function AdminLogin() {
           <label style={styles.label}>Password</label>
           <input
             type="password"
-            placeholder="••••••••"
+            placeholder="Enter password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             style={styles.input}
             required
           />
 
-          <button
-            type="submit"
-            style={styles.button}
-            disabled={loading}
-          >
+          <button type="submit" style={styles.button} disabled={loading}>
             {loading ? "Signing in..." : "Sign in"}
           </button>
 
           {error && <p style={styles.error}>{error}</p>}
+          {!!debugStep && <p style={styles.debug}>{debugStep}</p>}
         </form>
       </div>
     </div>
   );
 }
-
-/* ================= STYLES ================= */
 
 const styles = {
   wrapper: {
@@ -116,23 +137,39 @@ const styles = {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    background: "linear-gradient(135deg, #0f172a, #020617)",
+    background:
+      "radial-gradient(circle at 10% 20%, #1d4ed8 0%, transparent 35%), radial-gradient(circle at 90% 85%, #0ea5e9 0%, transparent 30%), linear-gradient(135deg, #0b1220, #111827)",
     padding: "16px",
   },
 
   card: {
     width: "100%",
     maxWidth: "420px",
-    background: "#ffffff",
-    borderRadius: "10px",
-    padding: "32px",
-    boxShadow: "0 20px 40px rgba(0,0,0,0.25)",
+    background: "#f8fafc",
+    borderRadius: "16px",
+    padding: "30px",
+    border: "1px solid #cbd5e1",
+    boxShadow: "0 24px 60px rgba(2, 6, 23, 0.3)",
+  },
+
+  logoRow: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "10px",
+  },
+
+  logoDot: {
+    width: "12px",
+    height: "12px",
+    borderRadius: "999px",
+    background: "linear-gradient(135deg, #2563eb, #06b6d4)",
   },
 
   brand: {
     margin: 0,
     textAlign: "center",
-    fontSize: "24px",
+    fontSize: "25px",
     fontWeight: "700",
     color: "#0f172a",
   },
@@ -142,7 +179,7 @@ const styles = {
     marginBottom: "28px",
     textAlign: "center",
     fontSize: "14px",
-    color: "#64748b",
+    color: "#475569",
   },
 
   form: {
@@ -160,8 +197,9 @@ const styles = {
   input: {
     padding: "12px 14px",
     fontSize: "14px",
-    borderRadius: "6px",
-    border: "1px solid #cbd5f5",
+    borderRadius: "10px",
+    border: "1px solid #cbd5e1",
+    background: "#ffffff",
     outline: "none",
   },
 
@@ -170,10 +208,10 @@ const styles = {
     padding: "12px",
     fontSize: "15px",
     fontWeight: "600",
-    borderRadius: "6px",
+    borderRadius: "10px",
     border: "none",
     cursor: "pointer",
-    background: "#2563eb",
+    background: "linear-gradient(135deg, #2563eb, #0ea5e9)",
     color: "#ffffff",
   },
 
@@ -181,7 +219,13 @@ const styles = {
     marginTop: "10px",
     fontSize: "13px",
     color: "#dc2626",
-    textAlign: "center",
+    textAlign: "left",
+  },
+
+  debug: {
+    marginTop: "6px",
+    fontSize: "12px",
+    color: "#334155",
+    textAlign: "left",
   },
 };
-
