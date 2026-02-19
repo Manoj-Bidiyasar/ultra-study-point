@@ -20,9 +20,6 @@ export default function AdminSidebar({ permissions, role, user, onLogout }) {
     .replaceAll("_", " ")
     .toUpperCase();
 
-  const [caOpen, setCaOpen] = useState(
-    pathname.startsWith("/admin/current-affairs")
-  );
   const caActive = pathname.startsWith("/admin/current-affairs");
 
   useEffect(() => {
@@ -189,38 +186,11 @@ export default function AdminSidebar({ permissions, role, user, onLogout }) {
 
         <div style={{ ...styles.navGroup, ...styles.navGroupContent }}>
           {permissions?.canManageContent && (
-            <>
-              <div
-                style={{
-                  ...styles.dropdownHeader,
-                  ...(caActive ? styles.dropdownActive : {}),
-                }}
-                onClick={() => setCaOpen(!caOpen)}
-              >
-                Current Affairs
-                <span
-                  style={{
-                    ...styles.chevron,
-                    transform: caOpen ? "rotate(45deg)" : "rotate(-45deg)",
-                  }}
-                />
-              </div>
-
-              {caOpen && (
-                <div style={styles.dropdownItems}>
-                  <NavLink
-                    href="/admin/current-affairs/daily"
-                    label="Daily CA"
-                    small
-                  />
-                  <NavLink
-                    href="/admin/current-affairs/monthly"
-                    label="Monthly CA"
-                    small
-                  />
-                </div>
-              )}
-            </>
+            <NavLink
+              href="/admin/current-affairs"
+              label="Current Affairs"
+              active={caActive}
+            />
           )}
 
           {permissions?.canManageContent && (
@@ -253,9 +223,10 @@ export default function AdminSidebar({ permissions, role, user, onLogout }) {
   );
 }
 
-function NavLink({ href, label, small, badge }) {
+function NavLink({ href, label, small, badge, active: forcedActive }) {
   const pathname = usePathname();
-  const active = pathname.startsWith(href);
+  const active =
+    typeof forcedActive === "boolean" ? forcedActive : pathname.startsWith(href);
   const [hover, setHover] = useState(false);
 
   return (
@@ -354,38 +325,6 @@ const styles = {
   navGroupUsers: {
     borderColor: "#c4b5fd",
     background: "#f5f3ff",
-  },
-  dropdownHeader: {
-    cursor: "pointer",
-    padding: "8px 12px",
-    fontSize: 14,
-    fontWeight: 700,
-    display: "flex",
-    justifyContent: "space-between",
-    borderRadius: 8,
-    background: "#ffffff",
-    border: "1px solid #e5e7eb",
-    transition: "all 0.15s ease",
-  },
-  dropdownActive: {
-    background: "linear-gradient(90deg, rgba(16,185,129,0.24), rgba(16,185,129,0.08))",
-    border: "1px solid #6ee7b7",
-    color: "#064e3b",
-  },
-  dropdownItems: {
-    marginLeft: 6,
-    display: "flex",
-    flexDirection: "column",
-    gap: 6,
-  },
-  chevron: {
-    width: 8,
-    height: 8,
-    borderRight: "2px solid #334155",
-    borderBottom: "2px solid #334155",
-    display: "inline-block",
-    transition: "transform 0.15s ease",
-    alignSelf: "center",
   },
   badge: {
     marginLeft: "auto",
