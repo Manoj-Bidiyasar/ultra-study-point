@@ -105,3 +105,5 @@ temp/
 
 # Local secret folder (service account JSON)
 secure/
+
+.next-dev.lock
