@@ -1,0 +1,703 @@
+[
+  {
+    "id": "Hb57bLtTnEZrlWtGAzZC"
+  },
+  {
+    "id": "He-jjffjhjfg",
+    "title": "He Jjffjhjfg",
+    "slug": "he-jjffjhjfg",
+    "summary": "",
+    "language": "en",
+    "tags": [],
+    "content": {
+      "mode": "points",
+      "data": []
+    },
+    "dailyMeta": {},
+    "monthlyMeta": {},
+    "notesMeta": {},
+    "pyqMeta": {
+      "exam": "",
+      "year": "",
+      "subject": "",
+      "hideAnswersDefault": true
+    },
+    "quizMeta": {
+      "durationMinutes": 0,
+      "rules": {
+        "minAttemptPercent": 0
+      },
+      "scoring": {
+        "defaultPoints": 1,
+        "negativeMarking": {
+          "type": "none",
+          "value": 0
+        }
+      },
+      "sections": [],
+      "questions": []
+    },
+    "description": "",
+    "durationMinutes": 0,
+    "rules": {
+      "minAttemptPercent": 0
+    },
+    "scoring": {
+      "defaultPoints": 1,
+      "negativeMarking": {
+        "type": "none",
+        "value": 0
+      }
+    },
+    "sections": [],
+    "questions": [],
+    "exam": "",
+    "year": "",
+    "subject": "",
+    "hideAnswersDefault": true,
+    "relatedContent": [],
+    "caDate": null,
+    "pdfUrl": "",
+    "status": "draft",
+    "publishedAt": null,
+    "review": {
+      "feedback": "",
+      "editorMessage": "",
+      "messageThread": []
+    },
+    "seo": {},
+    "type": "pyq",
+    "isDeleted": false,
+    "createdBy": {
+      "uid": "5pC2v2Cy0DSzSpEYbBYWRFGPXTj2",
+      "email": "manojbidiyasar1@gmail.com",
+      "displayName": "Manoj Bidiyasar",
+      "role": "super_admin"
+    },
+    "createdAt": {
+      "_seconds": 1771190849,
+      "_nanoseconds": 381000000
+    }
+  },
+  {
+    "id": "mvcmbjkbk-jkkhjkdfhkfd",
+    "title": "Mvcmbjkbk Jkkhjkdfhkfd",
+    "slug": "mvcmbjkbk-jkkhjkdfhkfd",
+    "summary": "",
+    "language": "en",
+    "tags": [],
+    "content": {
+      "mode": "points",
+      "data": []
+    },
+    "dailyMeta": {},
+    "monthlyMeta": {},
+    "notesMeta": {},
+    "quizMeta": {
+      "durationMinutes": 0,
+      "rules": {
+        "minAttemptPercent": 0
+      },
+      "scoring": {
+        "defaultPoints": 1,
+        "negativeMarking": {
+          "type": "none",
+          "value": 0
+        }
+      },
+      "sections": [],
+      "questions": []
+    },
+    "description": "",
+    "durationMinutes": 0,
+    "rules": {
+      "minAttemptPercent": 0
+    },
+    "scoring": {
+      "defaultPoints": 1,
+      "negativeMarking": {
+        "type": "none",
+        "value": 0
+      }
+    },
+    "sections": [],
+    "questions": [],
+    "exam": "",
+    "year": "",
+    "subject": "",
+    "course": "",
+    "type": "pyq",
+    "pyqCategoryId": "",
+    "hideAnswersDefault": true,
+    "relatedContent": [],
+    "caDate": null,
+    "pdfUrl": "",
+    "status": "draft",
+    "publishedAt": null,
+    "review": {
+      "feedback": "",
+      "editorMessage": "",
+      "messageThread": []
+    },
+    "seo": {},
+    "isDeleted": false,
+    "createdBy": {
+      "uid": "5pC2v2Cy0DSzSpEYbBYWRFGPXTj2",
+      "email": "manojbidiyasar1@gmail.com",
+      "displayName": "Manoj Bidiyasar",
+      "role": "super_admin"
+    },
+    "createdAt": {
+      "_seconds": 1771325275,
+      "_nanoseconds": 325000000
+    },
+    "pyqMeta": {
+      "exam": "",
+      "year": "",
+      "subject": "",
+      "course": "",
+      "type": "pyq",
+      "categoryMode": "exam",
+      "examCategoryId": "",
+      "subjectCategoryId": "",
+      "pyqCategoryId": "",
+      "hideAnswersDefault": true
+    }
+  },
+  {
+    "id": "nbdmnbnmd%20mnffdbmdf",
+    "slug": "nbdmnbnmd-mnffdbmdf",
+    "summary": "",
+    "language": "en",
+    "tags": [],
+    "content": {
+      "mode": "points",
+      "data": []
+    },
+    "dailyMeta": {},
+    "monthlyMeta": {},
+    "notesMeta": {},
+    "pyqMeta": {
+      "exam": "",
+      "year": "",
+      "subject": "",
+      "hideAnswersDefault": true
+    },
+    "quizMeta": {
+      "durationMinutes": 0,
+      "rules": {
+        "minAttemptPercent": 0
+      },
+      "scoring": {
+        "defaultPoints": 1,
+        "negativeMarking": {
+          "type": "none",
+          "value": 0
+        }
+      },
+      "sections": [],
+      "questions": []
+    },
+    "description": "",
+    "durationMinutes": 0,
+    "rules": {
+      "minAttemptPercent": 0
+    },
+    "scoring": {
+      "defaultPoints": 1,
+      "negativeMarking": {
+        "type": "none",
+        "value": 0
+      }
+    },
+    "sections": [],
+    "questions": [],
+    "exam": "",
+    "year": "",
+    "subject": "",
+    "hideAnswersDefault": true,
+    "relatedContent": [],
+    "caDate": null,
+    "pdfUrl": "",
+    "status": "draft",
+    "publishedAt": null,
+    "review": {
+      "feedback": "",
+      "editorMessage": "",
+      "messageThread": []
+    },
+    "seo": {},
+    "type": "pyq",
+    "isDeleted": false,
+    "createdBy": {
+      "uid": "5pC2v2Cy0DSzSpEYbBYWRFGPXTj2",
+      "email": "manojbidiyasar1@gmail.com",
+      "displayName": "Manoj Bidiyasar",
+      "role": "super_admin"
+    },
+    "createdAt": {
+      "_seconds": 1771190604,
+      "_nanoseconds": 910000000
+    },
+    "title": "Nbdmnbnmd% 20mnffdbmdf"
+  },
+  {
+    "id": "vbnvnbvbnv",
+    "title": "Vbnvnbvbnv",
+    "slug": "vbnvnbvbnv",
+    "summary": "",
+    "language": "en",
+    "tags": [],
+    "content": {
+      "mode": "points",
+      "data": []
+    },
+    "dailyMeta": {},
+    "monthlyMeta": {},
+    "notesMeta": {},
+    "pyqMeta": {
+      "exam": "",
+      "year": "",
+      "subject": "",
+      "hideAnswersDefault": true
+    },
+    "quizMeta": {
+      "durationMinutes": 0,
+      "rules": {
+        "minAttemptPercent": 0
+      },
+      "scoring": {
+        "defaultPoints": 1,
+        "negativeMarking": {
+          "type": "none",
+          "value": 0
+        }
+      },
+      "sections": [],
+      "questions": []
+    },
+    "description": "",
+    "durationMinutes": 0,
+    "rules": {
+      "minAttemptPercent": 0
+    },
+    "scoring": {
+      "defaultPoints": 1,
+      "negativeMarking": {
+        "type": "none",
+        "value": 0
+      }
+    },
+    "sections": [],
+    "questions": [],
+    "exam": "",
+    "year": "",
+    "subject": "",
+    "hideAnswersDefault": true,
+    "relatedContent": [],
+    "caDate": null,
+    "pdfUrl": "",
+    "status": "draft",
+    "publishedAt": null,
+    "review": {
+      "feedback": "",
+      "editorMessage": "",
+      "messageThread": []
+    },
+    "seo": {},
+    "type": "pyq",
+    "isDeleted": false,
+    "createdBy": {
+      "uid": "5pC2v2Cy0DSzSpEYbBYWRFGPXTj2",
+      "email": "manojbidiyasar1@gmail.com",
+      "displayName": "Manoj Bidiyasar",
+      "role": "super_admin"
+    },
+    "createdAt": {
+      "_seconds": 1771321752,
+      "_nanoseconds": 924000000
+    }
+  },
+  {
+    "id": "vnhjvhv-hghf",
+    "slug": "vnhjvhv-hghf",
+    "summary": "",
+    "language": "en",
+    "tags": [],
+    "content": {
+      "mode": "points",
+      "data": []
+    },
+    "dailyMeta": {},
+    "monthlyMeta": {},
+    "notesMeta": {},
+    "description": "",
+    "course": "",
+    "type": "pyq",
+    "relatedContent": [],
+    "caDate": null,
+    "pdfUrl": "",
+    "status": "draft",
+    "publishedAt": null,
+    "review": {
+      "feedback": "",
+      "editorMessage": "",
+      "messageThread": []
+    },
+    "seo": {},
+    "isDeleted": false,
+    "createdBy": {
+      "uid": "5pC2v2Cy0DSzSpEYbBYWRFGPXTj2",
+      "email": "manojbidiyasar1@gmail.com",
+      "displayName": "Manoj Bidiyasar",
+      "role": "super_admin"
+    },
+    "createdAt": {
+      "_seconds": 1771326968,
+      "_nanoseconds": 780000000
+    },
+    "durationMinutes": 0,
+    "sections": [],
+    "exam": "nvxbnbbncxv",
+    "year": "3333",
+    "title": "quiz title",
+    "scoring": {
+      "overallMarks": 3,
+      "negativeMarking": {
+        "type": "none",
+        "value": 0
+      },
+      "defaultPoints": 1
+    },
+    "hideAnswersDefault": true,
+    "rules": {
+      "minAttemptPercent": 0,
+      "showExplanation": true,
+      "useSections": false
+    },
+    "subject": "c",
+    "pyqCategoryId": "english",
+    "questions": [
+      {
+        "options": [
+          "mmcnxm,nmzb",
+          "xcznmnzmxbn",
+          "mxnm,nb,mnbx",
+          "mnxmbmnbxbm"
+        ],
+        "tags": [],
+        "id": "q1",
+        "type": "single",
+        "answer": 1,
+        "explanation": "m,nbm,nxbmnbx",
+        "points": 1,
+        "sectionId": null,
+        "prompt": "mnm,vnbmnm,nb",
+        "difficulty": "medium",
+        "meta": {
+          "subcategory": "",
+          "category": "",
+          "subject": "",
+          "subtopic": "",
+          "year": "",
+          "exam": "",
+          "pyqData": [
+            {
+              "stage": "",
+              "tagsText": "",
+              "tags": [],
+              "exam": "nvxbnbbncxv",
+              "year": "3333"
+            }
+          ],
+          "pyqExams": [
+            "nvxbnbbncxv"
+          ],
+          "sourceType": "pyq",
+          "isPYQ": true,
+          "caDate": null,
+          "contentType": "static",
+          "examTags": [],
+          "sourceName": "",
+          "topic": "",
+          "examStage": ""
+        }
+      },
+      {
+        "id": "q2",
+        "type": "single",
+        "prompt": "bxnmnbvmxv",
+        "options": [
+          "dgd",
+          "dvdsfd",
+          "dgdffd",
+          "dfdsfdfgf"
+        ],
+        "answer": 1,
+        "points": 1,
+        "sectionId": null,
+        "explanation": "dfsfgff",
+        "tags": [],
+        "difficulty": "medium",
+        "meta": {
+          "category": "",
+          "subcategory": "",
+          "topic": "",
+          "subtopic": "",
+          "sourceType": "pyq",
+          "sourceName": "",
+          "exam": "",
+          "examTags": [],
+          "examStage": "",
+          "year": "",
+          "isPYQ": true,
+          "contentType": "static",
+          "pyqData": [
+            {
+              "exam": "",
+              "year": "5555",
+              "stage": "",
+              "tagsText": "",
+              "tags": []
+            }
+          ],
+          "pyqExams": [],
+          "caDate": null,
+          "subject": ""
+        }
+      },
+      {
+        "id": "q3",
+        "type": "single",
+        "prompt": "bcvnbnmcxb",
+        "options": [
+          "fgdsdgsgd",
+          "fdsdsgdf",
+          "dgdsggds",
+          "dfsfsdff"
+        ],
+        "answer": 2,
+        "points": 1,
+        "sectionId": null,
+        "explanation": "fdfsfdgf",
+        "tags": [
+          "xbb"
+        ],
+        "difficulty": "medium",
+        "meta": {
+          "category": "cxnv,mnmnxv ",
+          "subcategory": "",
+          "topic": "vbf ",
+          "subtopic": "xvb ",
+          "sourceType": "pyq",
+          "sourceName": "",
+          "exam": "",
+          "examTags": [],
+          "examStage": "",
+          "year": "",
+          "isPYQ": true,
+          "contentType": "static",
+          "pyqData": [
+            {
+              "exam": "vbb bvbvx",
+              "year": "",
+              "stage": "",
+              "tagsText": "",
+              "tags": []
+            },
+            {
+              "exam": "xvbzxvb",
+              "year": "",
+              "stage": "",
+              "tagsText": "",
+              "tags": []
+            }
+          ],
+          "pyqExams": [
+            "vbb bvbvx",
+            "xvbzxvb"
+          ],
+          "caDate": null,
+          "subject": "c"
+        },
+        "tagsText": "xbb ,"
+      }
+    ],
+    "quizMeta": {
+      "durationMinutes": 0,
+      "rules": {
+        "minAttemptPercent": 0,
+        "showExplanation": true,
+        "useSections": false
+      },
+      "scoring": {
+        "overallMarks": 3,
+        "negativeMarking": {
+          "type": "none",
+          "value": 0
+        },
+        "defaultPoints": 1
+      },
+      "sections": [],
+      "questions": [
+        {
+          "options": [
+            "mmcnxm,nmzb",
+            "xcznmnzmxbn",
+            "mxnm,nb,mnbx",
+            "mnxmbmnbxbm"
+          ],
+          "tags": [],
+          "id": "q1",
+          "type": "single",
+          "answer": 1,
+          "explanation": "m,nbm,nxbmnbx",
+          "points": 1,
+          "sectionId": null,
+          "prompt": "mnm,vnbmnm,nb",
+          "difficulty": "medium",
+          "meta": {
+            "subcategory": "",
+            "category": "",
+            "subject": "",
+            "subtopic": "",
+            "year": "",
+            "exam": "",
+            "pyqData": [
+              {
+                "stage": "",
+                "tagsText": "",
+                "tags": [],
+                "exam": "nvxbnbbncxv",
+                "year": "3333"
+              }
+            ],
+            "pyqExams": [
+              "nvxbnbbncxv"
+            ],
+            "sourceType": "pyq",
+            "isPYQ": true,
+            "caDate": null,
+            "contentType": "static",
+            "examTags": [],
+            "sourceName": "",
+            "topic": "",
+            "examStage": ""
+          }
+        },
+        {
+          "id": "q2",
+          "type": "single",
+          "prompt": "bxnmnbvmxv",
+          "options": [
+            "dgd",
+            "dvdsfd",
+            "dgdffd",
+            "dfdsfdfgf"
+          ],
+          "answer": 1,
+          "points": 1,
+          "sectionId": null,
+          "explanation": "dfsfgff",
+          "tags": [],
+          "difficulty": "medium",
+          "meta": {
+            "category": "",
+            "subcategory": "",
+            "topic": "",
+            "subtopic": "",
+            "sourceType": "pyq",
+            "sourceName": "",
+            "exam": "",
+            "examTags": [],
+            "examStage": "",
+            "year": "",
+            "isPYQ": true,
+            "contentType": "static",
+            "pyqData": [
+              {
+                "exam": "",
+                "year": "5555",
+                "stage": "",
+                "tagsText": "",
+                "tags": []
+              }
+            ],
+            "pyqExams": [],
+            "caDate": null,
+            "subject": ""
+          }
+        },
+        {
+          "id": "q3",
+          "type": "single",
+          "prompt": "bcvnbnmcxb",
+          "options": [
+            "fgdsdgsgd",
+            "fdsdsgdf",
+            "dgdsggds",
+            "dfsfsdff"
+          ],
+          "answer": 2,
+          "points": 1,
+          "sectionId": null,
+          "explanation": "fdfsfdgf",
+          "tags": [
+            "xbb"
+          ],
+          "difficulty": "medium",
+          "meta": {
+            "category": "cxnv,mnmnxv ",
+            "subcategory": "",
+            "topic": "vbf ",
+            "subtopic": "xvb ",
+            "sourceType": "pyq",
+            "sourceName": "",
+            "exam": "",
+            "examTags": [],
+            "examStage": "",
+            "year": "",
+            "isPYQ": true,
+            "contentType": "static",
+            "pyqData": [
+              {
+                "exam": "vbb bvbvx",
+                "year": "",
+                "stage": "",
+                "tagsText": "",
+                "tags": []
+              },
+              {
+                "exam": "xvbzxvb",
+                "year": "",
+                "stage": "",
+                "tagsText": "",
+                "tags": []
+              }
+            ],
+            "pyqExams": [
+              "vbb bvbvx",
+              "xvbzxvb"
+            ],
+            "caDate": null,
+            "subject": "c"
+          },
+          "tagsText": "xbb ,"
+        }
+      ]
+    },
+    "pyqMeta": {
+      "exam": "nvxbnbbncxv",
+      "year": "3333",
+      "subject": "c",
+      "course": "",
+      "type": "pyq",
+      "examYearDisplayMode": "always_show",
+      "categoryMode": "subject",
+      "examCategoryId": "",
+      "subjectCategoryId": "english",
+      "pyqCategoryId": "english",
+      "hideAnswersDefault": true
+    }
+  }
+]

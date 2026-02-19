@@ -1,0 +1,950 @@
+[
+  {
+    "id": "2026-02-15",
+    "title": "15 February 2026 Current Affairs",
+    "slug": "15-february-2026-current-affairs",
+    "language": "en",
+    "monthlyMeta": {},
+    "notesMeta": {},
+    "quizMeta": {},
+    "relatedContent": [],
+    "caDate": {
+      "_seconds": 1771113600,
+      "_nanoseconds": 0
+    },
+    "pdfUrl": "",
+    "type": "daily",
+    "isDeleted": false,
+    "createdBy": {
+      "uid": "5pC2v2Cy0DSzSpEYbBYWRFGPXTj2",
+      "email": "manojbidiyasar1@gmail.com",
+      "displayName": "Manoj Bidiyasar",
+      "role": "super_admin"
+    },
+    "createdAt": {
+      "_seconds": 1771144394,
+      "_nanoseconds": 925000000
+    },
+    "dailyMeta": {
+      "caDate": "2026-02-15"
+    },
+    "summary": "This article covers important current affairs of 15 February 2026, including key updates from national and international events, economy, science and technology, sports, and government schemes.",
+    "tags": [
+      "current affairs",
+      "15 February 2026",
+      "national news",
+      "international news",
+      "economy",
+      "science and technology",
+      "sports",
+      "government schemes"
+    ],
+    "seo": {
+      "seoTitle": "15 February 2026 Daily Current Affairs in English",
+      "seoDescription": "Daily Current Affairs 15 February 2026 in Hindi – Important news and updates for UPSC, SSC, and state-level competitive exams. Covers national, international, economy, science & technology, sports, and government schemes.",
+      "canonicalUrl": "https://www.ultrastudypoint.in/current-affairs/daily/15-february-2026-current-affairs",
+      "keywords": "current affairs 2026, daily current affairs, 15 Feb 2026 news, UPSC current affairs, Rajasthan current affairs, India news updates, global news 2026, economic updates India, science and tech news, sports news India, government schemes India, competitive exam preparation"
+    },
+    "updatedBy": {
+      "uid": "5pC2v2Cy0DSzSpEYbBYWRFGPXTj2",
+      "email": "manojbidiyasar1@gmail.com",
+      "displayName": "Manoj Bidiyasar",
+      "role": "super_admin"
+    },
+    "isLocked": false,
+    "status": "published",
+    "updatedAt": {
+      "_seconds": 1771146147,
+      "_nanoseconds": 326000000
+    },
+    "publishedAt": null,
+    "content": {
+      "version": 1,
+      "mode": "blocks",
+      "blocks": [
+        {
+          "id": "sec-history",
+          "type": "section",
+          "title": "आज का इतिहास और महत्वपूर्ण दिवस (Today's History & Important Days)",
+          "subtitle": "",
+          "tone": "blue",
+          "blocks": [
+            {
+              "id": "pts-history",
+              "type": "points",
+              "style": "bullet",
+              "items": [
+                "**शहीद दिवस (बिहार)**: 15 फरवरी को बिहार सरकार 'शहीद दिवस' के रूप में मनाती है। यह 1932 में मुंगेर के तारापुर में पुलिस फायरिंग में शहीद हुए 34 स्वतंत्रता सेनानियों की याद में मनाया जाता है।",
+                "**मिर्जा गालिब पुण्यतिथि**: महान उर्दू शायर मिर्जा गालिब का निधन 15 फरवरी 1869 को दिल्ली में हुआ था।",
+                "**महत्वपूर्ण जन्म**: प्रसिद्ध अभिनेत्री **मधुबाला** (1933) और पूर्व विदेश मंत्री **सुषमा स्वराज** (1952) का जन्म आज ही के दिन हुआ था।"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "sec-national",
+          "type": "section",
+          "title": "राष्ट्रीय (National)",
+          "subtitle": "",
+          "tone": "blue",
+          "blocks": [
+            {
+              "id": "pts-national",
+              "type": "points",
+              "style": "bullet",
+              "items": [
+                "**AI इम्पैक्ट शिखर सम्मेलन 2026**: नई दिल्ली के भारत मंडपम में 16 फरवरी से वैश्विक एआई शिखर सम्मेलन शुरू हो रहा है। इसमें ब्राजील और फ्रांस के राष्ट्रपति शिरकत करेंगे।",
+                "**CBSE डिजिटल मूल्यांकन**: कक्षा 10वीं और 12वीं की 2026 की बोर्ड परीक्षाओं के लिए **डिजिटल स्क्रीन-आधारित मार्किंग प्रणाली** अपनाई जाएगी।",
+                "**BRICS शेरपा बैठक**: भारत की अध्यक्षता में वर्ष 2026 की पहली BRICS शेरपा बैठक नई दिल्ली में सफलतापूर्वक संपन्न हुई।"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "sec-international",
+          "type": "section",
+          "title": "अंतर्राष्ट्रीय (International)",
+          "subtitle": "",
+          "tone": "blue",
+          "blocks": [
+            {
+              "id": "pts-international",
+              "type": "points",
+              "style": "bullet",
+              "items": [
+                "**भारत-थाईलैंड वायु अभ्यास**: भारतीय वायुसेना और रॉयल थाई एयरफोर्स ने **हिंद महासागर क्षेत्र** में संयुक्त हवाई युद्ध अभ्यास आयोजित किया।",
+                "**मिस्र-भारत व्यापारिक संबंध**: मिस्र में मिले **संस्कृत और तमिल शिलालेखों** ने प्राचीन रोमन-मिस्र व्यापार मार्गों के ऐतिहासिक संबंधों की पुष्टि की है।"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "sec-sports",
+          "type": "section",
+          "title": "खेल (Sports)",
+          "subtitle": "",
+          "tone": "blue",
+          "blocks": [
+            {
+              "id": "pts-sports",
+              "type": "points",
+              "style": "bullet",
+              "items": [
+                "**T20 वर्ल्ड कप 2026**: टूर्नामेंट की मेजबानी **भारत और श्रीलंका** कर रहे हैं; भारत-पाकिस्तान मैच के शेड्यूल पर चर्चाएं तेज हैं।",
+                "**निशानेबाजी (विश्व रिकॉर्ड)**: भारत के **ऐश्वर्य प्रताप सिंह तोमर** ने 50 मीटर राइफल स्पर्धा में स्वर्ण पदक और विश्व रिकॉर्ड जीता।"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "sec-awards",
+          "type": "section",
+          "title": "पुरस्कार एवं नियुक्तियां (Awards & Appointments)",
+          "subtitle": "",
+          "tone": "blue",
+          "blocks": [
+            {
+              "id": "pts-awards",
+              "type": "points",
+              "style": "bullet",
+              "items": [
+                "**भारतीय विमानपत्तन प्राधिकरण (AAI)**: **निवेदिता दुबे** एएआई बोर्ड में नियुक्त होने वाली पहली महिला अधिकारी बनी हैं।",
+                "**अशोक चक्र 2026**: भारतीय अंतरिक्ष यात्री और ग्रुप कैप्टन **शुभांशु शुक्ला** को राष्ट्रपति द्वारा अशोक चक्र से सम्मानित किया गया।"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "sec-scitech",
+          "type": "section",
+          "title": "विज्ञान एवं तकनीक (Sci & Tech)",
+          "subtitle": "",
+          "tone": "blue",
+          "blocks": [
+            {
+              "id": "pts-scitech",
+              "type": "points",
+              "style": "bullet",
+              "items": [
+                "**इसरो EOS-N1**: इसरो ने **PSLV-C62** के माध्यम से पृथ्वी अवलोकन उपग्रह EOS-N1 का सफल प्रक्षेपण किया है।",
+                "**पारामाउंट-AI**: भारत ने अपनी पहली स्वदेशी **GenAI आधारित स्वास्थ्य सेवा** 'पारामाउंट' को पायलट प्रोजेक्ट के तौर पर लॉन्च किया है।"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "sec-economy",
+          "type": "section",
+          "title": "अर्थव्यवस्था (Economy)",
+          "subtitle": "",
+          "tone": "blue",
+          "blocks": [
+            {
+              "id": "pts-economy",
+              "type": "points",
+              "style": "bullet",
+              "items": [
+                "**राजस्थान बजट 2026-27**: राज्य की अर्थव्यवस्था को **21.52 लाख करोड़ रुपये** तक ले जाने का लक्ष्य रखा गया है।",
+                "**प्रति व्यक्ति आय**: राजस्थान में प्रति व्यक्ति आय वर्ष 2025-26 के अंत तक **₹2.02 लाख** होने का अनुमान है।"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "sec-schemes",
+          "type": "section",
+          "title": "सरकारी योजनाएं (Government Schemes)",
+          "subtitle": "",
+          "tone": "blue",
+          "blocks": [
+            {
+              "id": "pts-schemes",
+              "type": "points",
+              "style": "bullet",
+              "items": [
+                "**अमृत भारत स्टेशन योजना**: राजस्थान के 15 अतिरिक्त स्टेशनों (कुल 98) के आधुनिकीकरण के लिए विशेष बजट आवंटन।",
+                "**मुख्यमंत्री किसान सम्मान निधि**: राजस्थान सरकार ने इस राशि को वार्षिक ₹9,000 से बढ़ाकर **₹12,000** कर दिया है।",
+                "**हर घर नल योजना**: ग्रामीण क्षेत्रों में पेयजल हेतु **₹6,800 करोड़** का प्रावधान किया गया है।"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "sec-rajasthan",
+          "type": "section",
+          "title": "राजस्थान विशेष (Rajasthan Specific)",
+          "subtitle": "",
+          "tone": "blue",
+          "blocks": [
+            {
+              "id": "pts-rajasthan",
+              "type": "points",
+              "style": "bullet",
+              "items": [
+                "**वायु शक्ति-2026**: भारतीय वायुसेना का महा-अभ्यास पोकरण (जैसलमेर) में आयोजित होगा।",
+                "**नए सौर पार्क**: बीकानेर और जैसलमेर में नए सौर पार्कों हेतु **₹3,000 करोड़** आवंटित।",
+                "**शिक्षा ई-वाउचर**: मेधावी छात्रों को लैपटॉप/टैबलेट के लिए **₹20,000** का ई-वाउचर देने की प्रक्रिया शुरू।",
+                "**अमृत भारत रेलवे**: **अलवर** जिला अपनी सभी तहसीलों में 100% बैंकिंग और बीमा कवरेज हासिल करने वाला देश का पहला जिला बना।"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "review": {
+      "status": "approved",
+      "feedback": "",
+      "editorMessage": "",
+      "messageThread": [],
+      "reviewedBy": {
+        "uid": "5pC2v2Cy0DSzSpEYbBYWRFGPXTj2",
+        "email": "manojbidiyasar1@gmail.com",
+        "displayName": "Manoj Bidiyasar",
+        "role": "super_admin"
+      },
+      "reviewedByUid": "5pC2v2Cy0DSzSpEYbBYWRFGPXTj2",
+      "reviewedByEmail": "manojbidiyasar1@gmail.com",
+      "reviewedAt": {
+        "_seconds": 1771154157,
+        "_nanoseconds": 260000000
+      }
+    }
+  },
+  {
+    "id": "2026-02-16",
+    "title": "16 February 2026 Current Affairs",
+    "slug": "16-february-2026-current-affairs",
+    "language": "en",
+    "dailyMeta": {},
+    "monthlyMeta": {},
+    "notesMeta": {},
+    "relatedContent": [],
+    "pdfUrl": "",
+    "type": "daily",
+    "isDeleted": false,
+    "createdBy": {
+      "uid": "5pC2v2Cy0DSzSpEYbBYWRFGPXTj2",
+      "email": "manojbidiyasar1@gmail.com",
+      "displayName": "Manoj Bidiyasar",
+      "role": "super_admin"
+    },
+    "createdAt": {
+      "_seconds": 1771354227,
+      "_nanoseconds": 730000000
+    },
+    "tags": [
+      "current affairs",
+      "16 February 2026",
+      "national news",
+      "international news",
+      "economy",
+      "science and technology",
+      "sports",
+      "government scheme",
+      "Rajasthan special"
+    ],
+    "summary": "This article covers important current affairs of 16 February 2026, including Today's History, AI Impact Summit, Vande Mataram Protocol, National & International news, Sports, Sci & Tech, and Rajasthan specific updates.",
+    "seo": {
+      "seoTitle": "16 February 2026 Daily Current Affairs in English",
+      "seoDescription": "Important Current Affairs 16 February 2026. Covers AI Impact Summit, Vande Mataram Protocol, Henley Passport Index, and Rajasthan Specific updates for competitive exams.",
+      "canonicalUrl": "https://www.ultrastudypoint.in/current-affairs/daily/16-february-2026-current-affairs",
+      "keywords": "current affairs 16 Feb 2026, daily current affairs, Rajasthan current affairs, AI Summit 2026, Umaid Bhawan Palace value, NISAR satellite, Vande Mataram protocol, Henley Passport Index 2026 India rank"
+    },
+    "updatedBy": {
+      "uid": "5pC2v2Cy0DSzSpEYbBYWRFGPXTj2",
+      "email": "manojbidiyasar1@gmail.com",
+      "displayName": "Manoj Bidiyasar",
+      "role": "super_admin"
+    },
+    "isLocked": false,
+    "status": "published",
+    "updatedAt": {
+      "_seconds": 1771402858,
+      "_nanoseconds": 740000000
+    },
+    "publishedAt": null,
+    "review": {
+      "status": "approved",
+      "feedback": "",
+      "editorMessage": "",
+      "messageThread": [],
+      "reviewedBy": {
+        "uid": "5pC2v2Cy0DSzSpEYbBYWRFGPXTj2",
+        "email": "manojbidiyasar1@gmail.com",
+        "displayName": "Manoj Bidiyasar",
+        "role": "super_admin"
+      },
+      "reviewedByUid": "5pC2v2Cy0DSzSpEYbBYWRFGPXTj2",
+      "reviewedByEmail": "manojbidiyasar1@gmail.com",
+      "reviewedAt": {
+        "_seconds": 1771402864,
+        "_nanoseconds": 828000000
+      }
+    },
+    "caDate": null,
+    "pyqMeta": {},
+    "quizMeta": {},
+    "content": {
+      "version": 1,
+      "blocks": [
+        {
+          "blocks": [
+            {
+              "id": "pts-history",
+              "items": [
+                "**महाराजा उम्मेद सिंह (जोधपुर)**: जोधपुर के उम्मेद भवन पैलेस की नींव रखने वाले महाराजा उम्मेद सिंह का ऐतिहासिक महत्व। यह महल दुनिया के सबसे बड़े निजी आवासों में से एक है।",
+                "**महाशिवरात्रि व्रत पारण**: 15 फरवरी को मनाई गई महाशिवरात्रि का व्रत पारण आज 16 फरवरी को प्रातः 06:59 से दोपहर 03:24 के बीच किया जा रहा है।",
+                "**दादा साहब फाल्के पुण्यतिथि**: भारतीय सिनेमा के जनक धुंडीराज गोविंद फाल्के (दादा साहब फाल्के) का निधन 16 फरवरी 1944 को हुआ था।"
+              ],
+              "style": "bullet",
+              "type": "points"
+            }
+          ],
+          "id": "sec-history",
+          "title": "आज का इतिहास और महत्वपूर्ण दिवस (Today's History & Important Day)",
+          "tone": "blue",
+          "subtitle": "",
+          "type": "section"
+        },
+        {
+          "tone": "blue",
+          "title": "राष्ट्रीय (National)",
+          "type": "section",
+          "subtitle": "",
+          "id": "sec-national",
+          "blocks": [
+            {
+              "type": "points",
+              "items": [
+                "**AI इम्पैक्ट शिखर सम्मेलन 2026**: भारत 16 से 20 फरवरी तक नई दिल्ली में इस वैश्विक शिखर सम्मेलन की मेजबानी कर रहा है। इसकी थीम 'सर्वजन हिताय, सर्वजन सुखाय' रखी गई है।",
+                "**वंदे मातरम प्रोटोकॉल**: गृह मंत्रालय ने 'वंदे मातरम' के लिए नया प्रोटोकॉल जारी किया है। अब आधिकारिक कार्यक्रमों में इसके सभी छह अंतरे (stanzas) गाए जाएंगे, जिनकी अवधि 3 मिनट 10 सेकंड होगी।",
+                "**पीएमओ का नया पता**: प्रधानमंत्री कार्यालय (PMO) अब ऐतिहासिक साउथ ब्लॉक से हटकर 'सेवा तीर्थ' (Seva Teerth) परिसर (सेंट्रल विस्टा प्रोजेक्ट) में स्थानांतरित हो गया है।"
+              ],
+              "style": "bullet",
+              "id": "pts-national"
+            }
+          ]
+        },
+        {
+          "tone": "blue",
+          "blocks": [
+            {
+              "style": "bullet",
+              "items": [
+                "**कंबाइंड टास्क फोर्स (CTF) 154**: भारतीय नौसेना ने पहली बार बहरीन में बहुराष्ट्रीय प्रशिक्षण टास्क फोर्स CTF 154 की कमान संभाली है। भारतीय नौसेना के कमोडोर मिलिंद एम. मोकाशी इसके कमांडर नियुक्त किए गए हैं।",
+                "**हेनले पासपोर्ट इंडेक्स 2026**: फरवरी 2026 की रैंकिंग में भारतीय पासपोर्ट ने सुधार करते हुए 75वां स्थान हासिल किया है। सिंगापुर शीर्ष पर बना हुआ है।"
+              ],
+              "id": "pts-international",
+              "type": "points"
+            }
+          ],
+          "title": "अंतर्राष्ट्रीय (International)",
+          "type": "section",
+          "subtitle": "",
+          "id": "sec-international"
+        },
+        {
+          "blocks": [
+            {
+              "type": "points",
+              "items": [
+                "**एशियाई मिक्स्ड टीम बैडमिंटन**: भारत ने ग्रुप चरण में शानदार प्रदर्शन करते हुए नॉकआउट दौर में प्रवेश किया।"
+              ],
+              "style": "bullet",
+              "id": "pts-sports"
+            }
+          ],
+          "type": "section",
+          "id": "sec-sports",
+          "tone": "blue",
+          "title": "खेल (Sports)",
+          "subtitle": ""
+        },
+        {
+          "blocks": [
+            {
+              "id": "pts-awards",
+              "type": "points",
+              "items": [
+                "**AAI की पहली महिला बोर्ड सदस्य**: निवेदिता दुबे को भारतीय विमानपत्तन प्राधिकरण के बोर्ड में सदस्य (मानव संसाधन) के रूप में नियुक्त किया गया है। वह इस पद पर पहुंचने वाली पहली महिला अधिकारी हैं।",
+                "**ICAI के नए अध्यक्ष**: सीए मंगेश पांडुरंग किनरे को वर्ष 2026-27 के लिए 'इंस्टीट्यूट ऑफ चार्टर्ड अकाउंटेंट्स ऑफ इंडिया' का उपाध्यक्ष चुना गया है।"
+              ],
+              "style": "bullet"
+            }
+          ],
+          "tone": "blue",
+          "title": "पुरस्कार एवं नियुक्तियां (Awards & Appointments)",
+          "id": "sec-awards",
+          "type": "section",
+          "subtitle": ""
+        },
+        {
+          "type": "section",
+          "tone": "blue",
+          "title": "विज्ञान एवं तकनीक (Sci & Tech)",
+          "blocks": [
+            {
+              "id": "pts-scitech",
+              "style": "bullet",
+              "type": "points",
+              "items": [
+                "**NISAR सैटेलाइट**: इसरो और नासा के संयुक्त मिशन 'निसार' ने भारत की मिट्टी की नमी का 100 मीटर के उच्च रेजोल्यूशन पर नक्शा तैयार करना शुरू कर दिया है।",
+                "**फेस ट्रांसप्लांट प्रोग्राम**: AIIMS नई दिल्ली भारत का पहला ऐसा संस्थान बना है जिसने 'चेहरा प्रत्यारोपण कार्यक्रम' (Face Transplant Programme) शुरू करने की घोषणा की है।"
+              ]
+            }
+          ],
+          "id": "sec-scitech",
+          "subtitle": ""
+        },
+        {
+          "type": "section",
+          "id": "sec-economy",
+          "blocks": [
+            {
+              "id": "pts-economy",
+              "type": "points",
+              "style": "bullet",
+              "items": [
+                "**लीड बैंक योजना**: आरबीआई ने नरीमन समिति (1969) की सिफारिशों पर आधारित इस योजना के लिए नए संशोधित दिशानिर्देश जारी किए हैं।",
+                "**रियल एस्टेट योगदान**: नीति आयोग के अनुसार, 2047 तक भारत की जीडीपी में रियल एस्टेट क्षेत्र का योगदान बढ़कर 15-16% होने का अनुमान है।"
+              ]
+            }
+          ],
+          "title": "अर्थव्यवस्था (Economy)",
+          "subtitle": "",
+          "tone": "blue"
+        },
+        {
+          "blocks": [
+            {
+              "type": "points",
+              "items": [
+                "**Sthree Suraksha Scheme (केरल)**: केरल सरकार ने बेरोजगार महिलाओं और ट्रांसजेंडर व्यक्तियों के लिए ₹1,000 की मासिक पेंशन योजना शुरू की है।",
+                "**राष्ट्रीय लसीका फाइलेरिया उन्मूलन**: स्वास्थ्य मंत्रालय ने 2027 तक फाइलेरिया (Elephantiasis) को समाप्त करने के लिए वार्षिक राष्ट्रव्यापी अभियान शुरू किया है।",
+                "**अटल प्रगति पथ (राजस्थान)**: बजट 2026 के तहत राज्य में 500 करोड़ की लागत से 250 अटल प्रगति पथ (ग्रामीण सड़कें) विकसित करने का कार्य शुरू हुआ है।"
+              ],
+              "id": "pts-schemes",
+              "style": "bullet"
+            }
+          ],
+          "id": "sec-schemes",
+          "type": "section",
+          "subtitle": "",
+          "tone": "blue",
+          "title": "सरकारी योजनाएं (Government Schemes)"
+        },
+        {
+          "id": "sec-rajasthan",
+          "subtitle": "",
+          "type": "section",
+          "blocks": [
+            {
+              "type": "points",
+              "style": "bullet",
+              "items": [
+                "**उम्मेद भवन पैलेस (जोधपुर)**: ₹22,400 करोड़ के बाजार मूल्य के साथ भारत की सबसे मूल्यवान निजी संपत्तियों में से एक घोषित।",
+                "**न्यायिक राहत**: सुप्रीम कोर्ट ने राजस्थान सरकार के विरुद्ध संपत्तियों की कुर्की की कार्यवाही पर रोक लगा दी है।",
+                "**कार्बन क्रेडिट पायलट प्रोजेक्ट**: राजस्थान देश का पहला राज्य बनेगा जो किसानों को 'कार्बन क्रेडिट' के माध्यम से अतिरिक्त आय प्रदान करेगा।",
+                "**राज-सेतु (RAJ-SETU) फंड**: शहरी बुनियादी ढांचे और विकास कार्यों के वित्तपोषण के लिए राजस्थान सरकार ने इस फंड की स्थापना की है।"
+              ],
+              "id": "pts-rajasthan"
+            }
+          ],
+          "tone": "blue",
+          "title": "राजस्थान विशेष (Rajasthan Specific)"
+        }
+      ]
+    }
+  },
+  {
+    "id": "2026-02-17",
+    "title": "17 February 2026 Current Affairs",
+    "slug": "17-february-2026-current-affairs",
+    "language": "en",
+    "dailyMeta": {},
+    "monthlyMeta": {},
+    "notesMeta": {},
+    "pyqMeta": {},
+    "quizMeta": {},
+    "relatedContent": [],
+    "caDate": {
+      "_seconds": 1771286400,
+      "_nanoseconds": 0
+    },
+    "pdfUrl": "",
+    "type": "daily",
+    "isDeleted": false,
+    "createdBy": {
+      "uid": "5pC2v2Cy0DSzSpEYbBYWRFGPXTj2",
+      "email": "manojbidiyasar1@gmail.com",
+      "displayName": "Manoj Bidiyasar",
+      "role": "super_admin"
+    },
+    "createdAt": {
+      "_seconds": 1771401775,
+      "_nanoseconds": 992000000
+    },
+    "seo": {
+      "seoTitle": "17 February 2026 Daily Current Affairs in English",
+      "seoDescription": "Latest Current Affairs 17 February 2026. Includes PM Modi opening AI Summit, India vs Pakistan T20 match results, and Rajasthan's top rank in wool production.",
+      "canonicalUrl": "https://www.ultrastudypoint.in/current-affairs/daily/17-february-2026-current-affairs",
+      "keywords": "current affairs 17 Feb 2026, Rajasthan wool production, AI Impact Summit 2026, PM RAHAT portal, India vs Pakistan 2026 score, Bharat EduAI Stack, daily news for UPSC SSC"
+    },
+    "tags": [
+      "current affairs",
+      "17 February 2026",
+      "national news",
+      "international news",
+      "economy",
+      "science and technology",
+      "sports",
+      "government schemes",
+      "Rajasthan special"
+    ],
+    "summary": "This article covers important current affairs of 17 February 2026, including Global Tourism Resilience Day, India AI Impact Summit inauguration, India's first underwater tunnel in Assam, and Rajasthan's wool production record.",
+    "content": {
+      "version": 1,
+      "blocks": [
+        {
+          "blocks": [
+            {
+              "id": "pts-history",
+              "items": [
+                "**वैश्विक पर्यटन लचीलापन दिवस (Global Tourism Resilience Day)**: पर्यटन उद्योग को संकटों से उबारने और टिकाऊ बनाने के उद्देश्य से प्रतिवर्ष 17 फरवरी को मनाया जाता है।",
+                "**ऐतिहासिक घटना (1915)**: महात्मा गांधी ने पहली बार शांतिनिकेतन का दौरा किया था।",
+                "**छत्रपति शिवाजी महाराज (1670)**: शिवाजी महाराज ने मुगलों को हराकर सिंहगढ़ के किले पर विजय प्राप्त की थी।",
+                "**वासुदेव बलवंत फड़के पुण्यतिथि**: भारतीय स्वतंत्रता संग्राम के क्रांतिकारी वासुदेव बलवंत फड़के का निधन 17 फरवरी 1883 को हुआ था।"
+              ],
+              "style": "bullet",
+              "type": "points"
+            }
+          ],
+          "id": "sec-history",
+          "title": "आज का इतिहास और महत्वपूर्ण दिवस (Today's History & Important Day)",
+          "tone": "blue",
+          "subtitle": "",
+          "type": "section"
+        },
+        {
+          "tone": "blue",
+          "title": "राष्ट्रीय (National)",
+          "type": "section",
+          "subtitle": "",
+          "id": "sec-national",
+          "blocks": [
+            {
+              "type": "points",
+              "items": [
+                "**India AI Impact Summit 2026**: प्रधानमंत्री नरेंद्र मोदी ने नई दिल्ली में इस पांच दिवसीय शिखर सम्मेलन का उद्घाटन किया। इसकी थीम 'सर्वजन हिताय, सर्वजन सुखाय' रखी गई है।",
+                "**भारत की पहली जलमग्न सुरंग**: केंद्रीय कैबिनेट ने असम में ब्रह्मपुत्र नदी के नीचे देश की पहली सड़क-रेल सुरंग (Underground Rail-Road Tunnel) के निर्माण को मंजूरी दी है।",
+                "**JEE Main 2026 रिजल्ट**: नेशनल टेस्टिंग एजेंसी (NTA) ने जेईई मेन सेशन-1 के परिणाम घोषित किए, जिसमें रिकॉर्ड संख्या में छात्रों ने 100 पर्सेंटाइल हासिल किया।"
+              ],
+              "style": "bullet",
+              "id": "pts-national"
+            }
+          ]
+        },
+        {
+          "tone": "blue",
+          "blocks": [
+            {
+              "style": "bullet",
+              "items": [
+                "**कंबाइंड टास्क फोर्स (CTF) 154**: भारतीय नौसेना ने पहली बार बहरीन में बहुराष्ट्रीय प्रशिक्षण टास्क फोर्स CTF 154 की कमान संभाली है। भारतीय नौसेना के कमोडोर मिलिंद एम. मोकाशी इसके कमांडर नियुक्त किए गए हैं।",
+                "**बांग्लादेश में सत्ता परिवर्तन**: चुनाव के बाद तारिक रहमान बांग्लादेश के नए प्रधानमंत्री के रूप में शपथ लेने जा रहे हैं।",
+                "**आर्कटिक निगरानी मिशन**: नाटो (NATO) ने आर्कटिक क्षेत्र में रूस की गतिविधियों पर नजर रखने के लिए 'Arctic Sentry' मिशन लॉन्च किया है।"
+              ],
+              "id": "pts-international",
+              "type": "points"
+            }
+          ],
+          "title": "अंतर्राष्ट्रीय (International)",
+          "type": "section",
+          "subtitle": "",
+          "id": "sec-international"
+        },
+        {
+          "blocks": [
+            {
+              "type": "points",
+              "items": [
+                "**सैन्य साहसिक चुनौती कप**: भारतीय सेना पहली बार 'इंटरनेशनल मिलिट्री एडवेंचर चैलेंज कप' की मेजबानी 18 से 23 फरवरी तक पूर्वी हिमालय क्षेत्र में करेगी।"
+              ],
+              "style": "bullet",
+              "id": "pts-sports"
+            }
+          ],
+          "type": "section",
+          "id": "sec-sports",
+          "tone": "blue",
+          "title": "खेल (Sports)",
+          "subtitle": ""
+        },
+        {
+          "blocks": [
+            {
+              "id": "pts-awards",
+              "type": "points",
+              "items": [
+                "**उदय कोटक**: इन्हें भारत के वैश्विक वित्तीय केंद्र GIFT सिटी (गुजरात) का अध्यक्ष नियुक्त किया गया है।",
+                "**आनंद केंटिश कुमारस्वामी पुरस्कार 2026**: प्रसिद्ध लेखिका चारू गुप्ता को उनकी पुस्तक 'Hindi Hindu Histories' के लिए इस प्रतिष्ठित पुरस्कार से सम्मानित किया गया।"
+              ],
+              "style": "bullet"
+            }
+          ],
+          "tone": "blue",
+          "title": "पुरस्कार एवं नियुक्तियां (Awards & Appointments)",
+          "id": "sec-awards",
+          "type": "section",
+          "subtitle": ""
+        },
+        {
+          "type": "section",
+          "tone": "blue",
+          "title": "विज्ञान एवं तकनीक (Sci & Tech)",
+          "blocks": [
+            {
+              "id": "pts-scitech",
+              "style": "bullet",
+              "type": "points",
+              "items": [
+                "**Bharat EduAI Stack**: शिक्षा मंत्रालय ने स्कूलों के लिए स्वदेशी एआई मॉडल 'बोधन एआई' (Bodhan AI) और 'भारत एडूएआई स्टैक' लॉन्च किया है।",
+                "**डिजिटल फूड कूपन**: गुजरात देश का पहला ऐसा राज्य बना है जिसने CBDC आधारित 'डिजिटल फूड कूपन' का उपयोग PDS में शुरू किया है।"
+              ]
+            }
+          ],
+          "id": "sec-scitech",
+          "subtitle": ""
+        },
+        {
+          "type": "section",
+          "id": "sec-economy",
+          "blocks": [
+            {
+              "id": "pts-economy",
+              "type": "points",
+              "style": "bullet",
+              "items": [
+                "**स्टार्टअप इंडिया फंड**: कैबिनेट ने स्टार्टअप्स के लिए ₹10,000 करोड़ की 'फंड ऑफ फंड्स 2.0' योजना को स्वीकृति दी है।",
+                "**RBI का सख्त रुख**: भारतीय रिजर्व बैंक ने शेयर ब्रोकरों द्वारा ग्राहकों को दिए जाने वाले असुरक्षित ऋणों (Unsecured Loans) पर नए नियम जारी किए हैं।"
+              ]
+            }
+          ],
+          "title": "अर्थव्यवस्था (Economy)",
+          "subtitle": "",
+          "tone": "blue"
+        },
+        {
+          "blocks": [
+            {
+              "type": "points",
+              "items": [
+                "**'PM RAHAT' पोर्टल**: सड़क परिवहन मंत्रालय ने सड़क दुर्घटना पीड़ितों के लिए कैशलेस उपचार सुनिश्चित करने हेतु इस योजना का विस्तार किया है।",
+                "**तुलबुल नेविगेशन प्रोजेक्ट**: जम्मू-कश्मीर सरकार ने झेलम नदी पर रुके हुए इस प्रोजेक्ट को पुनः शुरू करने की घोषणा की है।",
+                "**मुख्यमंत्री ग्रामोत्थान योजना**: गुजरात सरकार ने ग्रामीण बुनियादी ढांचे के विकास के लिए इस नई योजना का शुभारंभ किया।"
+              ],
+              "id": "pts-schemes",
+              "style": "bullet"
+            }
+          ],
+          "id": "sec-schemes",
+          "type": "section",
+          "subtitle": "",
+          "tone": "blue",
+          "title": "सरकारी योजनाएं (Government Schemes)"
+        },
+        {
+          "id": "sec-rajasthan",
+          "subtitle": "",
+          "type": "section",
+          "blocks": [
+            {
+              "type": "points",
+              "style": "bullet",
+              "items": [
+                "**ऊन उत्पादन रिकॉर्ड**: भारत के कुल ऊन उत्पादन (33.69 मिलियन किग्रा) में राजस्थान की हिस्सेदारी लगभग 48% है।",
+                "**जैन चादर महोत्सव**: जैसलमेर जिले में 6 से 8 मार्च 2026 तक देश के पहले 'जैन चादर महोत्सव' का आयोजन किया जाएगा।",
+                "**अटल प्रगति पथ**: ग्रामीण कनेक्टिविटी के लिए बजट में घोषित 250 'अटल प्रगति पथ' के निर्माण की निविदाएं जारी कर दी गई हैं।"
+              ],
+              "id": "pts-rajasthan"
+            }
+          ],
+          "tone": "blue",
+          "title": "राजस्थान विशेष (Rajasthan Specific)"
+        }
+      ]
+    },
+    "updatedBy": {
+      "uid": "5pC2v2Cy0DSzSpEYbBYWRFGPXTj2",
+      "email": "manojbidiyasar1@gmail.com",
+      "displayName": "Manoj Bidiyasar",
+      "role": "super_admin"
+    },
+    "publishedAt": {
+      "_seconds": 1771402832,
+      "_nanoseconds": 470000000
+    },
+    "review": {
+      "status": "approved",
+      "feedback": "",
+      "editorMessage": "",
+      "messageThread": [],
+      "reviewedBy": {
+        "uid": "5pC2v2Cy0DSzSpEYbBYWRFGPXTj2",
+        "email": "manojbidiyasar1@gmail.com",
+        "displayName": "Manoj Bidiyasar",
+        "role": "super_admin"
+      },
+      "reviewedByUid": "5pC2v2Cy0DSzSpEYbBYWRFGPXTj2",
+      "reviewedByEmail": "manojbidiyasar1@gmail.com",
+      "reviewedAt": {
+        "_seconds": 1771402832,
+        "_nanoseconds": 470000000
+      }
+    },
+    "isLocked": false,
+    "status": "published",
+    "updatedAt": {
+      "_seconds": 1771402832,
+      "_nanoseconds": 470000000
+    }
+  },
+  {
+    "id": "Aug-2026-Monthly-CA",
+    "title": "August 2026 Monthly Current Affairs",
+    "slug": "august-2026-monthly-current-affairs",
+    "summary": "",
+    "language": "en",
+    "tags": [],
+    "content": {
+      "version": 1,
+      "blocks": []
+    },
+    "dailyMeta": {},
+    "monthlyMeta": {},
+    "notesMeta": {},
+    "quizMeta": {},
+    "relatedContent": [],
+    "caDate": {
+      "_seconds": 1785542400,
+      "_nanoseconds": 0
+    },
+    "pdfUrl": "",
+    "status": "draft",
+    "publishedAt": null,
+    "review": {
+      "feedback": "",
+      "editorMessage": "",
+      "messageThread": []
+    },
+    "seo": {
+      "seoTitle": "August 2026 Monthly Current Affairs in English",
+      "canonicalUrl": "https://www.ultrastudypoint.in/current-affairs/monthly/august-2026-monthly-current-affairs"
+    },
+    "type": "monthly",
+    "isDeleted": false,
+    "createdBy": {
+      "uid": "5pC2v2Cy0DSzSpEYbBYWRFGPXTj2",
+      "email": "manojbidiyasar1@gmail.com",
+      "displayName": "Manoj Bidiyasar",
+      "role": "super_admin"
+    },
+    "createdAt": {
+      "_seconds": 1771162912,
+      "_nanoseconds": 453000000
+    }
+  },
+  {
+    "id": "Feb 2026 Monthly CA",
+    "type": "monthly",
+    "pdfUrl": "https://drive.google.com/file/d/1SN0_gJlqby8pJaiNaG2rX6YWSMYs91Bl/view?usp=sharing",
+    "sections": [
+      {
+        "heading": "राष्ट्रीय समाचार",
+        "points": [
+          "प्रधानमंत्री नरेंद्र मोदी ने कहा कि वर्ष 2025 में भारत ने वैश्विक स्तर पर सुरक्षा, विज्ञान और कूटनीति के क्षेत्र में अपनी मजबूत उपस्थिति दर्ज कराई।",
+          "केंद्र सरकार ने विज्ञान एवं परमाणु ऊर्जा क्षेत्र में सुधार के लिए <b>SHANTI विधेयक</b> को अहम बताया।",
+          "अयोध्या राम मंदिर के प्राण-प्रतिष्ठा की दूसरी वर्षगांठ के अवसर पर धार्मिक अनुष्ठान शुरू हुए।"
+        ]
+      },
+      {
+        "points": [
+          "भारत और ओमान के बीच रणनीतिक साझेदारी को और मजबूत करने पर सहमति बनी, जिसमें व्यापार और सुरक्षा सहयोग शामिल है।",
+          "भारत-अफ्रीका रक्षा सहयोग को बढ़ाने पर चर्चा हुई, खासकर आतंकवाद और समुद्री सुरक्षा के क्षेत्र में।"
+        ],
+        "heading": "विदेश नीति / कूटनीति"
+      }
+    ],
+    "title": "Feburary 2026 Nonthly Compilation",
+    "status": "published",
+    "publishDate": "2025-12-28",
+    "lastModified": "2025-12-28",
+    "seoTitle": "Feburary 2026 Monthly Current Affairs in Hindi",
+    "seoDescription": "28 दिसंबर 2025 के दैनिक करेंट अफेयर्स – राष्ट्रीय समाचार, विदेश नीति, सुरक्षा, शिक्षा और अर्थव्यवस्था।",
+    "keywords": [
+      "Monthly Current Affairs",
+      "December 2026",
+      "Hindi Current Affairs"
+    ],
+    "summary\"": "आज के करेंट अफेयर्स में राष्ट्रीय समाचार, विदेश नीति, सुरक्षा, शिक्षा और अर्थव्यवस्था से जुड़े महत्वपूर्ण विषय शामिल हैं।",
+    "tags": [
+      "current-affairs",
+      "upsc"
+    ],
+    "prevSlug": "monthly-january-2026-current-affairs",
+    "publishAt": {
+      "_seconds": 1767207095,
+      "_nanoseconds": 133000000
+    },
+    "publishedAt": {
+      "_seconds": 1767205800,
+      "_nanoseconds": 307000000
+    },
+    "caDate": {
+      "_seconds": 1770748200,
+      "_nanoseconds": 244000000
+    },
+    "nextSlug": "march-2026-current-affairs",
+    "slug": "feburary-2026-current-affairs"
+  },
+  {
+    "id": "Jun-2026-Monthly-CA",
+    "title": "June 2026 Monthly Current Affairs",
+    "slug": "june-2026-monthly-current-affairs",
+    "language": "en",
+    "tags": [],
+    "dailyMeta": {},
+    "monthlyMeta": {},
+    "notesMeta": {
+      "categoryId": "",
+      "categoryName": "",
+      "subCategoryId": "",
+      "subCategoryName": "",
+      "topic": ""
+    },
+    "quizMeta": {},
+    "relatedContent": [],
+    "caDate": {
+      "_seconds": 1780272000,
+      "_nanoseconds": 0
+    },
+    "pdfUrl": "",
+    "status": "draft",
+    "publishedAt": null,
+    "type": "monthly",
+    "isDeleted": false,
+    "createdBy": {
+      "uid": "5pC2v2Cy0DSzSpEYbBYWRFGPXTj2",
+      "email": "manojbidiyasar1@gmail.com",
+      "displayName": "Manoj Bidiyasar",
+      "role": "super_admin"
+    },
+    "createdAt": {
+      "_seconds": 1769865954,
+      "_nanoseconds": 590000000
+    },
+    "summary": "bdvbvlkl;kla;dvjjbdsgvjjl;dksvvkbhsvjkjsldv",
+    "seo": {
+      "seoTitle": "June 2026 Monthly Current Affairs in English",
+      "seoDescription": "bnbmb bsdhvbdbvkmv.d.mvklskvjkjhda",
+      "canonicalUrl": "https://ultrastudypoint.in/current-affairs/monthly/june-2026-monthly-current-affairs"
+    },
+    "content": {
+      "version": 1,
+      "blocks": [
+        {
+          "id": "b5809a1f-c22d-42c2-b533-abc1c90b02a0",
+          "type": "markdown",
+          "__ui": {
+            "collapsed": false,
+            "label": ""
+          },
+          "content": "**Hello how are you**.\n***What are you doing*** bvvmbmbcxmnbxznmzxbnbnmzxbnbvcnxbnxbcvnbcx.\ncmnmxbm\n\nnvcxnbmzcx"
+        }
+      ]
+    }
+  },
+  {
+    "id": "May-2026-Monthly-CA",
+    "title": "May 2026 Monthly Current Affairs",
+    "slug": "may-2026-monthly-current-affairs",
+    "summary": "",
+    "language": "en",
+    "tags": [],
+    "content": {
+      "version": 1,
+      "blocks": []
+    },
+    "dailyMeta": {},
+    "monthlyMeta": {},
+    "notesMeta": {
+      "categoryId": "",
+      "categoryName": "",
+      "subCategoryId": "",
+      "subCategoryName": "",
+      "topic": ""
+    },
+    "quizMeta": {},
+    "relatedContent": [],
+    "pdfUrl": "",
+    "status": "draft",
+    "publishedAt": null,
+    "seo": {
+      "seoTitle": "May 2026 Monthly Current Affairs in English",
+      "canonicalUrl": "https://ultrastudypoint.in/current-affairs/monthly/may-2026-monthly-current-affairs"
+    },
+    "type": "monthly",
+    "isDeleted": false,
+    "createdBy": {
+      "uid": "5pC2v2Cy0DSzSpEYbBYWRFGPXTj2",
+      "email": "manojbidiyasar1@gmail.com",
+      "displayName": "Manoj Bidiyasar",
+      "role": "super_admin"
+    },
+    "createdAt": {
+      "_seconds": 1769594080,
+      "_nanoseconds": 355000000
+    },
+    "caDate": null
+  }
+]

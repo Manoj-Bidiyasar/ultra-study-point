@@ -1,0 +1,1335 @@
+[
+  {
+    "id": "Dsdxddr",
+    "title": "",
+    "slug": "dsdxddr",
+    "summary": "",
+    "language": "en",
+    "tags": [],
+    "content": {
+      "mode": "points",
+      "data": []
+    },
+    "dailyMeta": {},
+    "monthlyMeta": {},
+    "notesMeta": {},
+    "quizMeta": {
+      "durationMinutes": 60,
+      "rules": {
+        "minAttemptPercent": 90
+      },
+      "scoring": {
+        "defaultPoints": 1,
+        "negativeMarking": {
+          "type": "fraction",
+          "value": 0.3333333333333333
+        }
+      },
+      "sections": [],
+      "questions": []
+    },
+    "description": "",
+    "durationMinutes": 60,
+    "rules": {
+      "minAttemptPercent": 90
+    },
+    "scoring": {
+      "defaultPoints": 1,
+      "negativeMarking": {
+        "type": "fraction",
+        "value": 0.3333333333333333
+      }
+    },
+    "sections": [],
+    "questions": [],
+    "relatedContent": [],
+    "caDate": null,
+    "pdfUrl": "",
+    "status": "draft",
+    "publishedAt": null,
+    "seo": {},
+    "type": "quiz",
+    "isDeleted": false,
+    "createdBy": {
+      "uid": "5pC2v2Cy0DSzSpEYbBYWRFGPXTj2",
+      "email": "manojbidiyasar1@gmail.com",
+      "displayName": "Manoj Bidiyasar",
+      "role": "super_admin"
+    },
+    "createdAt": {
+      "_seconds": 1771085381,
+      "_nanoseconds": 169000000
+    }
+  },
+  {
+    "id": "Gfyduufidgdgfg",
+    "title": "",
+    "slug": "gfyduufidgdgfg",
+    "summary": "",
+    "language": "en",
+    "tags": [],
+    "content": {
+      "mode": "points",
+      "data": []
+    },
+    "dailyMeta": {},
+    "monthlyMeta": {},
+    "notesMeta": {},
+    "description": "",
+    "durationMinutes": 60,
+    "scoring": {
+      "defaultPoints": 1,
+      "negativeMarking": {
+        "type": "fraction",
+        "value": 0.3333333333333333
+      }
+    },
+    "sections": [],
+    "questions": [],
+    "relatedContent": [],
+    "caDate": null,
+    "pdfUrl": "",
+    "status": "draft",
+    "publishedAt": null,
+    "seo": {},
+    "type": "quiz",
+    "isDeleted": false,
+    "createdBy": {
+      "uid": "5pC2v2Cy0DSzSpEYbBYWRFGPXTj2",
+      "email": "manojbidiyasar1@gmail.com",
+      "displayName": "Manoj Bidiyasar",
+      "role": "super_admin"
+    },
+    "createdAt": {
+      "_seconds": 1771085609,
+      "_nanoseconds": 867000000
+    },
+    "rules": {
+      "minAttemptPercent": 90,
+      "languageVisibility": "force_hi",
+      "numberingMode": "section",
+      "timingMode": "section",
+      "toggleColor": "#0056d6",
+      "rulesList": [
+        {
+          "en": "Read all questions carefully.",
+          "hi": "सभी प्रश्न ध्यान से पढ़ें।"
+        },
+        {
+          "en": "Attempt all questions before submitting.",
+          "hi": "जमा करने से पहले सभी प्रश्न हल करें।"
+        }
+      ],
+      "languageMode": "dual"
+    },
+    "quizMeta": {
+      "durationMinutes": 60,
+      "rules": {
+        "minAttemptPercent": 90,
+        "languageVisibility": "force_hi",
+        "numberingMode": "section",
+        "timingMode": "section",
+        "toggleColor": "#0056d6",
+        "rulesList": [
+          {
+            "en": "Read all questions carefully.",
+            "hi": "सभी प्रश्न ध्यान से पढ़ें।"
+          },
+          {
+            "en": "Attempt all questions before submitting.",
+            "hi": "जमा करने से पहले सभी प्रश्न हल करें।"
+          }
+        ],
+        "languageMode": "dual"
+      },
+      "scoring": {
+        "defaultPoints": 1,
+        "negativeMarking": {
+          "type": "fraction",
+          "value": 0.3333333333333333
+        }
+      },
+      "sections": [],
+      "questions": []
+    }
+  },
+  {
+    "id": "Hsdjhds-sdhhfjs",
+    "title": "Hsdjhds Sdhhfjs",
+    "slug": "hsdjhds-sdhhfjs",
+    "summary": "",
+    "language": "en",
+    "tags": [],
+    "content": {
+      "mode": "points",
+      "data": []
+    },
+    "dailyMeta": {},
+    "monthlyMeta": {},
+    "notesMeta": {},
+    "quizMeta": {
+      "durationMinutes": 60,
+      "rules": {
+        "minAttemptPercent": 90
+      },
+      "scoring": {
+        "defaultPoints": 1,
+        "negativeMarking": {
+          "type": "fraction",
+          "value": 0.3333333333333333
+        }
+      },
+      "sections": [],
+      "questions": []
+    },
+    "description": "",
+    "durationMinutes": 60,
+    "rules": {
+      "minAttemptPercent": 90
+    },
+    "scoring": {
+      "defaultPoints": 1,
+      "negativeMarking": {
+        "type": "fraction",
+        "value": 0.3333333333333333
+      }
+    },
+    "sections": [],
+    "questions": [],
+    "relatedContent": [],
+    "caDate": null,
+    "pdfUrl": "",
+    "status": "draft",
+    "publishedAt": null,
+    "review": {
+      "feedback": "",
+      "editorMessage": "",
+      "messageThread": []
+    },
+    "seo": {},
+    "type": "quiz",
+    "isDeleted": false,
+    "createdBy": {
+      "uid": "5pC2v2Cy0DSzSpEYbBYWRFGPXTj2",
+      "email": "manojbidiyasar1@gmail.com",
+      "displayName": "Manoj Bidiyasar",
+      "role": "super_admin"
+    },
+    "createdAt": {
+      "_seconds": 1771175704,
+      "_nanoseconds": 739000000
+    }
+  },
+  {
+    "id": "Hshhdjs",
+    "title": "Hshhdjs",
+    "slug": "hshhdjs",
+    "language": "en",
+    "tags": [],
+    "content": {
+      "mode": "points",
+      "data": []
+    },
+    "dailyMeta": {},
+    "monthlyMeta": {},
+    "notesMeta": {},
+    "quizMeta": {
+      "durationMinutes": 60,
+      "rules": {
+        "minAttemptPercent": 90
+      },
+      "scoring": {
+        "defaultPoints": 1,
+        "negativeMarking": {
+          "type": "fraction",
+          "value": 0.3333333333333333
+        }
+      },
+      "sections": [],
+      "questions": []
+    },
+    "durationMinutes": 60,
+    "rules": {
+      "minAttemptPercent": 90
+    },
+    "scoring": {
+      "defaultPoints": 1,
+      "negativeMarking": {
+        "type": "fraction",
+        "value": 0.3333333333333333
+      }
+    },
+    "sections": [],
+    "questions": [],
+    "relatedContent": [],
+    "caDate": null,
+    "pdfUrl": "",
+    "status": "draft",
+    "publishedAt": null,
+    "review": {
+      "feedback": "",
+      "editorMessage": "",
+      "messageThread": []
+    },
+    "seo": {},
+    "type": "quiz",
+    "isDeleted": false,
+    "createdBy": {
+      "uid": "5pC2v2Cy0DSzSpEYbBYWRFGPXTj2",
+      "email": "manojbidiyasar1@gmail.com",
+      "displayName": "Manoj Bidiyasar",
+      "role": "super_admin"
+    },
+    "createdAt": {
+      "_seconds": 1771258844,
+      "_nanoseconds": 516000000
+    },
+    "summary": "Ebheheejkw",
+    "description": "Ebheheejkw",
+    "updatedBy": {
+      "uid": "5pC2v2Cy0DSzSpEYbBYWRFGPXTj2",
+      "email": "manojbidiyasar1@gmail.com",
+      "displayName": "Manoj Bidiyasar",
+      "role": "super_admin"
+    },
+    "isLocked": false,
+    "updatedAt": {
+      "_seconds": 1771258859,
+      "_nanoseconds": 933000000
+    }
+  },
+  {
+    "id": "SSC%20GK%20MOCK%20TEST",
+    "title": "",
+    "slug": "ssc-gk-mock-test",
+    "summary": "",
+    "language": "en",
+    "tags": [],
+    "content": {
+      "mode": "points",
+      "data": []
+    },
+    "dailyMeta": {},
+    "monthlyMeta": {},
+    "notesMeta": {},
+    "description": "",
+    "durationMinutes": 60,
+    "rules": {
+      "minAttemptPercent": 90
+    },
+    "scoring": {
+      "defaultPoints": 1,
+      "negativeMarking": {
+        "type": "fraction",
+        "value": 0.3333333333333333
+      }
+    },
+    "sections": [],
+    "relatedContent": [],
+    "caDate": null,
+    "pdfUrl": "",
+    "status": "draft",
+    "publishedAt": null,
+    "review": {
+      "feedback": "",
+      "editorMessage": "",
+      "messageThread": []
+    },
+    "seo": {},
+    "type": "quiz",
+    "isDeleted": false,
+    "createdBy": {
+      "uid": "5pC2v2Cy0DSzSpEYbBYWRFGPXTj2",
+      "email": "manojbidiyasar1@gmail.com",
+      "displayName": "Manoj Bidiyasar",
+      "role": "super_admin"
+    },
+    "createdAt": {
+      "_seconds": 1771174907,
+      "_nanoseconds": 578000000
+    },
+    "questions": [
+      {
+        "id": "q1",
+        "type": "single",
+        "prompt": "mcnxvmnbmnxm,b",
+        "options": [
+          "xcnvm,n,mxcn",
+          "mm x,m",
+          "sjdhjkhfkjhskd",
+          "nkjfjgkjfgk"
+        ],
+        "answer": 1,
+        "points": 1,
+        "sectionId": null,
+        "explanation": "sjkhfjkhgjkfkjkjjkhd",
+        "tags": [],
+        "difficulty": "medium"
+      }
+    ],
+    "quizMeta": {
+      "durationMinutes": 60,
+      "rules": {
+        "minAttemptPercent": 90
+      },
+      "scoring": {
+        "defaultPoints": 1,
+        "negativeMarking": {
+          "type": "fraction",
+          "value": 0.3333333333333333
+        }
+      },
+      "sections": [],
+      "questions": [
+        {
+          "id": "q1",
+          "type": "single",
+          "prompt": "mcnxvmnbmnxm,b",
+          "options": [
+            "xcnvm,n,mxcn",
+            "mm x,m",
+            "sjdhjkhfkjhskd",
+            "nkjfjgkjfgk"
+          ],
+          "answer": 1,
+          "points": 1,
+          "sectionId": null,
+          "explanation": "sjkhfjkhgjkfkjkjjkhd",
+          "tags": [],
+          "difficulty": "medium"
+        }
+      ]
+    }
+  },
+  {
+    "id": "SSC%20Quiz",
+    "slug": "ssc-quiz",
+    "summary": "",
+    "language": "en",
+    "tags": [],
+    "content": {
+      "mode": "points",
+      "data": []
+    },
+    "dailyMeta": {},
+    "monthlyMeta": {},
+    "notesMeta": {},
+    "description": "",
+    "durationMinutes": 60,
+    "scoring": {
+      "defaultPoints": 1,
+      "negativeMarking": {
+        "type": "fraction",
+        "value": 0.3333333333333333
+      }
+    },
+    "sections": [],
+    "relatedContent": [],
+    "caDate": null,
+    "pdfUrl": "",
+    "publishedAt": null,
+    "seo": {},
+    "type": "quiz",
+    "isDeleted": false,
+    "createdBy": {
+      "uid": "5pC2v2Cy0DSzSpEYbBYWRFGPXTj2",
+      "email": "manojbidiyasar1@gmail.com",
+      "displayName": "Manoj Bidiyasar",
+      "role": "super_admin"
+    },
+    "createdAt": {
+      "_seconds": 1770449864,
+      "_nanoseconds": 51000000
+    },
+    "status": "published",
+    "questions": [
+      {
+        "id": "q1",
+        "type": "single",
+        "prompt": "The largest planet in our solar system is?",
+        "options": [
+          "Earth",
+          "Venus",
+          "Jupiter",
+          "Mars"
+        ],
+        "answer": 2,
+        "points": 1,
+        "sectionId": null,
+        "explanation": "Jupiter is the largest planet.",
+        "answerText": null,
+        "tags": [
+          "Science",
+          "Space"
+        ],
+        "difficulty": "medium"
+      },
+      {
+        "id": "q2",
+        "type": "single",
+        "prompt": "Who wrote the National Anthem of India?",
+        "options": [
+          "Rabindranath Tagore",
+          "Bankim Chandra Chatterjee",
+          "Subhash Chandra Bose",
+          "Sarojini Naidu"
+        ],
+        "answer": 0,
+        "points": 1,
+        "sectionId": null,
+        "explanation": "Rabindranath Tagore wrote Jana Gana Mana.",
+        "answerText": null,
+        "tags": [
+          "History",
+          "Polity"
+        ],
+        "difficulty": "easy"
+      },
+      {
+        "id": "q3",
+        "type": "single",
+        "prompt": "Which river is called the Ganga of the South?",
+        "options": [
+          "Godavari",
+          "Krishna",
+          "Kaveri",
+          "Narmada"
+        ],
+        "answer": 2,
+        "points": 1,
+        "sectionId": null,
+        "explanation": "Kaveri is known as the Ganga of the South.",
+        "answerText": null,
+        "tags": [
+          "Geography",
+          "India"
+        ],
+        "difficulty": "medium"
+      }
+    ],
+    "rules": {
+      "minAttemptPercent": 90,
+      "useSections": false
+    },
+    "title": "nbnbvmxbcvb vhdvbuidhvdvhbvdhjv",
+    "quizMeta": {
+      "durationMinutes": 60,
+      "rules": {
+        "minAttemptPercent": 90,
+        "useSections": false
+      },
+      "scoring": {
+        "negativeMarking": {
+          "type": "fraction",
+          "value": 0.3333333333333333
+        },
+        "defaultPoints": 1
+      },
+      "sections": [],
+      "questions": [
+        {
+          "id": "q1",
+          "type": "single",
+          "prompt": "The largest planet in our solar system is?",
+          "options": [
+            "Earth",
+            "Venus",
+            "Jupiter",
+            "Mars"
+          ],
+          "answer": 2,
+          "points": 1,
+          "sectionId": null,
+          "explanation": "Jupiter is the largest planet.",
+          "answerText": null,
+          "tags": [
+            "Science",
+            "Space"
+          ],
+          "difficulty": "medium"
+        },
+        {
+          "id": "q2",
+          "type": "single",
+          "prompt": "Who wrote the National Anthem of India?",
+          "options": [
+            "Rabindranath Tagore",
+            "Bankim Chandra Chatterjee",
+            "Subhash Chandra Bose",
+            "Sarojini Naidu"
+          ],
+          "answer": 0,
+          "points": 1,
+          "sectionId": null,
+          "explanation": "Rabindranath Tagore wrote Jana Gana Mana.",
+          "answerText": null,
+          "tags": [
+            "History",
+            "Polity"
+          ],
+          "difficulty": "easy"
+        },
+        {
+          "id": "q3",
+          "type": "single",
+          "prompt": "Which river is called the Ganga of the South?",
+          "options": [
+            "Godavari",
+            "Krishna",
+            "Kaveri",
+            "Narmada"
+          ],
+          "answer": 2,
+          "points": 1,
+          "sectionId": null,
+          "explanation": "Kaveri is known as the Ganga of the South.",
+          "answerText": null,
+          "tags": [
+            "Geography",
+            "India"
+          ],
+          "difficulty": "medium"
+        }
+      ]
+    }
+  },
+  {
+    "id": "bsmbmcxv",
+    "title": "",
+    "slug": "bsmbmcxv",
+    "summary": "",
+    "language": "en",
+    "tags": [],
+    "content": {
+      "mode": "points",
+      "data": []
+    },
+    "dailyMeta": {},
+    "monthlyMeta": {},
+    "notesMeta": {},
+    "description": "",
+    "durationMinutes": 60,
+    "relatedContent": [],
+    "caDate": null,
+    "pdfUrl": "",
+    "status": "draft",
+    "publishedAt": null,
+    "seo": {},
+    "type": "quiz",
+    "isDeleted": false,
+    "createdBy": {
+      "uid": "5pC2v2Cy0DSzSpEYbBYWRFGPXTj2",
+      "email": "manojbidiyasar1@gmail.com",
+      "displayName": "Manoj Bidiyasar",
+      "role": "super_admin"
+    },
+    "createdAt": {
+      "_seconds": 1770265302,
+      "_nanoseconds": 284000000
+    },
+    "scoring": {
+      "defaultPoints": 2,
+      "negativeMarking": {
+        "type": "custom",
+        "value": 0
+      }
+    },
+    "sections": [
+      {
+        "title": "Geography",
+        "questionIds": [
+          "q1"
+        ],
+        "durationMinutes": 10,
+        "id": "s1"
+      },
+      {
+        "id": "s2",
+        "durationMinutes": 10,
+        "title": "New Section",
+        "questionIds": []
+      },
+      {
+        "questionIds": [],
+        "durationMinutes": 10,
+        "id": "s3",
+        "title": "New Section"
+      },
+      {
+        "id": "s4",
+        "questionIds": [],
+        "durationMinutes": 10,
+        "title": "New Section"
+      }
+    ],
+    "rules": {
+      "toggleColor": "#2959db",
+      "rulesList": [
+        {
+          "hi": "सभी प्रश्न ध्यान से पढ़ें।",
+          "en": "Read all questions carefully."
+        },
+        {
+          "hi": "जमा करने से पहले सभी प्रश्न हल करें।",
+          "en": "Attempt all questions before submitting."
+        },
+        {
+          "en": "Do not refresh the page during the test.",
+          "hi": "टेस्ट के दौरान पेज रीफ्रेश न करें।"
+        },
+        {
+          "hi": "अगर भाषा चयन उपलब्ध है तो उसका उपयोग करें।",
+          "en": "Use the language selector if available."
+        },
+        {
+          "en": "Use the language selector if available.",
+          "hi": "अगर भाषा चयन उपलब्ध है तो उसका उपयोग करें।"
+        }
+      ],
+      "dualDisplayMode": "inline",
+      "languageMode": "dual",
+      "minAttemptPercent": 0,
+      "showExplanation": true,
+      "useSections": true,
+      "optionEEnabled": true
+    },
+    "questions": [
+      {
+        "options": [
+          "bbmnbvcmv",
+          "$x^2$",
+          "mnx,mbm,cx",
+          "mcvx,m,mcx",
+          "mvxcm,,xcvmn"
+        ],
+        "sectionId": "s1",
+        "id": "q1",
+        "points": 1,
+        "prompt": "hello how are you",
+        "type": "single",
+        "explanation": {
+          "en": "vjhsvjvsjvhsdjvjhsvjhv bvhjvhj vjhbvjvhjgvhjvh",
+          "hi": "what are you doing"
+        },
+        "answer": 2
+      }
+    ],
+    "quizMeta": {
+      "durationMinutes": 60,
+      "rules": {
+        "toggleColor": "#2959db",
+        "rulesList": [
+          {
+            "hi": "सभी प्रश्न ध्यान से पढ़ें।",
+            "en": "Read all questions carefully."
+          },
+          {
+            "hi": "जमा करने से पहले सभी प्रश्न हल करें।",
+            "en": "Attempt all questions before submitting."
+          },
+          {
+            "en": "Do not refresh the page during the test.",
+            "hi": "टेस्ट के दौरान पेज रीफ्रेश न करें।"
+          },
+          {
+            "hi": "अगर भाषा चयन उपलब्ध है तो उसका उपयोग करें।",
+            "en": "Use the language selector if available."
+          },
+          {
+            "en": "Use the language selector if available.",
+            "hi": "अगर भाषा चयन उपलब्ध है तो उसका उपयोग करें।"
+          }
+        ],
+        "dualDisplayMode": "inline",
+        "languageMode": "dual",
+        "minAttemptPercent": 0,
+        "showExplanation": true,
+        "useSections": true,
+        "optionEEnabled": true
+      },
+      "scoring": {
+        "defaultPoints": 2,
+        "negativeMarking": {
+          "type": "custom",
+          "value": 0
+        }
+      },
+      "sections": [
+        {
+          "id": "s1",
+          "durationMinutes": 10,
+          "title": "Geography",
+          "questionIds": [
+            "q1"
+          ]
+        },
+        {
+          "id": "s2",
+          "title": "New Section",
+          "durationMinutes": 10,
+          "questionIds": []
+        },
+        {
+          "title": "New Section",
+          "id": "s3",
+          "questionIds": [],
+          "durationMinutes": 10
+        },
+        {
+          "durationMinutes": 10,
+          "questionIds": [],
+          "title": "New Section",
+          "id": "s4"
+        }
+      ],
+      "questions": [
+        {
+          "options": [
+            "bbmnbvcmv",
+            "$x^2$",
+            "mnx,mbm,cx",
+            "mcvx,m,mcx",
+            "mvxcm,,xcvmn"
+          ],
+          "sectionId": "s1",
+          "id": "q1",
+          "points": 1,
+          "prompt": "hello how are you",
+          "type": "single",
+          "explanation": {
+            "en": "vjhsvjvsjvhsdjvjhsvjhv bvhjvhj vjhbvjvhjgvhjvh",
+            "hi": "what are you doing"
+          },
+          "answer": 2
+        }
+      ]
+    }
+  },
+  {
+    "id": "cvnmxncv",
+    "title": "Cvnmxncv",
+    "slug": "cvnmxncv",
+    "summary": "",
+    "language": "en",
+    "tags": [],
+    "content": {
+      "mode": "points",
+      "data": []
+    },
+    "dailyMeta": {},
+    "monthlyMeta": {},
+    "notesMeta": {},
+    "pyqMeta": {},
+    "description": "",
+    "relatedContent": [],
+    "caDate": null,
+    "pdfUrl": "",
+    "status": "draft",
+    "publishedAt": null,
+    "review": {
+      "feedback": "",
+      "editorMessage": "",
+      "messageThread": []
+    },
+    "seo": {},
+    "type": "quiz",
+    "isDeleted": false,
+    "createdBy": {
+      "uid": "5pC2v2Cy0DSzSpEYbBYWRFGPXTj2",
+      "email": "manojbidiyasar1@gmail.com",
+      "displayName": "Manoj Bidiyasar",
+      "role": "super_admin"
+    },
+    "createdAt": {
+      "_seconds": 1771224994,
+      "_nanoseconds": 295000000
+    },
+    "durationMinutes": 20,
+    "sections": [
+      {
+        "totalMarks": null,
+        "questionIds": [],
+        "title": "fgggf",
+        "id": "s1",
+        "durationMinutes": 10
+      },
+      {
+        "id": "s2",
+        "durationMinutes": 10,
+        "title": "Section 2",
+        "totalMarks": null,
+        "questionIds": []
+      }
+    ],
+    "rules": {
+      "quickSuggestions": [
+        {
+          "en": "Read all questions carefully.",
+          "hi": "सभी प्रश्न ध्यान से पढ़ें।"
+        },
+        {
+          "hi": "टेस्ट के दौरान पेज रीफ्रेश न करें।",
+          "en": "Do not refresh the page during the test."
+        },
+        {
+          "en": "Attempt all questions before submitting.",
+          "hi": "जमा करने से पहले सभी प्रश्न हल करें।"
+        },
+        {
+          "en": "Use the language selector if available.",
+          "hi": "अगर भाषा चयन उपलब्ध है तो उसका उपयोग करें।"
+        },
+        {
+          "en": "Keep track of time and submit before it ends.",
+          "hi": "समय पर नज़र रखें और समय समाप्त होने से पहले जमा करें।"
+        },
+        {
+          "hi": "Option E के लिए नकारात्मक अंकन नहीं।",
+          "en": "No negative marking for Option E."
+        },
+        {
+          "en": "Minimum attempt: 90%.",
+          "hi": "न्यूनतम प्रयास: 90%."
+        },
+        {
+          "hi": "टेस्ट के दौरान अन्य टैब न खोलें।",
+          "en": "Do not open other tabs during the test."
+        },
+        {
+          "hi": "जब तक बताया न जाए, कैलकुलेटर की अनुमति नहीं है।",
+          "en": "Calculator is not allowed unless stated."
+        },
+        {
+          "hi": "जमा करने से पहले उत्तरों की जांच करें।",
+          "en": "Mark answers carefully before submitting."
+        }
+      ],
+      "languageVisibility": "student_choice",
+      "languageMode": "dual",
+      "rulesList": [
+        {
+          "en": "Read all questions carefully.",
+          "hi": "सभी प्रश्न ध्यान से पढ़ें।"
+        },
+        {
+          "en": "Attempt all questions before submitting.",
+          "hi": "जमा करने से पहले सभी प्रश्न हल करें।"
+        },
+        {
+          "en": "Read all questions carefully.",
+          "hi": "सभी प्रश्न ध्यान से पढ़ें।"
+        },
+        {
+          "en": "Do not refresh the page during the test.",
+          "hi": "टेस्ट के दौरान पेज रीफ्रेश न करें।"
+        },
+        {
+          "en": "Use the language selector if available.",
+          "hi": "अगर भाषा चयन उपलब्ध है तो उसका उपयोग करें।"
+        }
+      ],
+      "useSections": false,
+      "timingMode": "overall",
+      "minAttemptPercent": 90,
+      "marksMode": "per_question",
+      "dualDisplayMode": "toggle"
+    },
+    "scoring": {
+      "overallMarks": 6,
+      "negativeMarking": {
+        "value": 0.3333333333333333,
+        "type": "fraction"
+      },
+      "defaultPoints": 3
+    },
+    "questions": [
+      {
+        "explanation": "fdgdgf",
+        "difficulty": "medium",
+        "sectionId": "s1",
+        "points": 3,
+        "tags": [],
+        "prompt": "xbcmbvmxbcmcxv ",
+        "type": "single",
+        "id": "q2",
+        "answer": 2,
+        "options": [
+          "dmnmcxv",
+          "nbvmnxbcv",
+          "xcm,vnm,cxvn",
+          "bmnxbmvbx"
+        ],
+        "meta": {
+          "sourceName": "",
+          "subtopic": "",
+          "examTags": [],
+          "sourceType": "",
+          "exam": "",
+          "examStage": "",
+          "year": "",
+          "category": "",
+          "subcategory": "",
+          "topic": ""
+        }
+      },
+      {
+        "id": "q2-1",
+        "type": "single",
+        "prompt": {
+          "en": "xnn,mxnbm,nx",
+          "hi": "xnn,mxnbm"
+        },
+        "options": {
+          "en": [
+            "xm,cn,mnbx",
+            "xn,mn,xb",
+            "xcm,nm,nbxm,",
+            " cxvmbcx"
+          ],
+          "hi": []
+        },
+        "answer": 0,
+        "points": 3,
+        "sectionId": null,
+        "explanation": {
+          "en": "mxmncm,nm,ncxbb",
+          "hi": ""
+        },
+        "tags": [],
+        "difficulty": "medium",
+        "meta": {
+          "category": "",
+          "subcategory": "",
+          "topic": "",
+          "subtopic": "",
+          "sourceType": "",
+          "sourceName": "",
+          "exam": "",
+          "examTags": [],
+          "examStage": "",
+          "year": ""
+        }
+      }
+    ],
+    "quizMeta": {
+      "durationMinutes": 20,
+      "rules": {
+        "marksMode": "per_question",
+        "timingMode": "overall",
+        "rulesList": [
+          {
+            "hi": "सभी प्रश्न ध्यान से पढ़ें।",
+            "en": "Read all questions carefully."
+          },
+          {
+            "en": "Attempt all questions before submitting.",
+            "hi": "जमा करने से पहले सभी प्रश्न हल करें।"
+          },
+          {
+            "hi": "सभी प्रश्न ध्यान से पढ़ें।",
+            "en": "Read all questions carefully."
+          },
+          {
+            "hi": "टेस्ट के दौरान पेज रीफ्रेश न करें।",
+            "en": "Do not refresh the page during the test."
+          },
+          {
+            "en": "Use the language selector if available.",
+            "hi": "अगर भाषा चयन उपलब्ध है तो उसका उपयोग करें।"
+          }
+        ],
+        "useSections": false,
+        "dualDisplayMode": "toggle",
+        "minAttemptPercent": 90,
+        "quickSuggestions": [
+          {
+            "en": "Read all questions carefully.",
+            "hi": "सभी प्रश्न ध्यान से पढ़ें।"
+          },
+          {
+            "hi": "टेस्ट के दौरान पेज रीफ्रेश न करें।",
+            "en": "Do not refresh the page during the test."
+          },
+          {
+            "en": "Attempt all questions before submitting.",
+            "hi": "जमा करने से पहले सभी प्रश्न हल करें।"
+          },
+          {
+            "hi": "अगर भाषा चयन उपलब्ध है तो उसका उपयोग करें।",
+            "en": "Use the language selector if available."
+          },
+          {
+            "hi": "समय पर नज़र रखें और समय समाप्त होने से पहले जमा करें।",
+            "en": "Keep track of time and submit before it ends."
+          },
+          {
+            "en": "No negative marking for Option E.",
+            "hi": "Option E के लिए नकारात्मक अंकन नहीं।"
+          },
+          {
+            "en": "Minimum attempt: 90%.",
+            "hi": "न्यूनतम प्रयास: 90%."
+          },
+          {
+            "en": "Do not open other tabs during the test.",
+            "hi": "टेस्ट के दौरान अन्य टैब न खोलें।"
+          },
+          {
+            "hi": "जब तक बताया न जाए, कैलकुलेटर की अनुमति नहीं है।",
+            "en": "Calculator is not allowed unless stated."
+          },
+          {
+            "en": "Mark answers carefully before submitting.",
+            "hi": "जमा करने से पहले उत्तरों की जांच करें।"
+          }
+        ],
+        "languageMode": "dual",
+        "languageVisibility": "student_choice"
+      },
+      "scoring": {
+        "negativeMarking": {
+          "type": "fraction",
+          "value": 0.3333333333333333
+        },
+        "overallMarks": 6,
+        "defaultPoints": 3
+      },
+      "sections": [
+        {
+          "title": "fgggf",
+          "durationMinutes": 10,
+          "totalMarks": null,
+          "questionIds": [],
+          "id": "s1"
+        },
+        {
+          "durationMinutes": 10,
+          "id": "s2",
+          "totalMarks": null,
+          "title": "Section 2",
+          "questionIds": []
+        }
+      ],
+      "questions": [
+        {
+          "options": [
+            "dmnmcxv",
+            "nbvmnxbcv",
+            "xcm,vnm,cxvn",
+            "bmnxbmvbx"
+          ],
+          "sectionId": "s1",
+          "id": "q2",
+          "type": "single",
+          "difficulty": "medium",
+          "answer": 2,
+          "tags": [],
+          "meta": {
+            "exam": "",
+            "sourceName": "",
+            "examTags": [],
+            "examStage": "",
+            "category": "",
+            "subcategory": "",
+            "subtopic": "",
+            "year": "",
+            "sourceType": "",
+            "topic": ""
+          },
+          "explanation": "fdgdgf",
+          "prompt": "xbcmbvmxbcmcxv ",
+          "points": 3
+        },
+        {
+          "type": "single",
+          "answer": 0,
+          "meta": {
+            "category": "",
+            "subcategory": "",
+            "topic": "",
+            "sourceType": "",
+            "exam": "",
+            "sourceName": "",
+            "examTags": [],
+            "examStage": "",
+            "year": "",
+            "subtopic": ""
+          },
+          "tags": [],
+          "id": "q2-1",
+          "difficulty": "medium",
+          "prompt": {
+            "en": "xnn,mxnbm,nx",
+            "hi": "xnn,mxnbm"
+          },
+          "sectionId": null,
+          "points": 3,
+          "explanation": {
+            "hi": "",
+            "en": "mxmncm,nm,ncxbb"
+          },
+          "options": {
+            "en": [
+              "xm,cn,mnbx",
+              "xn,mn,xb",
+              "xcm,nm,nbxm,",
+              " cxvmbcx"
+            ],
+            "hi": []
+          }
+        }
+      ],
+      "categoryId": "exams",
+      "category": "Exams by Pattern",
+      "subcategoryId": "",
+      "subcategory": "",
+      "quizDate": "2026-02-17"
+    }
+  },
+  {
+    "id": "mbvmbjvbjf",
+    "title": "",
+    "slug": "mbvmbjvbjf",
+    "summary": "",
+    "language": "en",
+    "tags": [],
+    "content": {
+      "mode": "points",
+      "data": []
+    },
+    "dailyMeta": {},
+    "monthlyMeta": {},
+    "notesMeta": {},
+    "description": "",
+    "durationMinutes": 60,
+    "scoring": {
+      "defaultPoints": 1,
+      "negativeMarking": {
+        "type": "fraction",
+        "value": 0.3333333333333333
+      }
+    },
+    "questions": [],
+    "relatedContent": [],
+    "caDate": null,
+    "pdfUrl": "",
+    "status": "draft",
+    "publishedAt": null,
+    "seo": {},
+    "type": "quiz",
+    "isDeleted": false,
+    "createdBy": {
+      "uid": "5pC2v2Cy0DSzSpEYbBYWRFGPXTj2",
+      "email": "manojbidiyasar1@gmail.com",
+      "displayName": "Manoj Bidiyasar",
+      "role": "super_admin"
+    },
+    "createdAt": {
+      "_seconds": 1770321127,
+      "_nanoseconds": 193000000
+    },
+    "sections": [
+      {
+        "id": "s1",
+        "title": "New Section",
+        "durationMinutes": 10,
+        "questionIds": []
+      }
+    ],
+    "rules": {
+      "minAttemptPercent": 90,
+      "useSections": true
+    },
+    "quizMeta": {
+      "durationMinutes": 60,
+      "rules": {
+        "minAttemptPercent": 90,
+        "useSections": true
+      },
+      "scoring": {
+        "defaultPoints": 1,
+        "negativeMarking": {
+          "type": "fraction",
+          "value": 0.3333333333333333
+        }
+      },
+      "sections": [
+        {
+          "id": "s1",
+          "title": "New Section",
+          "durationMinutes": 10,
+          "questionIds": []
+        }
+      ],
+      "questions": []
+    }
+  },
+  {
+    "id": "sfdsdfds",
+    "title": "Sfdsdfds",
+    "slug": "sfdsdfds",
+    "summary": "",
+    "language": "en",
+    "tags": [],
+    "content": {
+      "mode": "points",
+      "data": []
+    },
+    "dailyMeta": {},
+    "monthlyMeta": {},
+    "notesMeta": {},
+    "pyqMeta": {},
+    "quizMeta": {
+      "durationMinutes": 60,
+      "rules": {
+        "minAttemptPercent": 90
+      },
+      "scoring": {
+        "defaultPoints": 1,
+        "negativeMarking": {
+          "type": "fraction",
+          "value": 0.3333333333333333
+        }
+      },
+      "sections": [],
+      "questions": []
+    },
+    "description": "",
+    "durationMinutes": 60,
+    "rules": {
+      "minAttemptPercent": 90
+    },
+    "scoring": {
+      "defaultPoints": 1,
+      "negativeMarking": {
+        "type": "fraction",
+        "value": 0.3333333333333333
+      }
+    },
+    "sections": [],
+    "questions": [],
+    "relatedContent": [],
+    "caDate": null,
+    "pdfUrl": "",
+    "status": "draft",
+    "publishedAt": null,
+    "review": {
+      "feedback": "",
+      "editorMessage": "",
+      "messageThread": []
+    },
+    "seo": {},
+    "type": "quiz",
+    "isDeleted": false,
+    "createdBy": {
+      "uid": "5pC2v2Cy0DSzSpEYbBYWRFGPXTj2",
+      "email": "manojbidiyasar1@gmail.com",
+      "displayName": "Manoj Bidiyasar",
+      "role": "super_admin"
+    },
+    "createdAt": {
+      "_seconds": 1771326662,
+      "_nanoseconds": 155000000
+    }
+  }
+]

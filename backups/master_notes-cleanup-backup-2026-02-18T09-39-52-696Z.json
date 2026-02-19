@@ -1,0 +1,383 @@
+[
+  {
+    "id": "Anmm-hhhh",
+    "title": "Anmm Hhhh",
+    "slug": "anmm-hhhh",
+    "summary": "",
+    "language": "en",
+    "tags": [],
+    "content": {
+      "version": 1,
+      "blocks": []
+    },
+    "dailyMeta": {},
+    "monthlyMeta": {},
+    "quizMeta": {},
+    "relatedContent": [],
+    "caDate": null,
+    "pdfUrl": "",
+    "status": "draft",
+    "publishedAt": null,
+    "seo": {},
+    "type": "notes",
+    "createdBy": {
+      "uid": "5pC2v2Cy0DSzSpEYbBYWRFGPXTj2",
+      "email": "manojbidiyasar1@gmail.com",
+      "displayName": "Manoj Bidiyasar",
+      "role": "super_admin"
+    },
+    "createdAt": {
+      "_seconds": 1771165824,
+      "_nanoseconds": 620000000
+    },
+    "notesMeta": {
+      "section": "subject",
+      "categoryId": "indian-gk",
+      "categoryName": "Indian GK",
+      "subCategoryId": "indian-history",
+      "subCategoryName": "Indian History",
+      "topic": "for checking"
+    },
+    "updatedBy": {
+      "uid": "5pC2v2Cy0DSzSpEYbBYWRFGPXTj2",
+      "email": "manojbidiyasar1@gmail.com",
+      "displayName": "Manoj Bidiyasar",
+      "role": "super_admin"
+    },
+    "isLocked": false,
+    "review": {
+      "status": "rejected",
+      "feedback": "vcxbbvcxmv",
+      "editorMessage": "",
+      "messageThread": [
+        {
+          "by": "admin",
+          "text": "",
+          "at": "2026-02-15T14:38:02.132Z",
+          "uid": "5pC2v2Cy0DSzSpEYbBYWRFGPXTj2",
+          "name": "Manoj Bidiyasar",
+          "email": "manojbidiyasar1@gmail.com"
+        },
+        {
+          "by": "admin",
+          "text": "vcxbbvcxmv",
+          "at": "2026-02-15T14:40:43.266Z",
+          "uid": "5pC2v2Cy0DSzSpEYbBYWRFGPXTj2",
+          "name": "Manoj Bidiyasar",
+          "email": "manojbidiyasar1@gmail.com"
+        }
+      ],
+      "reviewedBy": {
+        "uid": "5pC2v2Cy0DSzSpEYbBYWRFGPXTj2",
+        "email": "manojbidiyasar1@gmail.com",
+        "displayName": "Manoj Bidiyasar",
+        "role": "super_admin"
+      },
+      "reviewedByUid": "5pC2v2Cy0DSzSpEYbBYWRFGPXTj2",
+      "reviewedByEmail": "manojbidiyasar1@gmail.com",
+      "reviewedAt": {
+        "_seconds": 1771166448,
+        "_nanoseconds": 605000000
+      }
+    },
+    "updatedAt": {
+      "_seconds": 1771166561,
+      "_nanoseconds": 825000000
+    },
+    "deletedAt": {
+      "_seconds": 1771166699,
+      "_nanoseconds": 738000000
+    },
+    "isDeleted": true,
+    "deletedBy": {
+      "uid": "5pC2v2Cy0DSzSpEYbBYWRFGPXTj2",
+      "email": "manojbidiyasar1@gmail.com",
+      "displayName": "Manoj Bidiyasar",
+      "role": "super_admin"
+    }
+  },
+  {
+    "id": "Ghh-hjhj",
+    "title": "Ghh Hjhj",
+    "slug": "ghh-hjhj",
+    "summary": "",
+    "language": "en",
+    "tags": [],
+    "content": {
+      "version": 1,
+      "blocks": []
+    },
+    "dailyMeta": {},
+    "monthlyMeta": {},
+    "notesMeta": {
+      "section": "subject",
+      "categoryId": "",
+      "categoryName": "",
+      "subCategoryId": "",
+      "subCategoryName": "",
+      "topic": ""
+    },
+    "quizMeta": {},
+    "relatedContent": [],
+    "caDate": null,
+    "pdfUrl": "",
+    "status": "draft",
+    "publishedAt": null,
+    "review": {
+      "feedback": "",
+      "editorMessage": "",
+      "messageThread": []
+    },
+    "seo": {},
+    "type": "notes",
+    "isDeleted": false,
+    "createdBy": {
+      "uid": "5pC2v2Cy0DSzSpEYbBYWRFGPXTj2",
+      "email": "manojbidiyasar1@gmail.com",
+      "displayName": "Manoj Bidiyasar",
+      "role": "super_admin"
+    },
+    "createdAt": {
+      "_seconds": 1771166712,
+      "_nanoseconds": 812000000
+    }
+  },
+  {
+    "id": "Indian%20Polity",
+    "title": "",
+    "slug": "indian-polity",
+    "summary": "",
+    "language": "en",
+    "tags": [],
+    "status": "draft",
+    "isLocked": false,
+    "publishedAt": null,
+    "content": {
+      "version": 1,
+      "blocks": []
+    },
+    "dailyMeta": {},
+    "monthlyMeta": {},
+    "quizMeta": {},
+    "seo": {
+      "canonicalUrl": "https://ultrastudypoint.in/notes/indian-polity"
+    },
+    "relatedContent": [],
+    "caDate": null,
+    "pdfUrl": "",
+    "updatedBy": {
+      "uid": "5pC2v2Cy0DSzSpEYbBYWRFGPXTj2",
+      "email": "manojbidiyasar1@gmail.com",
+      "displayName": "Manoj Bidiyasar",
+      "role": "super_admin"
+    },
+    "review": null,
+    "isDeleted": false,
+    "createdAt": {
+      "_seconds": 1769257779,
+      "_nanoseconds": 236000000
+    },
+    "createdBy": null,
+    "__isNew": false,
+    "notesMeta": {
+      "subCategoryName": "Indian History",
+      "subCategoryId": "indian-history",
+      "categoryId": "indian-gk",
+      "categoryName": "Indian GK"
+    },
+    "updatedAt": {
+      "_seconds": 1769279231,
+      "_nanoseconds": 114000000
+    }
+  },
+  {
+    "id": "fundamental-rights",
+    "slug": "fundamental-rights",
+    "title": "Fundamental Rights",
+    "points": [
+      "Fundamental Rights are given in Part III of the Indian Constitution.",
+      "They ensure equality, liberty, and justice.",
+      "These rights are enforceable by courts.",
+      "They can be suspended during National Emergency (except Articles 20 and 21)."
+    ],
+    "status": "published",
+    "subCategoryId": "indian-polity",
+    "date": {
+      "_seconds": 1767033191,
+      "_nanoseconds": 315000000
+    },
+    "type": "master_notes",
+    "categoryId": "indian-gk",
+    "updatedAt": {
+      "_seconds": 1767378600,
+      "_nanoseconds": 851000000
+    }
+  },
+  {
+    "id": "google%20news",
+    "title": "",
+    "slug": "google-news",
+    "summary": "",
+    "language": "en",
+    "tags": [],
+    "content": {
+      "version": 1,
+      "blocks": []
+    },
+    "dailyMeta": {},
+    "monthlyMeta": {},
+    "quizMeta": {},
+    "relatedContent": [],
+    "caDate": null,
+    "pdfUrl": "",
+    "status": "draft",
+    "publishedAt": null,
+    "review": {
+      "feedback": "",
+      "editorMessage": "",
+      "messageThread": []
+    },
+    "seo": {},
+    "type": "notes",
+    "isDeleted": false,
+    "createdBy": {
+      "uid": "5pC2v2Cy0DSzSpEYbBYWRFGPXTj2",
+      "email": "manojbidiyasar1@gmail.com",
+      "displayName": "Manoj Bidiyasar",
+      "role": "super_admin"
+    },
+    "createdAt": {
+      "_seconds": 1771162980,
+      "_nanoseconds": 427000000
+    },
+    "notesMeta": {
+      "section": "subject",
+      "categoryId": "miscellaneous",
+      "categoryName": "Miscellaneous",
+      "subCategoryId": "static-gk",
+      "subCategoryName": "Static GK",
+      "topic": ""
+    }
+  },
+  {
+    "id": "google-camera",
+    "title": "",
+    "slug": "google-camera",
+    "summary": "",
+    "language": "en",
+    "tags": [],
+    "content": {
+      "version": 1,
+      "blocks": []
+    },
+    "dailyMeta": {},
+    "monthlyMeta": {},
+    "notesMeta": {
+      "section": "subject",
+      "categoryId": "",
+      "categoryName": "",
+      "subCategoryId": "",
+      "subCategoryName": "",
+      "topic": ""
+    },
+    "quizMeta": {},
+    "relatedContent": [],
+    "caDate": null,
+    "pdfUrl": "",
+    "status": "draft",
+    "publishedAt": null,
+    "review": {
+      "feedback": "",
+      "editorMessage": "",
+      "messageThread": []
+    },
+    "seo": {},
+    "type": "notes",
+    "isDeleted": false,
+    "createdBy": {
+      "uid": "5pC2v2Cy0DSzSpEYbBYWRFGPXTj2",
+      "email": "manojbidiyasar1@gmail.com",
+      "displayName": "Manoj Bidiyasar",
+      "role": "super_admin"
+    },
+    "createdAt": {
+      "_seconds": 1771163431,
+      "_nanoseconds": 69000000
+    }
+  },
+  {
+    "id": "hello-how-are-you",
+    "title": "Hello How Are You",
+    "slug": "hello-how-are-you",
+    "summary": "",
+    "language": "en",
+    "tags": [],
+    "dailyMeta": {},
+    "monthlyMeta": {},
+    "notesMeta": {
+      "section": "subject",
+      "categoryId": "",
+      "categoryName": "",
+      "subCategoryId": "",
+      "subCategoryName": "",
+      "topic": ""
+    },
+    "quizMeta": {},
+    "relatedContent": [],
+    "caDate": null,
+    "pdfUrl": "",
+    "status": "draft",
+    "publishedAt": null,
+    "review": {
+      "feedback": "",
+      "editorMessage": "",
+      "messageThread": []
+    },
+    "type": "notes",
+    "isDeleted": false,
+    "createdBy": {
+      "uid": "5pC2v2Cy0DSzSpEYbBYWRFGPXTj2",
+      "email": "manojbidiyasar1@gmail.com",
+      "displayName": "Manoj Bidiyasar",
+      "role": "super_admin"
+    },
+    "createdAt": {
+      "_seconds": 1771163649,
+      "_nanoseconds": 574000000
+    },
+    "seo": {
+      "seoDescription": "kvjxkljbkx"
+    },
+    "content": {
+      "version": 1,
+      "blocks": [
+        {
+          "id": "d4f596aa-b1d8-4fc2-a5db-d34727ababb6",
+          "type": "heading",
+          "__ui": {
+            "collapsed": false,
+            "label": ""
+          },
+          "text": "bncxbvnbcxmv ",
+          "level": 2
+        }
+      ]
+    }
+  },
+  {
+    "id": "ind_his_morya_gk",
+    "title": "morya dynasity",
+    "date": {
+      "_seconds": 1767034171,
+      "_nanoseconds": 243000000
+    },
+    "categoryId": "rajasthan-gk",
+    "slug": "ind_his_morya_gk",
+    "status": "published",
+    "points": [
+      "point 1",
+      "point 2"
+    ],
+    "subCategoryId": "rajasthan-polity"
+  }
+]
