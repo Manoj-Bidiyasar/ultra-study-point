@@ -1,6 +1,6 @@
 import NotesClient from "./NotesClient";
-import { unstable_cache } from "next/cache";
-import { getAdminDb } from "@/lib/firebase/admin";
+import { collection, getDocs, limit, query, where } from "firebase/firestore";
+import { db } from "@/lib/firebase/client";
 import { serializeDoc } from "@/lib/serialization/serializeDoc";
 
 /* ================= SEO ================= */
@@ -13,24 +13,48 @@ export const metadata = {
 /* ================= FORCE SSR ================= */
 export const dynamic = "force-dynamic";
 
-const getNotesIndex = unstable_cache(
-  async () => {
-    const adminDb = getAdminDb({ force: true });
-    if (!adminDb) return [];
+const toMillis = (value) => {
+  if (!value) return 0;
+  if (typeof value?.toDate === "function") {
+    const d = value.toDate();
+    return d instanceof Date && !Number.isNaN(d.getTime()) ? d.getTime() : 0;
+  }
+  if (value instanceof Date) return Number.isNaN(value.getTime()) ? 0 : value.getTime();
+  if (typeof value === "number") return Number.isFinite(value) ? value : 0;
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? 0 : d.getTime();
+};
 
-    const colRef = adminDb
-      .collection("artifacts")
-      .doc("ultra-study-point")
-      .collection("public")
-      .doc("data")
-      .collection("master_notes");
+const byBestTimestampDesc = (a, b) => {
+  const aTs =
+    toMillis(a.updatedAt) ||
+    toMillis(a.publishDate) ||
+    toMillis(a.date) ||
+    toMillis(a.createdAt);
+  const bTs =
+    toMillis(b.updatedAt) ||
+    toMillis(b.publishDate) ||
+    toMillis(b.date) ||
+    toMillis(b.createdAt);
+  return bTs - aTs;
+};
 
-    const snap = await colRef.orderBy("date", "desc").get();
-    return snap.docs.map(serializeDoc);
-  },
-  ["notes-index"],
-  { revalidate: 300, tags: ["notes-index"] }
-);
+async function getNotesIndex() {
+  const colRef = collection(
+    db,
+    "artifacts",
+    "ultra-study-point",
+    "public",
+    "data",
+    "master_notes"
+  );
+
+  const snap = await getDocs(
+    query(colRef, where("status", "==", "published"), limit(300))
+  );
+
+  return snap.docs.map(serializeDoc).sort(byBestTimestampDesc);
+}
 
 export default async function NotesPage() {
   const notes = await getNotesIndex();
