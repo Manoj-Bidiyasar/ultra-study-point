@@ -12,6 +12,11 @@ const DEFAULT_CONTENT_ACCESS = {
 export default function UserModal({ user, onClose, onSave }) {
   const [form, setForm] = useState({
     ...user,
+    maxConcurrentSessions:
+      Number(user.maxConcurrentSessions || 1) >= 2 ? 2 : 1,
+    allowedDeviceIds: Array.isArray(user.allowedDeviceIds)
+      ? user.allowedDeviceIds
+      : [],
     contentAccess: {
       ...DEFAULT_CONTENT_ACCESS,
       ...(user.contentAccess || {}),
@@ -63,6 +68,38 @@ export default function UserModal({ user, onClose, onSave }) {
         <option value="active">Active</option>
         <option value="suspended">Suspended</option>
       </select>
+
+      <h4 style={{ marginTop: 12 }}>Session Policy</h4>
+      <label>Max concurrent sessions</label>
+      <select
+        value={String(form.maxConcurrentSessions || 1)}
+        disabled={isSuperAdmin}
+        onChange={(e) =>
+          setForm({
+            ...form,
+            maxConcurrentSessions: Number(e.target.value) >= 2 ? 2 : 1,
+          })
+        }
+      >
+        <option value="1">1 device</option>
+        <option value="2">2 devices</option>
+      </select>
+
+      <label style={{ marginTop: 8 }}>Allowed Device IDs (comma-separated; leave blank for any)</label>
+      <textarea
+        value={(form.allowedDeviceIds || []).join(", ")}
+        disabled={isSuperAdmin}
+        onChange={(e) =>
+          setForm({
+            ...form,
+            allowedDeviceIds: String(e.target.value || "")
+              .split(",")
+              .map((x) => x.trim())
+              .filter(Boolean),
+          })
+        }
+        rows={3}
+      />
 
       <div style={{ marginTop: 16 }}>
         <button onClick={() => onSave(form)}>Save</button>

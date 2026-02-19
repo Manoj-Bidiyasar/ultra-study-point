@@ -3,11 +3,12 @@
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { onAuthStateChanged, signOut } from "firebase/auth";
-import { doc, getDoc, onSnapshot } from "firebase/firestore";
+import { doc, getDoc, onSnapshot, serverTimestamp, updateDoc } from "firebase/firestore";
 
 import { auth, db } from "@/lib/firebase/client";
 import { permissionsByRole } from "@/lib/admin/permissions";
 import AdminSidebar from "@/app/admin/components/AdminSidebar";
+import { getOrCreateAdminDeviceId, normalizeAllowedDeviceIds } from "@/lib/admin/sessionClient";
 
 export default function AdminLayout({ children }) {
   const router = useRouter();
@@ -18,13 +19,27 @@ export default function AdminLayout({ children }) {
 
   useEffect(() => {
     let stopUserDocListener = null;
+    let stopSessionListener = null;
+    let heartbeatTimer = null;
+
+    const clearRuntimeSession = () => {
+      if (stopUserDocListener) {
+        stopUserDocListener();
+        stopUserDocListener = null;
+      }
+      if (stopSessionListener) {
+        stopSessionListener();
+        stopSessionListener = null;
+      }
+      if (heartbeatTimer) {
+        clearInterval(heartbeatTimer);
+        heartbeatTimer = null;
+      }
+    };
 
     const unsub = onAuthStateChanged(auth, async (user) => {
       try {
-        if (stopUserDocListener) {
-          stopUserDocListener();
-          stopUserDocListener = null;
-        }
+        clearRuntimeSession();
 
         /* 🚫 Not logged in */
         if (!user) {
@@ -56,10 +71,9 @@ export default function AdminLayout({ children }) {
         }
 
         const userData = snap.data();
-        const localSessionId =
-          typeof window !== "undefined"
-            ? window.localStorage.getItem("admin_session_id")
-            : null;
+        const localSessionId = typeof window !== "undefined" ? window.localStorage.getItem("admin_session_id") : null;
+        const localDeviceId = getOrCreateAdminDeviceId();
+        const allowedDeviceIds = normalizeAllowedDeviceIds(userData.allowedDeviceIds);
 
         /* ❌ Disabled user */
         if (userData.status && userData.status !== "active") {
@@ -75,14 +89,40 @@ export default function AdminLayout({ children }) {
           return;
         }
 
-        if (
-          localSessionId &&
-          userData.activeSessionId &&
-          userData.activeSessionId !== localSessionId
-        ) {
+        if (allowedDeviceIds.length > 0 && !allowedDeviceIds.includes(localDeviceId)) {
           if (typeof window !== "undefined") {
             window.localStorage.removeItem("admin_session_id");
           }
+          await signOut(auth);
+          router.replace("/admin/login");
+          return;
+        }
+
+        if (!localSessionId) {
+          await signOut(auth);
+          router.replace("/admin/login");
+          return;
+        }
+
+        const sessionRef = doc(
+          db,
+          "artifacts",
+          "ultra-study-point",
+          "public",
+          "data",
+          "users",
+          user.uid,
+          "sessions",
+          localSessionId
+        );
+        const sessionSnap = await getDoc(sessionRef);
+        if (!sessionSnap.exists()) {
+          await signOut(auth);
+          router.replace("/admin/login");
+          return;
+        }
+        const sessionData = sessionSnap.data();
+        if (sessionData.revoked || sessionData.deviceId !== localDeviceId) {
           await signOut(auth);
           router.replace("/admin/login");
           return;
@@ -96,18 +136,40 @@ export default function AdminLayout({ children }) {
           permissions: permissionsByRole[userData.role],
         });
 
+        stopSessionListener = onSnapshot(sessionRef, async (docSnap) => {
+          if (!docSnap.exists()) {
+            if (typeof window !== "undefined") {
+              window.localStorage.removeItem("admin_session_id");
+            }
+            await signOut(auth);
+            router.replace("/admin/login");
+            return;
+          }
+          const latest = docSnap.data();
+          if (latest.revoked) {
+            if (typeof window !== "undefined") {
+              window.localStorage.removeItem("admin_session_id");
+            }
+            await signOut(auth);
+            router.replace("/admin/login");
+          }
+        });
+
+        heartbeatTimer = setInterval(async () => {
+          try {
+            await updateDoc(sessionRef, { lastSeenAt: serverTimestamp() });
+          } catch {
+            // Ignore heartbeat errors; snapshot listener still controls access.
+          }
+        }, 30_000);
+
         stopUserDocListener = onSnapshot(userRef, async (docSnap) => {
           if (!docSnap.exists()) return;
           const latest = docSnap.data();
-          const localId =
-            typeof window !== "undefined"
-              ? window.localStorage.getItem("admin_session_id")
-              : null;
-
+          const allowedLatest = normalizeAllowedDeviceIds(latest.allowedDeviceIds);
           if (
-            localId &&
-            latest.activeSessionId &&
-            latest.activeSessionId !== localId
+            latest.status !== "active" ||
+            (allowedLatest.length > 0 && !allowedLatest.includes(localDeviceId))
           ) {
             if (typeof window !== "undefined") {
               window.localStorage.removeItem("admin_session_id");
@@ -126,7 +188,7 @@ export default function AdminLayout({ children }) {
     });
 
     return () => {
-      if (stopUserDocListener) stopUserDocListener();
+      clearRuntimeSession();
       unsub();
     };
   }, [router, pathname]);
@@ -161,6 +223,29 @@ export default function AdminLayout({ children }) {
           role={adminUser.role}
           user={adminUser}
           onLogout={async () => {
+            const localId = typeof window !== "undefined" ? window.localStorage.getItem("admin_session_id") : null;
+            if (localId && adminUser?.uid) {
+              try {
+                const sessionRef = doc(
+                  db,
+                  "artifacts",
+                  "ultra-study-point",
+                  "public",
+                  "data",
+                  "users",
+                  adminUser.uid,
+                  "sessions",
+                  localId
+                );
+                await updateDoc(sessionRef, {
+                  revoked: true,
+                  revokedReason: "logout_self",
+                  revokedAt: serverTimestamp(),
+                });
+              } catch {
+                // noop
+              }
+            }
             if (typeof window !== "undefined") {
               window.localStorage.removeItem("admin_session_id");
             }

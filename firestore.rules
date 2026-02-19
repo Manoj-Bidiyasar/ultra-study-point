@@ -201,6 +201,15 @@ service cloud.firestore {
       allow create, delete: if isSuperAdmin();
     }
 
+    match /artifacts/{artifactId}/public/data/users/{uid}/sessions/{sessionId} {
+      allow read: if isSignedIn() && (request.auth.uid == uid || isAdminOrSuper());
+
+      // Staff can manage their own session docs; super admin/admin can manage any.
+      allow create, update: if isSignedIn() && (request.auth.uid == uid || isAdminOrSuper());
+
+      allow delete: if false;
+    }
+
     match /artifacts/{artifactId}/public/data/review_queue/{reviewId} {
       allow create: if
         isEditor() &&

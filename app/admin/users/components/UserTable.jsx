@@ -1,7 +1,7 @@
 import RoleBadge from "./RoleBadge";
 import AccessToggle from "./AccessToggle";
-import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
-import { db } from "@/lib/firebase/client";
+import { collection, doc, getDocs, query, serverTimestamp, updateDoc, where } from "firebase/firestore";
+import { auth, db } from "@/lib/firebase/client";
 
 export default function UserTable({ users }) {
   const updateStatus = async (user, status) => {
@@ -26,6 +26,49 @@ export default function UserTable({ users }) {
     });
   };
 
+  const updateMaxSessions = async (user, value) => {
+    if (user.isProtected || user.role === "super_admin") return;
+    const ref = doc(
+      db,
+      "artifacts",
+      "ultra-study-point",
+      "public",
+      "data",
+      "users",
+      user.id
+    );
+    await updateDoc(ref, {
+      maxConcurrentSessions: Number(value) >= 2 ? 2 : 1,
+      updatedAt: serverTimestamp(),
+    });
+  };
+
+  const forceLogoutAll = async (user) => {
+    if (user.isProtected || user.role === "super_admin") return;
+    const sessionsRef = collection(
+      db,
+      "artifacts",
+      "ultra-study-point",
+      "public",
+      "data",
+      "users",
+      user.id,
+      "sessions"
+    );
+    const active = await getDocs(query(sessionsRef, where("revoked", "==", false)));
+    await Promise.all(
+      active.docs.map((d) =>
+        updateDoc(d.ref, {
+          revoked: true,
+          revokedReason: "force_logout_by_super_admin",
+          revokedBy: auth.currentUser?.uid || null,
+          revokedAt: serverTimestamp(),
+        })
+      )
+    );
+    alert("All active sessions were logged out.");
+  };
+
   return (
     <table style={ui.table}>
       <colgroup>
@@ -38,6 +81,8 @@ export default function UserTable({ users }) {
         <col style={{ width: "7%" }} />
         <col style={{ width: "7%" }} />
         <col style={{ width: "8%" }} />
+        <col style={{ width: "10%" }} />
+        <col style={{ width: "10%" }} />
       </colgroup>
       <thead>
         <tr>
@@ -50,6 +95,8 @@ export default function UserTable({ users }) {
           <th style={{ ...ui.th, ...ui.centerCell }}>Notes</th>
           <th style={{ ...ui.th, ...ui.centerCell }}>Quiz</th>
           <th style={{ ...ui.th, ...ui.centerCell }}>PYQ</th>
+          <th style={{ ...ui.th, ...ui.centerCell }}>Max Login</th>
+          <th style={{ ...ui.th, ...ui.centerCell }}>Sessions</th>
         </tr>
       </thead>
 
@@ -123,6 +170,28 @@ export default function UserTable({ users }) {
                 value={u.contentAccess?.pyqs}
               />
             </td>
+
+            <td style={{ ...ui.td, ...ui.centerCell }}>
+              <select
+                value={String(Number(u.maxConcurrentSessions || 1) >= 2 ? 2 : 1)}
+                disabled={u.isProtected || u.role === "super_admin"}
+                onChange={(e) => updateMaxSessions(u, e.target.value)}
+                style={ui.select}
+              >
+                <option value="1">1</option>
+                <option value="2">2</option>
+              </select>
+            </td>
+
+            <td style={{ ...ui.td, ...ui.centerCell }}>
+              <button
+                disabled={u.isProtected || u.role === "super_admin"}
+                onClick={() => forceLogoutAll(u)}
+                style={ui.logoutBtn}
+              >
+                Logout All
+              </button>
+            </td>
           </tr>
         ))}
       </tbody>
@@ -180,6 +249,16 @@ const ui = {
     border: "1px solid #d1d5db",
     fontSize: 12,
     minWidth: 100,
+  },
+  logoutBtn: {
+    border: "1px solid #dc2626",
+    borderRadius: 6,
+    background: "#fff1f2",
+    color: "#b91c1c",
+    fontSize: 12,
+    fontWeight: 700,
+    padding: "6px 8px",
+    cursor: "pointer",
   },
 };
 

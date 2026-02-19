@@ -81,6 +81,11 @@ export default function UsersPage() {
         displayName: updatedUser.displayName,
         status: updatedUser.status,
         contentAccess: updatedUser.contentAccess,
+        maxConcurrentSessions:
+          Number(updatedUser.maxConcurrentSessions || 1) >= 2 ? 2 : 1,
+        allowedDeviceIds: Array.isArray(updatedUser.allowedDeviceIds)
+          ? updatedUser.allowedDeviceIds
+          : [],
         updatedAt: serverTimestamp(),
       }
     );

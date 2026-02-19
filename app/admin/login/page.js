@@ -3,9 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { doc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import { auth } from "@/lib/firebase/client";
 import { db } from "@/lib/firebase/client";
+import { permissionsByRole } from "@/lib/admin/permissions";
+import { startAdminSession } from "@/lib/admin/sessionClient";
 
 export default function AdminLogin() {
   const router = useRouter();
@@ -14,11 +16,6 @@ export default function AdminLogin() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  function isPermissionDenied(err) {
-    const msg = String(err?.message || "").toLowerCase();
-    return err?.code === "permission-denied" || msg.includes("insufficient") || msg.includes("permission");
-  }
-
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
@@ -26,12 +23,6 @@ export default function AdminLogin() {
 
     try {
       const cred = await signInWithEmailAndPassword(auth, email, password);
-      const sessionId =
-        typeof crypto !== "undefined" && crypto.randomUUID
-          ? crypto.randomUUID()
-          : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-
-      localStorage.setItem("admin_session_id", sessionId);
 
       const userRef = doc(
         db,
@@ -43,22 +34,31 @@ export default function AdminLogin() {
         cred.user.uid
       );
 
-      try {
-        await updateDoc(userRef, {
-          activeSessionId: sessionId,
-          activeSessionAt: serverTimestamp(),
-          activeSessionDevice: navigator.userAgent || "unknown",
-        });
-      } catch (err) {
-        // Optional session tracking. Some roles may not have permission to update users doc.
-        if (!isPermissionDenied(err)) throw err;
+      const userSnap = await getDoc(userRef);
+      if (!userSnap.exists()) {
+        throw new Error("User profile missing. Contact super admin.");
       }
+      const userData = userSnap.data();
+
+      if (userData.status && userData.status !== "active") {
+        throw new Error("Your account is suspended.");
+      }
+      if (!permissionsByRole[userData.role]) {
+        throw new Error("Your account role is not allowed for admin panel.");
+      }
+
+      await startAdminSession({
+        uid: cred.user.uid,
+        userData,
+      });
 
       router.replace("/admin");
     } catch (err) {
       const code = String(err?.code || "");
       if (code.includes("auth/invalid-credential") || code.includes("auth/wrong-password") || code.includes("auth/user-not-found")) {
         setError("Invalid email or password");
+      } else if (code === "session/device-not-allowed") {
+        setError("This device is not allowed. Contact super admin.");
       } else {
         setError(err?.message || "Login failed. Please try again.");
       }
