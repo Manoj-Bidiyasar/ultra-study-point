@@ -1,5 +1,6 @@
 import CurrentAffairsClient from "./CurrentAffairsClient";
-import { getAdminDb } from "@/lib/firebase/admin";
+import { collection, getDocs, limit, orderBy, query, where } from "firebase/firestore";
+import { db } from "@/lib/firebase/client";
 import { serializeFirestoreData } from "@/lib/serialization/serializeFirestore";
 import { SITE_URL } from "@/lib/seo/siteConfig";
 
@@ -37,31 +38,34 @@ export async function generateMetadata(props) {
 
 /* ===================== SERVER DATA FETCH ===================== */
 async function getInitialCurrentAffairs() {
-  const adminDb = getAdminDb();
-  if (!adminDb) {
-    return { daily: [], monthly: [] };
-  }
-
-  const baseRef = adminDb
-    .collection("artifacts")
-    .doc("ultra-study-point")
-    .collection("public")
-    .doc("data")
-    .collection("currentAffairs");
+  const baseRef = collection(
+    db,
+    "artifacts",
+    "ultra-study-point",
+    "public",
+    "data",
+    "currentAffairs"
+  );
 
   const [dailySnap, monthlySnap] = await Promise.all([
-    baseRef
-      .where("type", "==", "daily")
-      .where("status", "==", "published")
-      .orderBy("caDate", "desc")
-      .limit(10)
-      .get(),
-    baseRef
-      .where("type", "==", "monthly")
-      .where("status", "==", "published")
-      .orderBy("caDate", "desc")
-      .limit(5)
-      .get(),
+    getDocs(
+      query(
+        baseRef,
+        where("type", "==", "daily"),
+        where("status", "==", "published"),
+        orderBy("caDate", "desc"),
+        limit(10)
+      )
+    ),
+    getDocs(
+      query(
+        baseRef,
+        where("type", "==", "monthly"),
+        where("status", "==", "published"),
+        orderBy("caDate", "desc"),
+        limit(5)
+      )
+    ),
   ]);
 
   const hasValidCaDate = (value) => {
