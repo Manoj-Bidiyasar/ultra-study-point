@@ -1,5 +1,4 @@
 import CurrentAffairsClient from "./CurrentAffairsClient";
-import { unstable_cache } from "next/cache";
 import { getAdminDb } from "@/lib/firebase/admin";
 import { serializeFirestoreData } from "@/lib/serialization/serializeFirestore";
 import { SITE_URL } from "@/lib/seo/siteConfig";
@@ -37,8 +36,7 @@ export async function generateMetadata(props) {
 
 
 /* ===================== SERVER DATA FETCH ===================== */
-const getInitialCurrentAffairs = unstable_cache(
-  async () => {
+async function getInitialCurrentAffairs() {
   const adminDb = getAdminDb();
   if (!adminDb) {
     return { daily: [], monthly: [] };
@@ -90,10 +88,7 @@ const getInitialCurrentAffairs = unstable_cache(
         ...serializeFirestoreData(d.data()),
       })),
   };
-  },
-  ["current-affairs-index"],
-  { revalidate: 300, tags: ["current-affairs-index"] }
-);
+}
 
 /* ===================== PAGE ===================== */
 export default async function CurrentAffairsPage(props) {

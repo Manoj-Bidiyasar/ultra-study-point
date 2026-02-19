@@ -9,10 +9,9 @@ import {
 import { db } from "@/lib/firebase/client";
 import HomeClient from "./HomeClient";
 import { serializeFirestoreData } from "@/lib/serialization/serializeFirestore";
-import { unstable_cache } from "next/cache";
 
-/* ================= ISR ================= */
-export const revalidate = 300;
+/* ================= RENDER MODE ================= */
+export const dynamic = "force-dynamic";
 
 const serializeDoc = (doc) => ({
   id: doc.id,
@@ -55,8 +54,7 @@ export async function generateMetadata() {
   };
 }
 
-const getHomeData = unstable_cache(
-  async () => {
+async function getHomeData() {
   const caRef = collection(
     db,
     "artifacts",
@@ -148,13 +146,7 @@ const getHomeData = unstable_cache(
     latestQuizzes: quizSnap.docs.map(serializeDoc),
     latestPyqs: pyqSnap.docs.map(serializeDoc),
   };
-  },
-  ["home-data"],
-  {
-    revalidate: 300,
-    tags: ["home-data", "current-affairs-index", "notes-index"],
-  }
-);
+}
 
 /* ================= PAGE ================= */
 export default async function Page() {
