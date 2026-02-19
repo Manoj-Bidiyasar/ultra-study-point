@@ -16,6 +16,24 @@ export default function AdminLogin() {
   const [error, setError] = useState("");
   const [debugStep, setDebugStep] = useState("");
 
+  async function readProfileWithRetry(userRef, user) {
+    let lastErr = null;
+    for (let i = 0; i < 3; i += 1) {
+      try {
+        if (user) {
+          await user.getIdToken(true);
+        }
+        const snap = await getDoc(userRef);
+        return snap;
+      } catch (err) {
+        lastErr = err;
+        if (String(err?.code || "") !== "permission-denied") throw err;
+        await new Promise((r) => setTimeout(r, 400 * (i + 1)));
+      }
+    }
+    throw lastErr;
+  }
+
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
@@ -42,7 +60,7 @@ export default function AdminLogin() {
         cred.user.uid
       );
 
-      const userSnap = await getDoc(userRef);
+      const userSnap = await readProfileWithRetry(userRef, cred.user);
       if (!userSnap.exists()) {
         throw new Error("User profile missing. Contact super admin.");
       }
