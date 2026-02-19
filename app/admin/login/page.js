@@ -108,6 +108,7 @@ export default function AdminLogin() {
       await startAdminSession({
         uid: cred.user.uid,
         userData,
+        getIdToken: () => cred.user.getIdToken(true),
       });
 
       currentStep = "redirect";
