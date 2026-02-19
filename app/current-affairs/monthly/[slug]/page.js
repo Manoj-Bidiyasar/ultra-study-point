@@ -123,7 +123,7 @@ const getMonthlyBySlug = unstable_cache(
     return { id: direct.id, data: direct.data() };
   },
   (slugOrId) => ["monthly-ca", slugOrId],
-  { revalidate: 600 }
+  { revalidate: 600, tags: ["monthly-ca"] }
 );
 
 export async function generateMetadata(props) {

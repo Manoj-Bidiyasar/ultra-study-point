@@ -29,7 +29,7 @@ const getNotesIndex = unstable_cache(
     return snap.docs.map(serializeDoc);
   },
   ["notes-index"],
-  { revalidate: 300 }
+  { revalidate: 300, tags: ["notes-index"] }
 );
 
 export default async function NotesPage() {

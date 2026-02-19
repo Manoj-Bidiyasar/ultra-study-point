@@ -1,9 +1,9 @@
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { NextResponse } from "next/server";
 
 export async function POST(request) {
   try {
-    const { secret, paths } = await request.json();
+    const { secret, paths, tags } = await request.json();
     const expectedSecret =
       process.env.REVALIDATE_SECRET ||
       process.env.NEXT_PUBLIC_REVALIDATE_SECRET;
@@ -22,11 +22,18 @@ export async function POST(request) {
       );
     }
 
-    paths.forEach((path) => revalidatePath(path));
+    paths.forEach((path) => revalidatePath(path, "page"));
+
+    if (Array.isArray(tags)) {
+      tags
+        .filter((tag) => typeof tag === "string" && tag.trim())
+        .forEach((tag) => revalidateTag(tag.trim()));
+    }
 
     return NextResponse.json({
       success: true,
       paths,
+      tags: Array.isArray(tags) ? tags : [],
       time: Date.now(),
     });
   } catch (err) {

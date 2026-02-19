@@ -128,7 +128,7 @@ const getDailyBySlug = unstable_cache(
     return { id: direct.id, data: direct.data() };
   },
   (slugOrId) => ["daily-ca", slugOrId],
-  { revalidate: 300 }
+  { revalidate: 300, tags: ["daily-ca"] }
 );
 
 /* ================= SEO ================= */

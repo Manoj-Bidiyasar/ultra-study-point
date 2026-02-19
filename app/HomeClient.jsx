@@ -139,9 +139,10 @@ export default function HomeClient({
                   .filter((item) => item.status === "published")
                   .map((item) => {
                     const itemDate = formatCardDate(item.caDate);
+                    const dailyPath = `/current-affairs/daily/${item.slug || item.id}`;
                     return (
                       <Link
-                        href={`/current-affairs/daily/${item.slug}`}
+                        href={dailyPath}
                         key={item.id}
                         className="bg-white p-3 rounded-xl border border-gray-200 hover:border-blue-400 hover:shadow-sm transition-all flex items-center gap-4 group"
                       >
@@ -171,7 +172,7 @@ export default function HomeClient({
                   .filter((item) => item.status === "published")
                   .map((item) => (
                   <Link
-                    href={`/current-affairs/monthly/${item.slug}`}
+                    href={`/current-affairs/monthly/${item.slug || item.id}`}
                     key={item.id}
                     className="bg-white p-3 rounded-xl border border-gray-200 hover:border-red-600 hover:bg-red-50/20 transition-all flex items-center gap-4 group"
                   >
@@ -220,7 +221,7 @@ export default function HomeClient({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {latestNotes.map((note) => (
               <Link
-                href={`/notes/${note.slug}`}
+                href={`/notes/${note.slug || note.id}`}
                 key={note.id}
                 className="bg-white p-3 rounded-xl border border-gray-200 hover:border-indigo-400 hover:shadow-sm transition-all flex items-center gap-4 group"
               >

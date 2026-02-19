@@ -92,7 +92,7 @@ const getInitialCurrentAffairs = unstable_cache(
   };
   },
   ["current-affairs-index"],
-  { revalidate: 300 }
+  { revalidate: 300, tags: ["current-affairs-index"] }
 );
 
 /* ===================== PAGE ===================== */

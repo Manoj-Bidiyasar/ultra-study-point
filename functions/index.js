@@ -19,12 +19,14 @@ exports.autoRevalidate = onDocumentWritten(
       if (!after) return;
 
       const paths = ["/"];
+      const tags = ["home-data"];
 
       if (after.type === "daily") {
         paths.push(
           "/current-affairs",
           `/current-affairs/daily/${after.slug}`
         );
+        tags.push("current-affairs-index", "daily-ca");
       }
 
       if (after.type === "monthly") {
@@ -32,26 +34,35 @@ exports.autoRevalidate = onDocumentWritten(
           "/current-affairs",
           `/current-affairs/monthly/${after.slug}`
         );
+        tags.push("current-affairs-index", "monthly-ca");
       }
 
       if (after.type === "notes") {
         paths.push(
           "/notes",
-          `/notes/${after.category}`,
           `/notes/${after.slug}`
         );
+        tags.push("notes-index");
       }
 
-      await fetch("https://ultrastudypoint.in/api/revalidate", {
+      const response = await fetch("https://ultrastudypoint.in/api/revalidate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           secret: REVALIDATE_SECRET.value(),
           paths,
+          tags,
         }),
       });
 
-      logger.info("Revalidation successful", { paths });
+      if (!response.ok) {
+        const body = await response.text();
+        throw new Error(
+          `Revalidate API failed with ${response.status}: ${body || "no body"}`
+        );
+      }
+
+      logger.info("Revalidation successful", { paths, tags });
     } catch (err) {
       logger.error("Revalidation failed", err);
     }
