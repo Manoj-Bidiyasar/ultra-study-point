@@ -4,9 +4,7 @@ import { NextResponse } from "next/server";
 export async function POST(request) {
   try {
     const { secret, paths, tags } = await request.json();
-    const expectedSecret =
-      process.env.REVALIDATE_SECRET ||
-      process.env.NEXT_PUBLIC_REVALIDATE_SECRET;
+    const expectedSecret = process.env.REVALIDATE_SECRET;
 
     if (!expectedSecret || secret !== expectedSecret) {
       return NextResponse.json(
