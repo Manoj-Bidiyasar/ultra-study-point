@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect } from "react";
 import {
@@ -1196,7 +1196,11 @@ const docRef = doc(
           snapshotAt: serverTimestamp(),
           snapshotBy: currentUserProfile,
         };
-        await addDoc(collection(docRef, "versions"), snapshot);
+        try {
+          await addDoc(collection(docRef, "versions"), snapshot);
+        } catch (err) {
+          if (!isPermissionDenied(err)) throw toRuntimeError(err);
+        }
       }
       const update = {
         status: nextStatus,
@@ -1915,4 +1919,5 @@ const ui = {
     whiteSpace: "nowrap",
   },
 };
+
 
